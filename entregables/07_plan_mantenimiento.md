@@ -79,11 +79,11 @@ Evolucionar el sistema con nuevas funcionalidades y mejoras.
 
 ## 4. Roles responsables
 
-| Rol | Responsabilidades principales |
-|-----|------------------------------|
-| **Administrador del sistema** | Gestión de usuarios, roles, permisos, backups, seguridad, logs, actualizaciones del sistema y control de versiones. |
+| Rol                           | Responsabilidades principales                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Administrador del sistema** | Gestión de usuarios, roles, permisos, backups, seguridad, logs, actualizaciones del sistema y control de versiones.        |
 | **Encargado del restaurante** | Gestión de stock, disponibilidad de mesas, horarios, categorías de producto, supervisión de pedidos y reportes operativos. |
-| **Soporte técnico** | Atención de incidencias, mantenimiento correctivo y preventivo, instalación de parches, soporte a usuarios finales. |
+| **Soporte técnico**           | Atención de incidencias, mantenimiento correctivo y preventivo, instalación de parches, soporte a usuarios finales.        |
 
 ---
 
@@ -101,12 +101,12 @@ Evolucionar el sistema con nuevas funcionalidades y mejoras.
 
 ## 6. Versiones y control de cambios
 
-| Versión | Fecha | Autor | Descripción de cambios |
-|---------|-------|-------|------------------------|
-| 1.0 | 29/10/2026 | Equipo de integración | Versión inicial del plan de mantenimiento. |
+| Versión | Fecha      | Autor                 | Descripción de cambios                     |
+| ------- | ---------- | --------------------- | ------------------------------------------ |
+| 1.0     | 29/10/2026 | Equipo de integración | Versión inicial del plan de mantenimiento. |
 
 **Control de cambios:** Cualquier modificación a este documento debe ser registrada en la tabla anterior, indicando número de versión, fecha, autor y descripción del cambio. El administrador del sistema es responsable de aprobar y versionar este documento.
 
 ---
 
-**Confirmación:** Este archivo `06_plan_mantenimiento.md` ha sido creado exitosamente en la carpeta `documentacion_integrador/`.
+**Confirmación:** Este archivo `07_plan_mantenimiento.md` ha sido creado exitosamente en la carpeta `entregables/`.

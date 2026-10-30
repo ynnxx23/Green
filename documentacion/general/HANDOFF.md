@@ -29,13 +29,19 @@ Sistema funcional completo con 3 roles, autenticación, reservas, pedidos, stock
 ├── /documentacion        Documentación del sistema
 │   ├── /general          Documentación general (requerimientos, tecnologías, endpoints, guías)
 │   └── /desarrollo       Documentación de desarrollo (análisis, arquitectura, pruebas, CI/CD)
-├── /documentacion_integrador Documentación del proyecto integrador académico (7 archivos)
-├── /entregables          Entregables del proyecto (diagramas, documento APA7, actividades)
+├── /entregables          Entregables del proyecto (documento APA7, etapas del integrador y diagramas)
+│   ├── 00_indice_entregables.md
 │   ├── 01_documento_apa7.md
-│   ├── 02_diagrama_caso_uso.md
-│   ├── 03_diagrama_der.md
-│   ├── 04_diagrama_gantt.md
-│   └── /actividades
+│   ├── 02_analisis_problematica.md
+│   ├── 03_etapa1_requerimientos.md
+│   ├── 04_diseno_sistema.md
+│   ├── 05_desarrollo.md
+│   ├── 06_sistema_funcional_pruebas.md
+│   ├── 07_plan_mantenimiento.md
+│   ├── 08_plan_capacitacion.md
+│   ├── 09_diagrama_caso_uso.md
+│   ├── 10_diagrama_der.md
+│   └── 11_diagrama_gantt.md
 ├── /plan_desarrollo      Plan de desarrollo (backend, frontend)
 └── /tests                Pruebas (en .gitignore)
 ```
@@ -84,7 +90,7 @@ Páginas en `public/`:
 ### Documentación
 - `/documentacion/general/` — Documentación general del sistema (requerimientos, tecnologías, endpoints, guías de instalación, estrategia de migraciones).
 - `/documentacion/desarrollo/` — Documentación de desarrollo (análisis de requisitos, stack y arquitectura, base de datos, diseño y accesibilidad, seguridad, pruebas, CI/CD, hoja de ruta).
-- `/documentacion_integrador/` — 7 archivos del proyecto integrador académico (análisis, requerimientos, diseño, desarrollo, pruebas, mantenimiento, capacitación).
+- `/entregables/` — Etapas del proyecto integrador (archivos 02 a 08: análisis, requerimientos, diseño, desarrollo, pruebas, mantenimiento y capacitación), documento APA7 (01) y diagramas (09 a 11).
 - `/entregables/` — Entregables finales (documento APA7, diagramas de casos de uso, DER, Gantt en .md Mermaid).
 
 ## Reglas de Negocio Clave

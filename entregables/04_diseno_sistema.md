@@ -8,11 +8,11 @@ Documento de diseño técnico y funcional del sistema de gestión para el restau
 
 El sistema define exactamente tres roles de usuario, identificados por `id_rol`:
 
-| id_rol | Rol | Responsabilidades principales |
-|--------|-----|-------------------------------|
-| 1 | Cliente | Ver la carta de productos. Hacer una reserva para una fecha determinada. Hacer pedidos. Ver sus propias reservas y pedidos. Cancelar sus propias reservas. |
-| 2 | Encargado del restaurante | Gestionar el stock y el límite de venta por plato. Publicar el menú semanal con los platos disponibles cada semana. Abrir disponibilidad de mesas por múltiples fechas con rango de hora. Ver todos los pedidos, cambiar su estado y gestionar el estado de la seña (pendiente/pagada/devuelta). Bloquear mesas. |
-| 4 | Administrador | Gestionar usuarios (crear, activar, desactivar, eliminar). Ver todas las reservas y cambiar su estado. Ver todos los pedidos y cambiar su estado. Acceso a reportes de ventas, productos más vendidos, reservas por día y ventas por día, y al historial completo de movimientos. Acceso total al sistema. |
+| id_rol | Rol                       | Responsabilidades principales                                                                                                                                                                                                                                                                                    |
+| ------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Cliente                   | Ver la carta de productos. Hacer una reserva para una fecha determinada. Hacer pedidos. Ver sus propias reservas y pedidos. Cancelar sus propias reservas.                                                                                                                                                       |
+| 2      | Encargado del restaurante | Gestionar el stock y el límite de venta por plato. Publicar el menú semanal con los platos disponibles cada semana. Abrir disponibilidad de mesas por múltiples fechas con rango de hora. Ver todos los pedidos, cambiar su estado y gestionar el estado de la seña (pendiente/pagada/devuelta). Bloquear mesas. |
+| 4      | Administrador             | Gestionar usuarios (crear, activar, desactivar, eliminar). Ver todas las reservas y cambiar su estado. Ver todos los pedidos y cambiar su estado. Acceso a reportes de ventas, productos más vendidos, reservas por día y ventas por día, y al historial completo de movimientos. Acceso total al sistema.       |
 
 ---
 

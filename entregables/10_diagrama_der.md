@@ -215,20 +215,20 @@ erDiagram
 
 ## Diccionario de datos resumido
 
-| Tabla | Descripción | PK | FK principales |
-|-------|-------------|----|----------------|
-| roles | 3 roles del sistema | id_rol | — |
-| usuarios | Usuarios autenticados | id_usuario | id_rol → roles |
-| areas | Salones del restaurante | id_area | — |
-| mesas | Mesas físicas | id_mesa | id_area → areas |
-| productos | Catálogo vendible | id_producto | — |
-| stock_producto | Inventario y límite de venta | id_stock | id_producto → productos |
-| pedidos | Pedidos (normalizado) | id_pedido | id_mesa→mesas, id_mesero→usuarios, id_usuario→usuarios |
-| detalle_pedidos | Líneas de pedido | id_detalle | id_pedido→pedidos, id_producto→productos |
-| reservas | Reservas de mesas | id_reserva | id_mesa→mesas, id_usuario→usuarios |
-| disponibilidad_mesa | Disponibilidad para reservas | id_disponibilidad | creado_por→usuarios |
-| horarios_funcionamiento | Apertura/cierre por área y día | id_horario | id_area → areas |
-| bloques_mesa | Bloqueos de mesas | id_bloque | id_mesa→mesas, creado_por→usuarios |
-| menu_semanal | Menú semanal publicado | id_menu_semanal | creado_por→usuarios |
-| menu_semanal_items | Platos del menú semanal | id_item | id_menu_semanal→menu_semanal, id_producto→productos |
-| historial_movimientos | Auditoría del sistema | id_historial | id_usuario→usuarios |
+| Tabla                   | Descripción                    | PK                | FK principales                                         |
+| ----------------------- | ------------------------------ | ----------------- | ------------------------------------------------------ |
+| roles                   | 3 roles del sistema            | id_rol            | —                                                      |
+| usuarios                | Usuarios autenticados          | id_usuario        | id_rol → roles                                         |
+| areas                   | Salones del restaurante        | id_area           | —                                                      |
+| mesas                   | Mesas físicas                  | id_mesa           | id_area → areas                                        |
+| productos               | Catálogo vendible              | id_producto       | —                                                      |
+| stock_producto          | Inventario y límite de venta   | id_stock          | id_producto → productos                                |
+| pedidos                 | Pedidos (normalizado)          | id_pedido         | id_mesa→mesas, id_mesero→usuarios, id_usuario→usuarios |
+| detalle_pedidos         | Líneas de pedido               | id_detalle        | id_pedido→pedidos, id_producto→productos               |
+| reservas                | Reservas de mesas              | id_reserva        | id_mesa→mesas, id_usuario→usuarios                     |
+| disponibilidad_mesa     | Disponibilidad para reservas   | id_disponibilidad | creado_por→usuarios                                    |
+| horarios_funcionamiento | Apertura/cierre por área y día | id_horario        | id_area → areas                                        |
+| bloques_mesa            | Bloqueos de mesas              | id_bloque         | id_mesa→mesas, creado_por→usuarios                     |
+| menu_semanal            | Menú semanal publicado         | id_menu_semanal   | creado_por→usuarios                                    |
+| menu_semanal_items      | Platos del menú semanal        | id_item           | id_menu_semanal→menu_semanal, id_producto→productos    |
+| historial_movimientos   | Auditoría del sistema          | id_historial      | id_usuario→usuarios                                    |

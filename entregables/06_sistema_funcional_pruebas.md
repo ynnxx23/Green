@@ -21,28 +21,28 @@ Se verificó el correcto funcionamiento de las siguientes funcionalidades:
 
 Durante las pruebas se detectaron y corrigieron los siguientes errores:
 
-| Error detectado | Corrección aplicada |
-|---|---|
-| Navbar roto: links apilados verticalmente | Navbar con flexbox: logo a la izquierda, enlaces centrados, sesión a la derecha |
-| Fondo hero roto: imagen `hero-comida` inexistente | Fondo cambiado a `plato.png` con opacidad suave |
-| Verde de marca muy oscuro | Verde aclarado: primario `#2E5F4E`, secundario `#4A8C6F` |
-| Roles reducidos/inconsistentes | Estandarizados a 3 roles: cliente, encargado, administrador |
-| No había botón de registro en el navbar | Registro movido dentro del flujo de login (por solicitud del diseño) |
-| `id_mesa` era NOT NULL en pedidos | `id_mesa` ahora es nullable para permitir pedidos sin mesa |
-| No existía historial de movimientos | Se agregó registro de historial en cada acción relevante |
-| No existían reportes administrativos | Se implementaron reportes de ventas, productos, reservas y dias |
+| Error detectado                                   | Corrección aplicada                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Navbar roto: links apilados verticalmente         | Navbar con flexbox: logo a la izquierda, enlaces centrados, sesión a la derecha |
+| Fondo hero roto: imagen `hero-comida` inexistente | Fondo cambiado a `plato.png` con opacidad suave                                 |
+| Verde de marca muy oscuro                         | Verde aclarado: primario `#2E5F4E`, secundario `#4A8C6F`                        |
+| Roles reducidos/inconsistentes                    | Estandarizados a 3 roles: cliente, encargado, administrador                     |
+| No había botón de registro en el navbar           | Registro movido dentro del flujo de login (por solicitud del diseño)            |
+| `id_mesa` era NOT NULL en pedidos                 | `id_mesa` ahora es nullable para permitir pedidos sin mesa                      |
+| No existía historial de movimientos               | Se agregó registro de historial en cada acción relevante                        |
+| No existían reportes administrativos              | Se implementaron reportes de ventas, productos, reservas y dias                 |
 
 ## 3. Pruebas de historial
 
 Se verificó que se registren movimientos de historial en las siguientes acciones:
 
-| Acción | Movimiento esperado |
-|---|---|
-| Crear reserva | Registro de nueva reserva con fecha, mesa y cliente |
-| Cancelar reserva | Registro de cancelación con motivo y usuario |
+| Acción                    | Movimiento esperado                                           |
+| ------------------------- | ------------------------------------------------------------- |
+| Crear reserva             | Registro de nueva reserva con fecha, mesa y cliente           |
+| Cancelar reserva          | Registro de cancelación con motivo y usuario                  |
 | Cambiar estado de reserva | Registro de transición de estado (ej. pendiente → confirmada) |
-| Crear pedido | Registro de nuevo pedido con platos, mesa y total |
-| Cambiar estado de pedido | Registro de transición de estado (ej. pendiente → enviado) |
+| Crear pedido              | Registro de nuevo pedido con platos, mesa y total             |
+| Cambiar estado de pedido  | Registro de transición de estado (ej. pendiente → enviado)    |
 
 Cada movimiento queda asociado al usuario que lo ejecutó y a la fecha/hora del suceso.
 
@@ -90,4 +90,4 @@ El sistema se encuentra completamente funcional con los 3 roles definidos (clien
 
 ---
 
-**Archivo creado:** `documentacion_integrador/05_sistema_funcional_pruebas.md`
+**Archivo creado:** `entregables/06_sistema_funcional_pruebas.md`

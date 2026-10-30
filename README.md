@@ -226,27 +226,26 @@ docker compose up -d
 ├── /documentacion        Documentación del sistema
 │   ├── /general          Documentación general (requerimientos, tecnologías, endpoints, guías)
 │   └── /desarrollo       Documentación de desarrollo (análisis, arquitectura, pruebas, CI/CD)
-├── /documentacion_integrador Documentación del proyecto integrador académico (7 archivos)
-├── /entregables          Entregables del proyecto (diagramas, documento APA7, actividades)
+├── /entregables          Entregables del proyecto (documento APA7, etapas del integrador y diagramas)
+│   ├── 00_indice_entregables.md
 │   ├── 01_documento_apa7.md
-│   ├── 02_diagrama_caso_uso.md
-│   ├── 03_diagrama_der.md
-│   ├── 04_diagrama_gantt.md
-│   └── /actividades
+│   ├── 02_analisis_problematica.md
+│   ├── 03_etapa1_requerimientos.md
+│   ├── 04_diseno_sistema.md
+│   ├── 05_desarrollo.md
+│   ├── 06_sistema_funcional_pruebas.md
+│   ├── 07_plan_mantenimiento.md
+│   ├── 08_plan_capacitacion.md
+│   ├── 09_diagrama_caso_uso.md
+│   ├── 10_diagrama_der.md
+│   └── 11_diagrama_gantt.md
 ├── /plan_desarrollo      Plan de desarrollo (backend, frontend)
 └── /tests                Pruebas (en .gitignore)
 ```
 
 ## 10. Documentación del proyecto integrador
 
-Ver carpeta `documentacion_integrador/` (7 archivos .md siguiendo las fases del proyecto integrador 2026):
-- `01_analisis_problematica.md`
-- `02_etapa1_requerimientos.md` (FODA, requerimientos funcionales/no funcionales, APA 7)
-- `03_diseno_sistema.md` (roles, casos de uso, modelo datos, reglas negocio, arquitectura)
-- `04_desarrollo.md` (interfaz, BD, programación, integración, funcionalidades)
-- `05_sistema_funcional_pruebas.md` (pruebas, errores corregidos, cómo ejecutar)
-- `06_plan_mantenimiento.md`
-- `07_plan_capacitacion.md`
+Todos los archivos de las etapas del proyecto integrador se encuentran en `entregables/` (archivos numerados del 02 al 08), junto al documento APA7 (01) y los diagramas (09 a 11). Ver `entregables/00_indice_entregables.md` para el listado completo y ordenado.
 
 Documentación general del sistema en `documentacion/general/` y documentación de desarrollo en `documentacion/desarrollo/`.
 

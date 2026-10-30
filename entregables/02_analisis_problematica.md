@@ -88,4 +88,4 @@ Quedan fuera del alcance de esta etapa:
 
 ---
 
-*Archivo 01_analisis_problematica.md creado correctamente dentro de documentacion_integrador/.*
+*Archivo 02_analisis_problematica.md creado correctamente dentro de entregables/.*

@@ -126,4 +126,4 @@ El frontend consume la API REST mediante `fetch` y envía cookies de sesión con
 
 ---
 
-**Archivo creado:** `documentacion_integrador/04_desarrollo.md`
+**Archivo creado:** `entregables/05_desarrollo.md`

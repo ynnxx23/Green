@@ -79,11 +79,11 @@ Responsables de la configuración global y gestión de usuarios.
 
 ### Duración sugerida
 
-| Rol | Duración total | Sesiones |
-|-----|---------------|----------|
-| Clientes | 1 hora | 1 sesión |
-| Encargados del restaurante | 4 horas | 2 sesiones de 2 horas |
-| Administradores del sistema | 6 horas | 3 sesiones de 2 horas |
+| Rol                         | Duración total | Sesiones              |
+| --------------------------- | -------------- | --------------------- |
+| Clientes                    | 1 hora         | 1 sesión              |
+| Encargados del restaurante  | 4 horas        | 2 sesiones de 2 horas |
+| Administradores del sistema | 6 horas        | 3 sesiones de 2 horas |
 
 ### Materiales
 
@@ -96,11 +96,11 @@ Responsables de la configuración global y gestión de usuarios.
 
 ## 5. Cronograma indicativo
 
-| Semana | Rol | Contenido principal |
-|--------|-----|---------------------|
+| Semana   | Rol                         | Contenido principal                                                          |
+| -------- | --------------------------- | ---------------------------------------------------------------------------- |
 | Semana 1 | Administradores del sistema | Gestión de usuarios, reservas y pedidos globales, configuración y seguridad. |
-| Semana 2 | Encargados del restaurante | Gestión de stock, disponibilidad, pedidos y estados, reportes operativos. |
-| Semana 3 | Clientes | Cómo reservar y pedir, consulta de menú, seguimiento y cancelación. |
+| Semana 2 | Encargados del restaurante  | Gestión de stock, disponibilidad, pedidos y estados, reportes operativos.    |
+| Semana 3 | Clientes                    | Cómo reservar y pedir, consulta de menú, seguimiento y cancelación.          |
 
 ---
 
@@ -137,4 +137,4 @@ El resultado de la prueba práctica y la encuesta se registrarán en el acta de 
 
 ---
 
-**Confirmación:** Este archivo `07_plan_capacitacion.md` ha sido creado exitosamente en la carpeta `documentacion_integrador/`.
+**Confirmación:** Este archivo `08_plan_capacitacion.md` ha sido creado exitosamente en la carpeta `entregables/`.
