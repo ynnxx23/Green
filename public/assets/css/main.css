@@ -106,6 +106,18 @@ img {
   padding: 0 var(--space-md);
 }
 
+/* Evitar solapamiento entre secciones */
+section {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+/* Separación clara entre secciones apiladas */
+section + section {
+  margin-top: var(--space-lg);
+}
+
 /* Botones */
 .btn {
   display: inline-block;

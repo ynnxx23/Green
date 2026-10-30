@@ -104,3 +104,22 @@ useCaseDiagram
 | CU17 | Gestionar usuarios     | Admin                     | Crear, activar, desactivar, eliminar usuarios y roles.             |
 | CU18 | Reportes               | Admin                     | Ventas, productos más vendidos, reservas/día, ventas/día.          |
 | CU19 | Historial              | Admin                     | Auditoría de movimientos con filtros.                              |
+
+## Casos de uso extendidos (RF-68 a RF-105)
+
+| ID   | Caso de uso                          | Actor principal   | Descripción breve                                                  |
+| ---- | ------------------------------------ | ----------------- | ------------------------------------------------------------------ |
+| CU20 | Gestionar límite pedidos sin reserva | Encargado, Admin  | Configura límite máximo por período (día/semana/mes) y reactiva.   |
+| CU21 | Gestionar zonas de delivery          | Encargado, Admin  | Crea/edita zonas con nombre, costo de envío y radio de cobertura.  |
+| CU22 | Gestionar repartidores               | Encargado, Admin  | Alta/baja repartidores, vehículo, estado, zona asignada.           |
+| CU23 | Gestionar cupones de descuento       | Encargado, Admin  | Códigos con %/monto fijo, mínimo pedido, expiración, usos máximos. |
+| CU24 | Calificar platos                     | Cliente           | 1-5 estrellas + comentario en pedidos entregados.                  |
+| CU25 | Gestionar preferencias y alergias    | Cliente           | Vegetariano, vegano, sin gluten, alérgenos, platos favoritos.      |
+| CU26 | Ver y canjear puntos de fidelidad    | Cliente           | Acumulación por consumo, canje por descuentos, historial.          |
+| CU27 | Configuración del restaurante        | Encargado, Admin  | Nombre, contacto, horarios, moneda, IVA, políticas, capacidad.     |
+| CU28 | Recuperar contraseña                 | Cliente, Encargado| Token seguro por email (expiración 1h, un solo uso).               |
+| CU29 | Estado de entrega delivery           | Encargado, Repartidor | pendiente → en_camino → entregado / fallido.                   |
+| CU30 | Cierre de caja diario                | Encargado, Admin  | Apertura/cierre, montos por método, diferencia, observaciones.     |
+| CU31 | Gestionar sucursales                 | Admin             | Múltiples sedes con usuarios, pedidos y reservas por sucursal.     |
+| CU32 | Registrar respaldos de BD            | Admin             | Historial de respaldos (completo/parcial/programado/manual).       |
+| CU33 | Permisos granulares por rol          | Admin             | Matriz de permisos por módulo (pedidos, reservas, stock, etc.).    |

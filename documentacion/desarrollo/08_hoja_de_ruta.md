@@ -339,3 +339,56 @@ F1 --> F2 --> F3 --> F4 --> F5 --> F6 --> F7 --> F8 --> F9
 - [ ] `main` estable etiquetada `v1.0.0`.
 
 **Una etapa no se considera finalizada si no se cumplen todos los ítems de su checklist.**
+
+---
+
+## 6. Fases adicionales implementadas (post-F9)
+
+Tras completar las fases F1–F9 del plan original, se implementaron funcionalidades adicionales cubriendo RF-68 a RF-105 (requerimientos extendidos):
+
+| Fase | Nombre | RFs cubiertos | Estado |
+|------|--------|---------------|--------|
+| F10 | **Stock, límites y menú semanal** | RF-72 a RF-80 | ✅ Completada |
+| F11 | **Delivery, zonas y repartidores** | RF-81 a RF-83 | ✅ Completada |
+| F12 | **Pedidos sin reserva y configuración** | RF-68 a RF-71, RF-101 | ✅ Completada |
+| F13 | **Cupones y descuentos** | RF-88 | ✅ Completada |
+| F14 | **Calificaciones, preferencias, fidelidad** | RF-90 a RF-93 | ✅ Completada (parcial: RF-93 tabla creada) |
+| F15 | **RF pendientes: cierre caja, notificaciones, sucursales, permisos** | RF-84, RF-87, RF-89, RF-94-100, RF-102, RF-103, RF-105 | ✅ Migraciones listas (013) |
+
+### Migraciones añadidas post-F9
+
+| Archivo | Descripción |
+|---------|-------------|
+| `004_stock_y_disponibilidad.sql` | Stock y límite por producto, disponibilidad mesa (RF-72–77) |
+| `005_pedidos_y_senas.sql` | Pedidos con seña, tipos, menú semanal (RF-78–80, RF-86) |
+| `006_historial_y_reportes.sql` | Historial movimientos, normalización, reportes (RF-97–100) |
+| `007_datos_prueba.sql` | Datos de prueba |
+| `008_recuperar_contrasena_y_perfil.sql` | Recuperación contraseña, perfil extendido |
+| `009_configuracion_y_limites_pedidos.sql` | Config sistema, límite pedidos sin reserva (RF-68–71, RF-101) |
+| `010_cupones_descuento.sql` | Cupones y uso por cliente (RF-88) |
+| `011_calificaciones_preferencias_fidelidad.sql` | Calificaciones, preferencias, fidelidad, reservas recurrentes (RF-90–93) |
+| `012_delivery_repartidores.sql` | Zonas delivery, repartidores, campos delivery en pedidos (RF-81, RF-83) |
+| `013_rf_pendientes.sql` | Estado entrega, cierre caja, favoritos, notificaciones, sucursales, respaldos, permisos (RF-84, 87, 89, 94–100, 102, 103, 105) |
+
+### Endpoints principales añadidos
+
+| Área | Endpoints |
+|------|-----------|
+| Configuración | `GET/PUT /api/configuracion`, `GET/PUT /api/configuracion/limite-pedidos-sin-reserva`, `GET/POST /api/configuracion/contador-pedidos-sin-reserva` |
+| Zonas delivery | `GET/POST/PUT/DELETE /api/zonas-delivery` |
+| Repartidores | `GET/POST/PUT/DELETE /api/repartidores`, `POST /api/repartidores/{id}/estado` |
+| Cupones | `GET/POST/PUT/DELETE /api/cupones`, `GET /api/cupones/{id}/usos`, `GET /api/cupones/validar` |
+| Calificaciones | `POST /api/calificaciones`, `GET /api/calificaciones/plato/{id}` |
+| Preferencias | `GET/POST /api/preferencias` |
+| Fidelidad | `GET /api/fidelidad/puntos`, `GET /api/fidelidad/historial`, `POST /api/fidelidad/canjear` |
+| Autenticación | `POST /api/auth/recuperar`, `POST /api/auth/restablecer` |
+
+### Cobertura de requerimientos (actualizada)
+
+| Categoría | Total RF | Implementados | Pendientes |
+|-----------|----------|---------------|------------|
+| Core original (RF-01 a RF-30) | 30 | 30 | 0 |
+| Extendidos (RF-31 a RF-71) | 41 | 41 | 0 |
+| Avanzados (RF-72 a RF-105) | 34 | 23 | 11* |
+
+*Los 11 RF pendientes requieren servicios externos (facturación electrónica, envío real de notificaciones WhatsApp/Email/Push, reportes avanzados) o son mejoras de fase 2 (reservas recurrentes con endpoints, cierre de caja UI, multisede UI).

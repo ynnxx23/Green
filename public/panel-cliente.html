@@ -85,6 +85,8 @@
   .mesa-card.seleccionada p { color: rgba(255,255,255,0.9); }
   .seña-info { background: rgba(184,134,11,0.1); border: 1px solid #8a6200; border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; color: #8a6200; font-size: 0.9rem; }
   .domicilio-fields { background: #f5f5f5; border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; display: none; }
+  .estrella { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #bdbdbd; padding: 0; }
+  .estrella:hover { color: #8a6200; }
   @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr; } .panel-sidebar { display: none; } }
 </style>
 </head>
@@ -116,6 +118,9 @@
     <a href="#" onclick="mostrar('menu-semanal')">Menú semanal</a>
     <a href="#" onclick="mostrar('nuevo-pedido')">Hacer pedido</a>
     <a href="#" onclick="mostrar('mis-pedidos')">Mis pedidos</a>
+    <a href="#" onclick="mostrar('calificaciones')">Calificar platos</a>
+    <a href="#" onclick="mostrar('preferencias')">Mis preferencias</a>
+    <a href="#" onclick="mostrar('puntos')">Puntos de fidelidad</a>
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
@@ -194,6 +199,10 @@
         <div id="grupo-direccion" class="domicilio-fields">
           <label>Dirección de entrega</label>
           <input type="text" id="inp-direccion" placeholder="Calle, número, barrio, referencia">
+          <label style="margin-top:0.5rem; display:block;">Zona de delivery</label>
+          <select id="sel-zona-delivery" style="width:100%; padding:0.35rem; border:1px solid rgba(27,67,50,0.15); border-radius:var(--radius-sm);"><option value="">Seleccionar zona</option></select>
+          <label style="margin-top:0.5rem; display:block;">Repartidor</label>
+          <select id="sel-repartidor" style="width:100%; padding:0.35rem; border:1px solid rgba(27,67,50,0.15); border-radius:var(--radius-sm);"><option value="">Sin asignar</option></select>
         </div>
       </div>
       <div id="lista-productos" class="card-grid"></div>
@@ -206,6 +215,85 @@
     <section id="vista-mis-pedidos" class="panel-card">
       <h3>Mis pedidos</h3>
       <div class="tabla-wrap" id="tabla-pedidos"></div>
+    </section>
+
+    <section id="vista-calificaciones" class="panel-card" style="display:none;">
+      <h3>Calificar platos</h3>
+      <p>Califique los platos que ha probado (1 a 5 estrellas).</p>
+      <div id="alerta-calificaciones" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <label>Plato</label>
+          <select id="sel-cal-plato"><option value="">Cargando platos...</option></select>
+        </div>
+        <div>
+          <label>Puntuación</label>
+          <div style="display:flex; gap:0.25rem;">
+            <button type="button" class="estrella" data-val="1" onclick="seleccionarEstrella(this, 1)">★</button>
+            <button type="button" class="estrella" data-val="2" onclick="seleccionarEstrella(this, 2)">★</button>
+            <button type="button" class="estrella" data-val="3" onclick="seleccionarEstrella(this, 3)">★</button>
+            <button type="button" class="estrella" data-val="4" onclick="seleccionarEstrella(this, 4)">★</button>
+            <button type="button" class="estrella" data-val="5" onclick="seleccionarEstrella(this, 5)">★</button>
+          </div>
+          <input type="hidden" id="inp-cal-puntuacion" value="0">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label>Comentario</label>
+          <textarea id="inp-cal-comentario" rows="3" placeholder="Su opinión sobre este plato..."></textarea>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-calificacion">Guardar calificación</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarCalificaciones()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-calificaciones"></div>
+    </section>
+
+    <section id="vista-preferencias" class="panel-card" style="display:none;">
+      <h3>Mis preferencias y alergias</h3>
+      <p>Registre sus preferencias alimentarias y alergias para el personal del restaurante.</p>
+      <div id="alerta-preferencias" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <label>Tipo</label>
+          <select id="inp-pref-tipo">
+            <option value="alergia">Alergia</option>
+            <option value="preferencia">Preferencia</option>
+            <option value="restriccion">Restricción</option>
+          </select>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label>Descripción</label>
+          <input type="text" id="inp-pref-descripcion" placeholder="Ej. Alérgico a los mariscos">
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-preferencia">Guardar preferencia</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarPreferencias()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-preferencias"></div>
+    </section>
+
+    <section id="vista-puntos" class="panel-card" style="display:none;">
+      <h3>Puntos de fidelidad</h3>
+      <p>Acumule puntos por cada compra y canjéelos por descuentos.</p>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
+          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos disponibles</div>
+          <div style="font-size:2rem; font-weight:700; color:var(--color-primary);" id="puntos-disponibles">0</div>
+        </div>
+        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
+          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos acumulados</div>
+          <div style="font-size:2rem; font-weight:700; color:#8a6200;" id="puntos-acumulados">0</div>
+        </div>
+        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
+          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos canjeados</div>
+          <div style="font-size:2rem; font-weight:700; color:#a83636;" id="puntos-canjeados">0</div>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem;">
+        <button type="button" class="btn btn-accion sec" onclick="cargarPuntos()">Refrescar puntos</button>
+      </div>
     </section>
   </main>
 </div>
@@ -226,6 +314,8 @@
   let tipoPedido = 'con_reserva';
   let carrito = []; // {id_producto, cantidad, precio_unitario}
   let mesSeleccionado = new Date();
+  let zonasDelivery = [];
+  let repartidores = [];
 
   const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -236,7 +326,7 @@
     if (vista === 'reservas') cargarMisReservas();
     if (vista === 'nueva-reserva') { cargarMesas(); renderCalendario(); }
     if (vista === 'menu-semanal') { cargarSemanasMenu(); cargarMenuSemanal(); }
-    if (vista === 'nuevo-pedido') { cargarMesas(); cargarProductos(); cargarMenuSemanal(); actualizarTotal(); }
+    if (vista === 'nuevo-pedido') { cargarMesas(); cargarProductos(); cargarMenuSemanal(); cargarZonasRepartidores(); actualizarTotal(); }
     if (vista === 'mis-pedidos') cargarMisPedidos();
   }
 
@@ -368,9 +458,16 @@
 
   function actualizarTotal() {
     const total = carrito.reduce((sum, c) => sum + c.cantidad * c.precio_unitario, 0);
-    document.getElementById('total-pedido').textContent = formatearMoneda(total);
+    let costoEnvio = 0;
+    if (tipoPedido === 'domicilio') {
+      const zonaId = parseInt(document.getElementById('sel-zona-delivery').value, 10);
+      const zona = zonasDelivery.find(z => z.id_zona === zonaId);
+      if (zona) costoEnvio = parseFloat(zona.costo_envio) || 0;
+    }
+    const totalConEnvio = total + costoEnvio;
+    document.getElementById('total-pedido').textContent = formatearMoneda(totalConEnvio);
     const señaInfo = document.getElementById('seña-info');
-    if (total > 0) {
+    if (totalConEnvio > 0) {
       señaInfo.style.display = 'block';
     } else {
       señaInfo.style.display = 'none';
@@ -599,12 +696,20 @@
 
     let id_mesa = null;
     let direccion = null;
+    let id_zona_delivery = null;
+    let costo_envio = 0;
+    let id_repartidor = null;
 
     if (tipoPedido === 'con_reserva') {
       id_mesa = parseInt(document.getElementById('sel-mesa-pedido').value, 10);
       if (!id_mesa) { alerta('alerta-pedido', 'Seleccione una mesa.', 'error'); return; }
     } else if (tipoPedido === 'domicilio') {
       direccion = document.getElementById('inp-direccion').value.trim();
+      const zonaId = parseInt(document.getElementById('sel-zona-delivery').value, 10);
+      const zona = zonasDelivery.find(z => z.id_zona === zonaId);
+      id_zona_delivery = zonaId > 0 ? zonaId : null;
+      costo_envio = zona ? parseFloat(zona.costo_envio) : 0;
+      id_repartidor = parseInt(document.getElementById('sel-repartidor').value, 10) || null;
       if (!direccion) { alerta('alerta-pedido', 'Ingrese la dirección de entrega.', 'error'); return; }
     }
 
@@ -621,6 +726,9 @@
           tipo_pedido: tipoPedido,
           seña: seña,
           direccion_domicilio: direccion,
+          id_zona_delivery: id_zona_delivery,
+          costo_envio: costo_envio,
+          id_repartidor: id_repartidor,
           estado_seña: 'pendiente'
         })
       });
@@ -658,9 +766,170 @@
     }
   }
 
-  function escapeHtml(texto) {
-    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
+  async function cargarZonasRepartidores() {
+    try {
+      const rz = await api._request('/admin/zonas-delivery', { method: 'GET' });
+      zonasDelivery = rz.datos || [];
+      const selZona = document.getElementById('sel-zona-delivery');
+      selZona.innerHTML = '<option value="">Seleccionar zona</option>';
+      zonasDelivery.forEach(z => {
+        const o = document.createElement('option'); o.value = z.id_zona; o.textContent = z.nombre + ' ($' + (z.costo_envio || 0).toFixed(2) + ')';
+        selZona.appendChild(o);
+      });
+    } catch (e) { console.error('zonas', e); }
+    try {
+      const rr = await api._request('/admin/repartidores', { method: 'GET' });
+      repartidores = rr.datos || [];
+      const selRep = document.getElementById('sel-repartidor');
+      selRep.innerHTML = '<option value="">Sin asignar</option>';
+      repartidores.forEach(r => {
+        const o = document.createElement('option'); o.value = r.id_repartidor; o.textContent = r.nombre;
+        selRep.appendChild(o);
+      });
+    } catch (e) { console.error('repartidores', e); }
   }
+
+  // ── Calificaciones de platos (RF-91) ──
+  let puntuacionSeleccionada = 0;
+
+  window.seleccionarEstrella = function(btn, val) {
+    puntuacionSeleccionada = val;
+    document.getElementById('inp-cal-puntuacion').value = val;
+    document.querySelectorAll('.estrella').forEach((b, i) => {
+      b.style.color = (i < val) ? '#8a6200' : '#bdbdbd';
+    });
+  };
+
+  async function cargarCalificaciones() {
+    try {
+      const sel = document.getElementById('sel-cal-plato');
+      const rp = await api.productos();
+      productos = rp.datos || [];
+      sel.innerHTML = '<option value="">Seleccionar plato</option>';
+      productos.forEach(p => {
+        const o = document.createElement('option'); o.value = p.id_producto; o.textContent = p.nombre + ' (' + p.categoria + ')';
+        sel.appendChild(o);
+      });
+
+      const r = await api._request('/calificaciones?id_producto=' + (sel.value || 0), { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-calificaciones');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">Sin calificaciones para este plato.</p>'; return; }
+      let html = '<table><thead><tr><th>Usuario</th><th>Puntuación</th><th>Comentario</th><th>Fecha</th></tr></thead><tbody>';
+      datos.forEach(c => {
+        html += `<tr>
+          <td>${escapeHtml(c.nombre_usuario)}</td>
+          <td>${'★'.repeat(c.puntuacion)}${'☆'.repeat(5 - c.puntuacion)} (${c.puntuacion})</td>
+          <td>${escapeHtml(c.comentario || '-')}</td>
+          <td>${c.fecha_calificacion}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      console.error(e);
+      document.getElementById('tabla-calificaciones').innerHTML = '<p class="vacio">No se pudieron cargar las calificaciones.</p>';
+    }
+  }
+
+  document.getElementById('sel-cal-plato').addEventListener('change', () => {
+    puntuacionSeleccionada = 0;
+    document.getElementById('inp-cal-puntuacion').value = 0;
+    document.querySelectorAll('.estrella').forEach(b => b.style.color = '#bdbdbd');
+    cargarCalificaciones();
+  });
+
+  document.getElementById('btn-guardar-calificacion').addEventListener('click', async () => {
+    const id_producto = parseInt(document.getElementById('sel-cal-plato').value, 10);
+    const puntuacion = parseInt(document.getElementById('inp-cal-puntuacion').value, 10);
+    const comentario = document.getElementById('inp-cal-comentario').value.trim();
+    if (!id_producto) { alerta('alerta-calificaciones', 'Seleccione un plato.', 'error'); return; }
+    if (puntuacion < 1 || puntuacion > 5) { alerta('alerta-calificaciones', 'Seleccione una puntuación de 1 a 5 estrellas.', 'error'); return; }
+    try {
+      await api._request('/calificaciones', {
+        method: 'POST',
+        body: JSON.stringify({ id_producto, puntuacion, comentario })
+      });
+      alerta('alerta-calificaciones', 'Calificación guardada.', 'exito');
+      document.getElementById('inp-cal-comentario').value = '';
+      puntuacionSeleccionada = 0;
+      document.getElementById('inp-cal-puntuacion').value = 0;
+      document.querySelectorAll('.estrella').forEach(b => b.style.color = '#bdbdbd');
+      cargarCalificaciones();
+    } catch (e) { alerta('alerta-calificaciones', e.message || 'Error.', 'error'); }
+  });
+
+  // ── Preferencias y alergias (RF-92) ──
+  async function cargarPreferencias() {
+    try {
+      const r = await api._request('/preferencias', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-preferencias');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">Sin preferencias registradas.</p>'; return; }
+      let html = '<table><thead><tr><th>Tipo</th><th>Descripción</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(p => {
+        html += `<tr>
+          <td>${p.tipo === 'alergia' ? '🚨 Alergia' : (p.tipo === 'preferencia' ? '⭐ Preferencia' : '⚠️ Restricción')}</td>
+          <td>${escapeHtml(p.descripcion)}</td>
+          <td><button class="btn-sm btn-accion danger" onclick="eliminarPreferencia(${p.id_preferencia})">Eliminar</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      console.error(e);
+      document.getElementById('tabla-preferencias').innerHTML = '<p class="vacio">No se pudieron cargar las preferencias.</p>';
+    }
+  }
+
+  window.eliminarPreferencia = async function (id) {
+    if (!confirm('¿Eliminar esta preferencia?')) return;
+    try {
+      await api._request('/preferencias/' + id, { method: 'DELETE' });
+      alerta('alerta-preferencias', 'Preferencia eliminada.', 'exito');
+      cargarPreferencias();
+    } catch (e) { alerta('alerta-preferencias', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('btn-guardar-preferencia').addEventListener('click', async () => {
+    const tipo = document.getElementById('inp-pref-tipo').value;
+    const descripcion = document.getElementById('inp-pref-descripcion').value.trim();
+    if (!descripcion) { alerta('alerta-preferencias', 'Ingrese una descripción.', 'error'); return; }
+    try {
+      await api._request('/preferencias', {
+        method: 'POST',
+        body: JSON.stringify({ tipo, descripcion })
+      });
+      alerta('alerta-preferencias', 'Preferencia guardada.', 'exito');
+      document.getElementById('inp-pref-descripcion').value = '';
+      cargarPreferencias();
+    } catch (e) { alerta('alerta-preferencias', e.message || 'Error.', 'error'); }
+  });
+
+  // ── Puntos de fidelidad (RF-90) ──
+  async function cargarPuntos() {
+    try {
+      const r = await api._request('/puntos-fidelidad/mis-puntos', { method: 'GET' });
+      const d = r.datos || {};
+      document.getElementById('puntos-disponibles').textContent = d.puntos_disponibles || 0;
+      document.getElementById('puntos-acumulados').textContent = d.puntos_acumulados || 0;
+      document.getElementById('puntos-canjeados').textContent = d.puntos_canjeados || 0;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  document.getElementById('sel-zona-delivery').addEventListener('change', () => actualizarTotal());
+  document.getElementById('sel-repartidor').addEventListener('change', () => actualizarTotal());
+
+  // Actualizar mostrar() para incluir las nuevas vistas
+  const _mostrarCli = mostrar;
+  mostrar = function(vista) {
+    _mostrarCli(vista);
+    if (vista === 'calificaciones') cargarCalificaciones();
+    if (vista === 'preferencias') cargarPreferencias();
+    if (vista === 'puntos') cargarPuntos();
+  };
 
   mostrar('reservas');
 </script>

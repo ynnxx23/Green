@@ -75,3 +75,36 @@ Estas variables solo se definen si se confirma el uso de JWT o mejoras relaciona
 - `.env.example` solo muestra nombres de variables y ejemplos ilustrativos (no credenciales reales).
 - Los secretos de producción se gestionan en el servidor o mediante los secretos cifrados de GitHub Actions (para CI/CD), nunca en archivos del repositorio.
 - No se muestran secretos en logs, mensajes de error ni respuestas HTTP.
+
+---
+
+## 6. Claves de configuración del sistema (tabla `configuracion_sistema`)
+
+Estas claves se gestionan desde el panel de administración (RF-101) y se almacenan en la tabla `configuracion_sistema`. No son variables de entorno `.env`; son configuraciones de negocio editables en runtime.
+
+| Clave | Tipo | Descripción | Valor por defecto | Ejemplo |
+|-------|------|-------------|-------------------|---------|
+| `restaurante_nombre` | string | Nombre comercial del restaurante | `Green en la Casa Blanca` | `Green en la Casa Blanca` |
+| `restaurante_telefono` | string | Teléfono de contacto principal | `+57 300 000 0000` | `+57 300 123 4567` |
+| `restaurante_email` | string | Email de contacto/reservas | `reservas@greencasablanca.com` | `info@restaurante.com` |
+| `restaurante_direccion` | string | Dirección física completa | `Av. Principal 123, Ciudad` | `Calle 45 #10-20, Bogotá` |
+| `restaurante_horario_apertura` | string | Hora de apertura diaria (formato HH:MM) | `11:00` | `12:00` |
+| `restaurante_horario_cierre` | string | Hora de cierre diaria (formato HH:MM) | `23:00` | `22:30` |
+| `moneda_codigo` | string | Código ISO 4217 de la moneda | `COP` | `COP`, `USD`, `EUR` |
+| `moneda_simbolo` | string | Símbolo de la moneda | `$` | `$`, `US$`, `€` |
+| `iva_porcentaje` | float | Porcentaje de IVA aplicable | `19.0` | `19.0`, `21.0`, `0` |
+| `capacidad_maxima_total` | int | Capacidad máxima total del restaurante | `100` | `120` |
+| `tiempo_preparacion_estandar_min` | int | Tiempo estándar de preparación (minutos) | `30` | `25`, `40` |
+| `politica_sena_porcentaje` | float | Porcentaje de seña para pedidos anticipados | `50.0` | `50.0`, `30.0` |
+| `politica_cancelacion_horas` | int | Horas mínimas para cancelar sin penalidad | `2` | `2`, `4`, `24` |
+| `limite_pedidos_sin_reserva_periodo` | string | Período para límite: `dia`, `semana`, `mes` | `dia` | `dia`, `semana`, `mes` |
+| `limite_pedidos_sin_reserva_maximo` | int | Límite máximo de pedidos sin reserva por período (0 = sin límite) | `50` | `50`, `100`, `0` |
+| `puntos_fidelidad_por_monto` | float | Puntos ganados por cada unidad monetaria gastada | `0.001` | `0.001` (1 pt / $1000 COP) |
+| `puntos_fidelidad_valor_canje` | float | Valor monetario por punto al canjear | `10.0` | `10.0` (100 pts = $1000) |
+| `puntos_fidelidad_expiracion_meses` | int | Meses hasta que expiran los puntos sin uso | `12` | `12`, `6`, `24` |
+| `delivery_tiempo_estimado_min` | int | Tiempo estimado estándar de delivery (minutos) | `30` | `30`, `45`, `60` |
+| `notificaciones_whatsapp_habilitado` | bool | Habilitar notificaciones por WhatsApp | `0` | `0`, `1` |
+| `notificaciones_email_habilitado` | bool | Habilitar notificaciones por Email | `0` | `0`, `1` |
+| `notificaciones_push_habilitado` | bool | Habilitar notificaciones Push | `0` | `0`, `1` |
+
+> **Nota:** Estas claves se leen/escriben vía endpoints `GET/PUT /api/configuracion` y `GET/PUT /api/configuracion/limite-pedidos-sin-reserva`. El backend usa valores por defecto si la clave no existe en la tabla.

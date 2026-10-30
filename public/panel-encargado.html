@@ -120,6 +120,10 @@
     <a href="#" onclick="mostrar('menu-semanal')">Menú semanal</a>
     <a href="#" onclick="mostrar('disponibilidad')">Días y horas disponibles</a>
     <a href="#" onclick="mostrar('bloques')">Bloques de mesas</a>
+    <a href="#" onclick="mostrar('zonas-delivery')">Zonas de delivery</a>
+    <a href="#" onclick="mostrar('repartidores')">Repartidores</a>
+    <a href="#" onclick="mostrar('cupones')">Cupones y descuentos</a>
+    <a href="#" onclick="mostrar('limite-pedidos')">Límite pedidos sin reserva</a>
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
@@ -208,6 +212,133 @@
         </div>
       </div>
       <div class="tabla-wrap" id="tabla-bloques"></div>
+    </section>
+
+    <section id="vista-zonas-delivery" class="panel-card" style="display:none;">
+      <h3>Zonas de delivery</h3>
+      <p>Configure zonas de entrega con costo de envío y tiempo estimado.</p>
+      <div id="alerta-zonas" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <label>Nombre de la zona</label>
+          <input type="text" id="inp-zona-nombre" placeholder="Ej. Centro Norte">
+        </div>
+        <div>
+          <label>Costo de envío ($)</label>
+          <input type="number" id="inp-zona-costo" min="0" step="0.01" value="0.00">
+        </div>
+        <div>
+          <label>Tiempo estimado (min)</label>
+          <input type="number" id="inp-zona-tiempo" min="1" value="45">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label>Cobertura (barrios, direcciones)</label>
+          <textarea id="inp-zona-cobertura" rows="2" placeholder="Ej. Centro, Norte, Avenida Principal"></textarea>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-zona">Guardar zona</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarZonasDelivery()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-zonas-delivery"></div>
+    </section>
+
+    <section id="vista-repartidores" class="panel-card" style="display:none;">
+      <h3>Repartidores</h3>
+      <p>Gestione los repartidores para pedidos a domicilio.</p>
+      <div id="alerta-repartidores" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <label>Nombre del repartidor</label>
+          <input type="text" id="inp-rep-nombre" placeholder="Ej. Juan Pérez">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input type="text" id="inp-rep-telefono" placeholder="+57 300 000 000">
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-repartidor">Guardar repartidor</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarRepartidores()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-repartidores"></div>
+    </section>
+
+    <section id="vista-cupones" class="panel-card" style="display:none;">
+      <h3>Cupones y descuentos</h3>
+      <p>Cree cupones de descuento aplicables a pedidos y reservas.</p>
+      <div id="alerta-cupones" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <label>Código del cupón</label>
+          <input type="text" id="inp-cupon-codigo" placeholder="DESCUENTO20">
+        </div>
+        <div>
+          <label>Tipo de descuento</label>
+          <select id="inp-cupon-tipo">
+            <option value="porcentaje">Porcentaje (%)</option>
+            <option value="monto_fijo">Monto fijo ($)</option>
+          </select>
+        </div>
+        <div>
+          <label>Valor del descuento</label>
+          <input type="number" id="inp-cupon-valor" min="0" step="0.01" value="0.00">
+        </div>
+        <div>
+          <label>Monto mínimo de pedido ($)</label>
+          <input type="number" id="inp-cupon-minimo" min="0" step="0.01" value="0.00">
+        </div>
+        <div>
+          <label>Descuento máximo aplicable ($)</label>
+          <input type="number" id="inp-cupon-maximo" min="0" step="0.01" placeholder="Opcional">
+        </div>
+        <div>
+          <label>Fecha de inicio</label>
+          <input type="date" id="inp-cupon-inicio" required>
+        </div>
+        <div>
+          <label>Fecha de fin</label>
+          <input type="date" id="inp-cupon-fin">
+        </div>
+        <div>
+          <label>Usos máximos</label>
+          <input type="number" id="inp-cupon-usos-max" min="1" placeholder="Ilimitado">
+        </div>
+        <div>
+          <label>Usos por cliente</label>
+          <input type="number" id="inp-cupon-usos-cliente" min="1" value="1">
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-cupon">Guardar cupón</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarCupones()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-cupones"></div>
+    </section>
+
+    <section id="vista-limite-pedidos" class="panel-card" style="display:none;">
+      <h3>Límite de pedidos sin reserva</h3>
+      <p>Controle cuántos pedidos sin reserva de mesa se aceptan por día para retiro y delivery.</p>
+      <div id="alerta-limite" class="alerta" style="display:none;"></div>
+      <div class="form-grid" style="grid-template-columns: 220px 220px 1fr;">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="inp-limite-fecha">
+        </div>
+        <div>
+          <label>Límite retiro (mesa)</label>
+          <input type="number" id="inp-limite-retiro" min="0" value="0" placeholder="0 = ilimitado">
+        </div>
+        <div>
+          <label>Límite delivery (domicilio)</label>
+          <input type="number" id="inp-limite-domicilio" min="0" value="0" placeholder="0 = ilimitado">
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-limite">Guardar límites</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarLimitePedidos()">Refrescar</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-limite-pedidos"></div>
     </section>
   </main>
 </div>
@@ -600,6 +731,258 @@
   };
 
   document.getElementById('sel-mesa-bloque').addEventListener('change', () => cargarBloques());
+
+  // ── Zonas de delivery (RF-81) ──
+  async function cargarZonasDelivery() {
+    try {
+      const r = await api._request('/admin/zonas-delivery', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-zonas-delivery');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay zonas de delivery.</p>'; return; }
+      let html = '<table><thead><tr><th>Zona</th><th>Costo envío ($)</th><th>Tiempo (min)</th><th>Cobertura</th><th>Activa</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(z => {
+        html += `<tr>
+          <td>${escapeHtml(z.nombre)}</td>
+          <td>$${(z.costo_envio || 0).toFixed(2)}</td>
+          <td>${z.tiempo_estimado_minutos}</td>
+          <td>${escapeHtml(z.cobertura || '-')}</td>
+          <td><span class="estado estado--${z.activa ? 'confirmada' : 'cancelada'}">${z.activa ? 'Activa' : 'Inactiva'}</span></td>
+          <td>
+            <button class="btn-sm btn-accion danger" onclick="toggleZona(${z.id_zona}, ${!z.activa})">${z.activa ? 'Desactivar' : 'Activar'}</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-zonas-delivery').innerHTML = '<p class="vacio">No se pudieron cargar las zonas.</p>';
+      console.error(e);
+    }
+  }
+
+  window.toggleZona = async function (id, activa) {
+    try {
+      await api._request(`/admin/zonas-delivery/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ activa: activa ? 1 : 0 })
+      });
+      alerta('alerta-zonas', 'Zona actualizada.', 'exito');
+      cargarZonasDelivery();
+    } catch (e) { alerta('alerta-zonas', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('btn-guardar-zona').addEventListener('click', async () => {
+    const nombre = document.getElementById('inp-zona-nombre').value.trim();
+    const costo = parseFloat(document.getElementById('inp-zona-costo').value) || 0;
+    const tiempo = parseInt(document.getElementById('inp-zona-tiempo').value) || 45;
+    const cobertura = document.getElementById('inp-zona-cobertura').value.trim();
+    if (!nombre) { alerta('alerta-zonas', 'Ingrese nombre de la zona.', 'error'); return; }
+    try {
+      await api._request('/admin/zonas-delivery', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, costo_envio: costo, tiempo_estimado_minutos: tiempo, cobertura })
+      });
+      alerta('alerta-zonas', 'Zona creada.', 'exito');
+      document.getElementById('inp-zona-nombre').value = '';
+      document.getElementById('inp-zona-costo').value = '0.00';
+      document.getElementById('inp-zona-tiempo').value = '45';
+      document.getElementById('inp-zona-cobertura').value = '';
+      cargarZonasDelivery();
+    } catch (e) { alerta('alerta-zonas', e.message || 'Error.', 'error'); }
+  };
+
+  // ── Repartidores (RF-83) ──
+  async function cargarRepartidores() {
+    try {
+      const r = await api._request('/admin/repartidores', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-repartidores');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay repartidores.</p>'; return; }
+      let html = '<table><thead><tr><th>Repartidor</th><th>Teléfono</th><th>Usuario</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(rp => {
+        html += `<tr>
+          <td>${escapeHtml(rp.nombre)}</td>
+          <td>${rp.telefono || '-'}</td>
+          <td>${rp.nombre_usuario || '-'}</td>
+          <td><span class="estado estado--${rp.activo ? 'confirmada' : 'cancelada'}">${rp.activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <button class="btn-sm btn-accion danger" onclick="toggleRepartidor(${rp.id_repartidor}, ${!rp.activo})">${rp.activo ? 'Desactivar' : 'Activar'}</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-repartidores').innerHTML = '<p class="vacio">No se pudieron cargar los repartidores.</p>';
+      console.error(e);
+    }
+  }
+
+  window.toggleRepartidor = async function (id, activo) {
+    try {
+      await api._request(`/admin/repartidores/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ activo: activo ? 1 : 0 })
+      });
+      alerta('alerta-repartidores', 'Repartidor actualizado.', 'exito');
+      cargarRepartidores();
+    } catch (e) { alerta('alerta-repartidores', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('btn-guardar-repartidor').addEventListener('click', async () => {
+    const nombre = document.getElementById('inp-rep-nombre').value.trim();
+    const telefono = document.getElementById('inp-rep-telefono').value.trim();
+    if (!nombre) { alerta('alerta-repartidores', 'Ingrese nombre del repartidor.', 'error'); return; }
+    try {
+      await api._request('/admin/repartidores', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, telefono })
+      });
+      alerta('alerta-repartidores', 'Repartidor creado.', 'exito');
+      document.getElementById('inp-rep-nombre').value = '';
+      document.getElementById('inp-rep-telefono').value = '';
+      cargarRepartidores();
+    } catch (e) { alerta('alerta-repartidores', e.message || 'Error.', 'error'); }
+  };
+
+  // ── Cupones (RF-88) ──
+  async function cargarCupones() {
+    try {
+      const r = await api._request('/cupones', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-cupones');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay cupones.</p>'; return; }
+      let html = '<table><thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Mínimo ($)</th><th>Máximo ($)</th><th>Desde</th><th>Hasta</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(c => {
+        html += `<tr>
+          <td><strong>${escapeHtml(c.codigo)}</strong></td>
+          <td>${c.tipo_descuento === 'porcentaje' ? '%' : '$'}</td>
+          <td>${(c.valor_descuento || 0).toFixed(2)}</td>
+          <td>${(c.monto_minimo || 0).toFixed(2)}</td>
+          <td>${c.descuento_maximo !== null ? (c.descuento_maximo).toFixed(2) : '-'}</td>
+          <td>${c.fecha_inicio}</td>
+          <td>${c.fecha_fin || '-'}</td>
+          <td><span class="estado estado--${c.activa ? 'confirmada' : 'cancelada'}">${c.activa ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <button class="btn-sm btn-accion danger" onclick="toggleCupon(${c.id_cupon}, ${!c.activa})">${c.activa ? 'Desactivar' : 'Activar'}</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-cupones').innerHTML = '<p class="vacio">No se pudieron cargar los cupones.</p>';
+      console.error(e);
+    }
+  }
+
+  window.toggleCupon = async function (id, activa) {
+    try {
+      await api._request(`/cupones/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ activo: activa ? 1 : 0 })
+      });
+      alerta('alerta-cupones', 'Cupón actualizado.', 'exito');
+      cargarCupones();
+    } catch (e) { alerta('alerta-cupones', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('btn-guardar-cupon').addEventListener('click', async () => {
+    const codigo = document.getElementById('inp-cupon-codigo').value.trim().toUpperCase();
+    const tipo = document.getElementById('inp-cupon-tipo').value;
+    const valor = parseFloat(document.getElementById('inp-cupon-valor').value) || 0;
+    const minimo = parseFloat(document.getElementById('inp-cupon-minimo').value) || 0;
+    const maximo = document.getElementById('inp-cupon-maximo').value ? parseFloat(document.getElementById('inp-cupon-maximo').value) : null;
+    const inicio = document.getElementById('inp-cupon-inicio').value;
+    const fin = document.getElementById('inp-cupon-fin').value || null;
+    const usosMax = document.getElementById('inp-cupon-usos-max').value ? parseInt(document.getElementById('inp-cupon-usos-max').value) : null;
+    const usosCliente = parseInt(document.getElementById('inp-cupon-usos-cliente').value) || 1;
+
+    if (!codigo) { alerta('alerta-cupones', 'Ingrese código del cupón.', 'error'); return; }
+    if (!inicio) { alerta('alerta-cupones', 'Ingrese fecha de inicio.', 'error'); return; }
+
+    try {
+      await api._request('/cupones', {
+        method: 'POST',
+        body: JSON.stringify({
+          codigo, tipo_descuento: tipo, valor_descuento: valor, monto_minimo: minimo,
+          descuento_maximo: maximo, fecha_inicio: inicio, fecha_fin: fin,
+          uso_maximo: usosMax, uso_por_cliente: usosCliente
+        })
+      });
+      alerta('alerta-cupones', 'Cupón creado.', 'exito');
+      document.getElementById('inp-cupon-codigo').value = '';
+      document.getElementById('inp-cupon-valor').value = '0.00';
+      document.getElementById('inp-cupon-minimo').value = '0.00';
+      document.getElementById('inp-cupon-maximo').value = '';
+      document.getElementById('inp-cupon-usos-max').value = '';
+      document.getElementById('inp-cupon-usos-cliente').value = '1';
+      cargarCupones();
+    } catch (e) { alerta('alerta-cupones', e.message || 'Error.', 'error'); }
+  });
+
+  // ── Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71) ──
+  async function cargarLimitePedidos() {
+    const fecha = document.getElementById('inp-limite-fecha').value || new Date().toISOString().slice(0,10);
+    try {
+      const r = await api._request('/admin/pedidos-sin-reserva?fecha=' + encodeURIComponent(fecha), { method: 'GET' });
+      const d = r.datos || {};
+      document.getElementById('inp-limite-retiro').value = d.limite_retiro || 0;
+      document.getElementById('inp-limite-domicilio').value = d.limite_domicilio || 0;
+      const wrap = document.getElementById('tabla-limite-pedidos');
+      wrap.innerHTML = `
+        <table>
+          <thead><tr><th>Tipo</th><th>Límite</th><th>Usados hoy</th><th>Disponibles</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Retiro en restaurante</td>
+              <td>${d.limite_retiro || 0}</td>
+              <td>${d.contador_retiro || 0}</td>
+              <td>${d.disponible_retiro || 0}</td>
+              <td><span class="estado estado--${d.bloqueado_retiro ? 'cancelada' : 'confirmada'}">${d.bloqueado_retiro ? 'Bloqueado' : 'Disponible'}</span></td>
+            </tr>
+            <tr>
+              <td>Delivery a domicilio</td>
+              <td>${d.limite_domicilio || 0}</td>
+              <td>${d.contador_domicilio || 0}</td>
+              <td>${d.disponible_domicilio || 0}</td>
+              <td><span class="estado estado--${d.bloqueado_domicilio ? 'cancelada' : 'confirmada'}">${d.bloqueado_domicilio ? 'Bloqueado' : 'Disponible'}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    } catch (e) {
+      console.error(e);
+      document.getElementById('tabla-limite-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los límites.</p>';
+    }
+  }
+
+  document.getElementById('btn-guardar-limite').addEventListener('click', async () => {
+    const retiro = parseInt(document.getElementById('inp-limite-retiro').value) || 0;
+    const domicilio = parseInt(document.getElementById('inp-limite-domicilio').value) || 0;
+    try {
+      await api._request('/admin/pedidos-sin-reserva', {
+        method: 'POST',
+        body: JSON.stringify({ tipo: 'retiro', limite: retiro })
+      });
+      await api._request('/admin/pedidos-sin-reserva', {
+        method: 'POST',
+        body: JSON.stringify({ tipo: 'domicilio', limite: domicilio })
+      });
+      alerta('alerta-limite', 'Límites guardados.', 'exito');
+      cargarLimitePedidos();
+    } catch (e) { alerta('alerta-limite', e.message || 'Error.', 'error'); }
+  });
+
+  // Actualizar mostrar() para incluir las nuevas vistas
+  const _mostrar = mostrar;
+  mostrar = function(vista) {
+    _mostrar(vista);
+    if (vista === 'zonas-delivery') cargarZonasDelivery();
+    if (vista === 'repartidores') cargarRepartidores();
+    if (vista === 'cupones') cargarCupones();
+    if (vista === 'limite-pedidos') cargarLimitePedidos();
+  };
 
   function escapeHtml(texto) {
     const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;

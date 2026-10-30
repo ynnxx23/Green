@@ -31,9 +31,13 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - Hacer un **pedido anticipado**:
   - **Con reserva de mesa:** se le cobra un **50% de seña** por los platos y la mesa.
   - **Sin reserva (para llevar):** pedido para llevar, se le pide el plato y cantidad, se dice el precio, se aplica seña del 50%, puede retirar personalmente.
-  - **Sin reserva (domicilio):** pedido a domicilio, se aplica seña del 50%, se indica dirección de entrega.
+  - **Sin reserva (domicilio):** pedido a domicilio, se aplica seña del 50%, se indica dirección de entrega y zona de delivery.
   - También puede hacer una reserva **sin pedir ningún plato**.
 - Ver sus propios pedidos y sus estados, incluido el estado de la seña (pendiente/pagada).
+- **Calificar platos** (1-5 estrellas + comentario) de los pedidos entregados.
+- Gestionar **preferencias y alergias** alimentarias (vegetariano, vegano, sin gluten, alérgenos, platos favoritos).
+- Ver **puntos de fidelidad** acumulados, historial de movimientos y canjear puntos por descuentos.
+- Aplicar **cupones de descuento** en pedidos (código, porcentaje o monto fijo, fecha expiración, uso máximo).
 
 ### Encargado del restaurante
 - **Stock y límite de ventas por plato:** ingresa el stock actual y un límite de venta para cada producto. El límite evita tomar más pedidos de los que el restaurante puede gestionar. El stock se descuenta automáticamente al crear pedidos.
@@ -46,6 +50,11 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - **Pedidos:** ver todos los pedidos, cambiar su estado, consultar señas (pendiente/pagada), marcar seña como pagada, administrar delivery y retiro de pedidos.
 - **Reservas:** ver todas las reservas, confirmar, rechazar, modificar o cancelar reservas.
 - **Bloques de mesas:** bloquear mesas en fechas/horas donde no haya disponibilidad.
+- **Zonas de delivery:** crear/editar/eliminar zonas de entrega con nombre, descripción, costo de envío y radio de cobertura.
+- **Repartidores:** gestionar repartidores (nombre, teléfono, vehículo, placa, estado activo/ocupado/inactivo, zona asignada).
+- **Límite de pedidos sin reserva:** configurar límite máximo de pedidos para llevar/domicilio por período (día/semana/mes), contador automático y bloqueo/desbloqueo automático.
+- **Cupones de descuento:** crear/editar/eliminar cupones (código, tipo descuento, valor, mínimo pedido, fecha expiración, usos máximos totales/por cliente, estado).
+- **Configuración del restaurante:** nombre, teléfono, email, dirección, horarios, moneda, IVA, capacidad máxima, tiempo preparación, políticas de seña/cancelación.
 
 ### Administrador
 - Gestionar usuarios: crear, activar, desactivar y eliminar clientes, encargados y otros administradores.
@@ -53,6 +62,7 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - Ver **todos** los pedidos y cambiar su estado.
 - **Reportes y estadísticas:** ver ventas por periodo de tiempo, productos más vendidos, días con más reservas, días con más ventas, historial completo de movimientos del sistema.
 - Acceso total a la gestión del sistema.
+- Ver configuración global del sistema.
 
 ---
 
@@ -97,6 +107,8 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - `POST /api/auth/registro` — registrar usuario (cliente o encargado).
 - `POST /api/auth/logout` — cerrar sesión.
 - `GET /api/auth/sesion` — verificar sesión activa (devuelve rol).
+- `POST /api/auth/recuperar` — solicitar recuperación de contraseña.
+- `POST /api/auth/restablecer` — restablecer contraseña con token.
 
 ### Públicos / clientes
 - `GET /api/productos` — listar productos de la carta.
@@ -107,8 +119,17 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - `POST /api/reservas` — crear reserva (autenticado; valida disponibilidad y solapamiento).
 - `GET /api/reservas/mis-reservas` — reservas propias.
 - `POST /api/reservas/{id}/cancelar` — cancelar reserva propia.
-- `POST /api/pedidos` — crear pedido (autenticado; valida stock y límite de venta; acepta tipo_pedido, seña, direccion_domicilio).
+- `POST /api/pedidos` — crear pedido (autenticado; valida stock, límite de venta y límite pedidos sin reserva; acepta tipo_pedido, seña, direccion_domicilio, id_zona_delivery, id_cupon).
 - `GET /api/pedidos/mis-pedidos` — pedidos propios.
+- `POST /api/calificaciones` — calificar plato (1-5 estrellas + comentario) de pedido entregado.
+- `GET /api/calificaciones/plato/{id_producto}` — obtener calificaciones de un plato.
+- `GET /api/preferencias` — obtener preferencias y alergias del cliente autenticado.
+- `POST /api/preferencias` — crear/actualizar preferencias y alergias.
+- `GET /api/fidelidad/puntos` — obtener puntos de fidelidad del cliente.
+- `GET /api/fidelidad/historial` — historial de movimientos de puntos.
+- `POST /api/fidelidad/canjear` — canjear puntos por descuento.
+- `GET /api/cupones/validar?codigo=XXX` — validar cupón de descuento.
+- `GET /api/zonas-delivery` — listar zonas de delivery activas.
 
 ### Encargado / administrador
 - `GET /api/admin/stock` — listar stock y límite por producto.
@@ -128,6 +149,30 @@ El sistema tiene **3 roles de usuario** (eliminado el rol cocinero):
 - `POST /api/pedidos/{id}/estado` — cambiar estado de pedido.
 - `GET /api/reservas` — listar todas las reservas (solo admin).
 - `POST /api/reservas/{id}/estado` — cambiar estado de reserva (solo admin).
+
+### Encargado / Delivery y Zonas
+- `GET /api/zonas-delivery` — listar zonas de delivery (admin/encargado: todas; cliente: solo activas).
+- `POST /api/zonas-delivery` — crear zona de delivery.
+- `PUT /api/zonas-delivery/{id}` — actualizar zona de delivery.
+- `DELETE /api/zonas-delivery/{id}` — eliminar zona de delivery.
+- `GET /api/repartidores` — listar repartidores.
+- `POST /api/repartidores` — crear repartidor.
+- `PUT /api/repartidores/{id}` — actualizar repartidor.
+- `DELETE /api/repartidores/{id}` — eliminar repartidor.
+- `POST /api/repartidores/{id}/estado` — cambiar estado del repartidor (activo/ocupado/inactivo).
+
+### Encargado / Cupones y Configuración
+- `GET /api/cupones` — listar cupones (admin/encargado: todos; cliente: solo válidos).
+- `POST /api/cupones` — crear cupón.
+- `PUT /api/cupones/{id}` — actualizar cupón.
+- `DELETE /api/cupones/{id}` — eliminar cupón.
+- `GET /api/cupones/{id}/usos` — ver usos de un cupón.
+- `GET /api/configuracion` — obtener configuración del restaurante.
+- `PUT /api/configuracion` — actualizar configuración (solo admin/encargado).
+- `GET /api/configuracion/limite-pedidos-sin-reserva` — obtener límite actual de pedidos sin reserva.
+- `PUT /api/configuracion/limite-pedidos-sin-reserva` — actualizar límite de pedidos sin reserva.
+- `GET /api/configuracion/contador-pedidos-sin-reserva` — obtener contador actual por período.
+- `POST /api/configuracion/contador-pedidos-sin-reserva/resetear` — resetear contador (cambio de período).
 
 ### Administrador / Reportes e historial
 - `GET /api/admin/reportes/ventas?fecha_desde=&fecha_hasta=` — Ventas totales por periodo.
@@ -154,6 +199,15 @@ Aplicar las migraciones en orden dentro de `migrations/`:
 4. `004_stock_y_disponibilidad.sql` — tablas `stock_producto` (stock y límite de venta) y `disponibilidad_mesa` (disponibilidad por fecha y hora).
 5. `005_pedidos_y_senas.sql` — campos en `pedidos` (tipo_pedido, seña, estado_seña, direccion_domicilio), tablas `menu_semanal` y `menu_semanal_items`, campo `observaciones` en `reservas`.
 6. `006_historial_y_reportes.sql` — normalización (id_mesa nullable, id_usuario en pedidos), tabla `historial_movimientos` y índices para reportes.
+7. `007_datos_prueba.sql` — datos de prueba para desarrollo (productos, mesas, usuarios de prueba).
+8. `008_recuperar_contrasena_y_perfil.sql` — tabla `tokens_recuperacion`, campos `avatar`, `telefono`, `fecha_nacimiento` en `usuarios`.
+9. `009_configuracion_y_limites_pedidos.sql` — tablas `configuracion_sistema` (RF-101) y `contador_pedidos_sin_reserva` (RF-68 a RF-71).
+10. `010_cupones_descuento.sql` — tablas `cupones_descuento` y `uso_cupon_cliente` (RF-88).
+11. `011_calificaciones_preferencias_fidelidad.sql` — tablas `calificaciones_platos` (RF-91), `preferencias_cliente` (RF-92), `reservas_recurrentes` (RF-93), `puntos_fidelidad` (RF-90).
+12. `012_delivery_repartidores.sql` — tablas `zonas_delivery`, `repartidores`, campos `id_zona_delivery`, `costo_envio`, `id_repartidor` en `pedidos` (RF-81, RF-83).
+13. `013_rf_pendientes.sql` — tablas para RF pendientes: `estado_entrega` en pedidos (RF-84), `cierre_caja` (RF-87), `platos_favoritos` (RF-89), `notificaciones` (RF-94-96), `sucursales` (RF-102), `respaldos_bd` (RF-103), `permisos` y `roles_permisos` (RF-105).
+
+**Script consolidado:** `MIGRACIONES_PENDIENTES.sql` (009 → 012 en un solo archivo).
 
 **Usuario administrador de prueba:**
 - Email: `admin@restaurante.local`
@@ -194,9 +248,17 @@ docker compose up -d
 - **Calendario encargado:** múltiples fechas, días verde pastel seleccionados, amarillos ya creados.
 - **Menú semanal:** publicación y consulta de platos por semana.
 - **Pedidos con seña:** seña del 50% para pedidos anticipados, tipos con_reserva/para_llevar/domicilio, estado de seña gestionable por encargado.
-- **Delivery y retiro:** dirección de domicilio para pedidos a domicilio, opción para llevar sin dirección.
+- **Delivery y retiro:** dirección de domicilio para pedidos a domicilio, opción para llevar sin dirección, zona de delivery y costo de envío automático.
 - **Historial de movimientos:** tabla `historial_movimientos` registra todo (reservas, pedidos, cambios de estado, señas) con usuario, fecha, IP y detalles en JSON.
 - **Reportes de administrador:** ventas por periodo, productos más vendidos, reservas por día, ventas por día, historial filtrado.
+- **Límite de pedidos sin reserva:** configuración de límite máximo por período (día/semana/mes), contador automático, bloqueo automático con respuesta 403 y reactivación manual/automática.
+- **Zonas de delivery y repartidores:** gestión completa de zonas (nombre, descripción, costo, radio) y repartidores (datos, vehículo, estado, zona asignada).
+- **Cupones de descuento:** códigos con descuento porcentual/fijo, mínimo pedido, fecha expiración, usos máximos totales y por cliente.
+- **Calificaciones de platos:** 1-5 estrellas + comentario, solo en pedidos entregados, promedio visible en carta.
+- **Preferencias y alergias:** vegetarianos, veganos, sin gluten, alérgenos personalizados, platos favoritos, visible al hacer pedidos.
+- **Puntos de fidelidad:** acumulación por consumo (1 pt / $1000), canje por descuentos (100 pts = $1000), historial de movimientos, expiración 12 meses.
+- **Configuración del restaurante:** nombre, contacto, horarios, moneda, IVA, capacidad, tiempos, políticas, todo editable desde panel.
+- **Recuperación de contraseña:** tokens seguros (expiración 1h, un solo uso), envío simulado por email.
 
 ---
 
@@ -222,7 +284,7 @@ docker compose up -d
 │   ├── router.php
 │   ├── *.html            Páginas
 │   └── /assets           CSS, imágenes, JS
-├── /migrations           Migraciones de base de datos (001 → 007)
+├── /migrations           Migraciones de base de datos (001 → 013)
 ├── /documentacion        Documentación del sistema
 │   ├── /general          Documentación general (requerimientos, tecnologías, endpoints, guías)
 │   └── /desarrollo       Documentación de desarrollo (análisis, arquitectura, pruebas, CI/CD)

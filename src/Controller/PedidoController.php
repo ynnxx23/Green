@@ -66,6 +66,9 @@ class PedidoController
         $seña = isset($entrada['seña']) ? (float) $entrada['seña'] : 0.00;
         $estado_seña = $entrada['estado_seña'] ?? 'pendiente';
         $direccion_domicilio = $entrada['direccion_domicilio'] ?? null;
+        $id_zona_delivery = isset($entrada['id_zona_delivery']) && $entrada['id_zona_delivery'] !== '' ? (int) $entrada['id_zona_delivery'] : null;
+        $costo_envio = isset($entrada['costo_envio']) ? (float) $entrada['costo_envio'] : 0.00;
+        $id_repartidor = isset($entrada['id_repartidor']) && $entrada['id_repartidor'] !== '' ? (int) $entrada['id_repartidor'] : null;
         $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
         $id_mesero = $id_usuario;
 
@@ -83,6 +86,38 @@ class PedidoController
 
         if ($tipo_pedido === 'domicilio' && empty($direccion_domicilio)) {
             return $this->error('Se requiere dirección de domicilio para pedidos a domicilio.', 400);
+        }
+
+        // -----------------------------------------------------------------
+        // RF-70: Bloquear automáticamente pedidos sin reserva cuando se alcanza el límite
+        // -----------------------------------------------------------------
+        if ($tipo_pedido === 'para_llevar' || $tipo_pedido === 'domicilio') {
+            $pdo = \Restaurante\Database\Conexion::obtener();
+            $fecha = date('Y-m-d');
+            $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
+
+            $stmt = $pdo->prepare('
+                SELECT c.valor AS limite
+                FROM configuracion_sistema c
+                WHERE c.clave = ?
+            ');
+            $clave = $tipo_pedido === 'para_llevar' ? 'limite_pedidos_sin_reserva_retiro' : 'limite_pedidos_sin_reserva_domicilio';
+            $stmt->execute([$clave]);
+            $config = $stmt->fetch();
+            $limite = $config ? (int) $config['limite'] : 0;
+
+            if ($limite > 0) {
+                $stmt = $pdo->prepare('
+                    SELECT cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ? AND tipo_pedido = ?
+                ');
+                $stmt->execute([$fecha, $tipoContador]);
+                $contador = $stmt->fetch();
+                $cantidadActual = $contador ? (int) $contador['cantidad_pedidos'] : 0;
+
+                if ($cantidadActual >= $limite) {
+                    return $this->error('Se ha alcanzado el límite máximo de pedidos sin reserva para ' . ($tipo_pedido === 'para_llevar' ? 'retiro' : 'delivery') . ' hoy. Intente con una reserva de mesa o en otro horario.', 403);
+                }
+            }
         }
 
         $pdo = \Restaurante\Database\Conexion::obtener();
@@ -135,8 +170,8 @@ class PedidoController
 
             // Registrar pedido
             $stmt = $pdo->prepare('
-                INSERT INTO pedidos (id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total, tipo_pedido, seña, estado_seña, direccion_domicilio, fecha_pedido_hora, fecha_creacion)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, \"pendiente\", ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                INSERT INTO pedidos (id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total, tipo_pedido, seña, estado_seña, direccion_domicilio, id_zona_delivery, costo_envio, id_repartidor, fecha_pedido_hora, fecha_creacion)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, \"pendiente\", ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ');
             $stmt->execute([
                 $id_mesa,
@@ -147,6 +182,9 @@ class PedidoController
                 $seña,
                 $estado_seña,
                 $direccion_domicilio,
+                $id_zona_delivery,
+                $costo_envio,
+                $id_repartidor,
             ]);
             $id_pedido = (int) $pdo->lastInsertId();
 
@@ -179,6 +217,20 @@ class PedidoController
                 'tipo_pedido' => $entrada['tipo_pedido'] ?? 'con_reserva',
                 'seña' => $entrada['seña'] ?? 0
             ], $id_mesero);
+
+            // RF-69: Contabilizar pedidos sin reserva por día
+            if ($tipo_pedido === 'para_llevar' || $tipo_pedido === 'domicilio') {
+                $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
+                $stmtContador = $pdo->prepare('
+                    INSERT INTO contador_pedidos_sin_reserva (fecha, tipo_pedido, cantidad_pedidos)
+                    VALUES (:f, :t, 1)
+                    ON DUPLICATE KEY UPDATE cantidad_pedidos = cantidad_pedidos + 1, fecha_actualizacion = CURRENT_TIMESTAMP
+                ');
+                $stmtContador->execute([
+                    ':f' => date('Y-m-d'),
+                    ':t' => $tipoContador,
+                ]);
+            }
 
             return [
                 'exito' => true,
@@ -331,6 +383,9 @@ class PedidoController
                 'numero_mesa' => $pedido['numero_mesa'] ?? null,
                 'id_mesero' => $pedido['id_mesero'] !== null ? (int) $pedido['id_mesero'] : null,
                 'nombre_mesero' => $pedido['nombre_mesero'] ?? null,
+                'id_zona_delivery' => $pedido['id_zona_delivery'] !== null ? (int) $pedido['id_zona_delivery'] : null,
+                'costo_envio' => (float) ($pedido['costo_envio'] ?? 0),
+                'id_repartidor' => $pedido['id_repartidor'] !== null ? (int) $pedido['id_repartidor'] : null,
                 'fecha_pedido' => $pedido['fecha_pedido'] ?? null,
                 'estado' => $pedido['estado'],
                 'total' => (float) $pedido['total'],

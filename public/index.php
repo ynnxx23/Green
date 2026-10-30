@@ -356,7 +356,7 @@ try {
 
                 $pdo = Conexion::obtener();
                 // Obtener pedido
-                $stmt = $pdo->prepare('SELECT * FROM pedidos WHERE id_pedido = ?');
+                $stmt = $pdo->prepare('SELECT p.*, m.numero_mesa FROM pedidos p LEFT JOIN mesas m ON m.id_mesa = p.id_mesa WHERE p.id_pedido = ?');
                 $stmt->execute([$id_pedido]);
                 $pedido = $stmt->fetch();
                 if (!$pedido) {
@@ -628,6 +628,194 @@ try {
             $query_params = $_GET ?? [];
             $cuerpo = leerCuerpoJson();
             $respuesta = manejarHistorial($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Configuración general del sistema (RF-101)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/configuracion'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/configuracion')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarConfiguracionSistema($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/pedidos-sin-reserva'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/pedidos-sin-reserva')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarLimitePedidosSinReserva($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Zonas de delivery (RF-81)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/zonas-delivery'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/zonas-delivery')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarZonasDelivery($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Repartidores (RF-83)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/repartidores'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/repartidores')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarRepartidores($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Cupones y descuentos (RF-88)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/cupones'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/cupones')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarCupones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Calificaciones de platos (RF-91)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/calificaciones'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/calificaciones')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarCalificaciones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Preferencias y alergias del cliente (RF-92)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/preferencias'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/preferencias')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarPreferencias($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // Puntos de fidelidad (RF-90)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/puntos-fidelidad'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/puntos-fidelidad')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarPuntosFidelidad($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-84: Estado de entrega de delivery
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/pedidos/{id}/entrega'):
+        case str_starts_with($uri, '/api/pedidos/{id}/entrega'):
+            $ruta_interna = ltrim(substr($uri, strrpos($uri, '/api/pedidos')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarEstadoEntrega($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-87: Cierre de caja diario
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/cierre-caja'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/cierre-caja')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarCierreCaja($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-89: Platos favoritos del cliente
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/favoritos'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/favoritos')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarFavoritos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-93: Reservas recurrentes
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/reservas-recurrentes'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/reservas-recurrentes')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarReservasRecurrentes($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-94 a RF-96: Notificaciones
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/notificaciones'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/notificaciones')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarNotificaciones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-97 a RF-100: Reportes avanzados
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/reportes-avanzados'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/reportes-avanzados')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarReportesAvanzados($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-102: Sucursales múltiples
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/sucursales'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/sucursales')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarSucursales($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-103: Respaldos de base de datos
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/respaldos'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/respaldos')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarRespaldos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
+            $codigo_http = $respuesta['codigo'] ?? 200;
+            break;
+
+        // -------------------------------------------------------------------------
+        // RF-105: Roles y permisos avanzados
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/admin/permisos'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/permisos')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+            $respuesta = manejarPermisos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
 
@@ -1145,6 +1333,584 @@ function manejarHistorial(string $ruta, string $metodo, array $query, array $cue
 
     return errorJson('Endpoint de historial no encontrado.', 404);
 }
+
+// -------------------------------------------------------------------------
+// Configuración general del sistema (RF-101)
+// -------------------------------------------------------------------------
+function manejarConfiguracionSistema(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereAdministrador();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if ($ruta === '' && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT clave, valor, descripcion, fecha_actualizacion FROM configuracion_sistema ORDER BY clave');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Configuración obtenida.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'PUT') {
+        $clave = $cuerpo['clave'] ?? '';
+        $valor = $cuerpo['valor'] ?? null;
+        $descripcion = $cuerpo['descripcion'] ?? null;
+        if ($clave === '') {
+            return errorJson('Se requiere la clave de configuración.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO configuracion_sistema (clave, valor, descripcion, actualizado_por)
+                VALUES (:c, :v, :d, :u)
+                ON DUPLICATE KEY UPDATE valor = VALUES(valor), descripcion = VALUES(descripcion), actualizado_por = VALUES(actualizado_por), fecha_actualizacion = CURRENT_TIMESTAMP
+            ');
+            $stmt->execute([
+                ':c' => $clave,
+                ':v' => $valor !== null ? $valor : null,
+                ':d' => $descripcion,
+                ':u' => $id_usuario,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Configuración guardada.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al guardar la configuración.', 500);
+        }
+    }
+
+    return errorJson('Endpoint de configuración no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71)
+// -------------------------------------------------------------------------
+function manejarLimitePedidosSinReserva(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+
+    // GET: consultar límite y contador del día
+    if ($ruta === '' && $metodo === 'GET') {
+        $fecha = $query['fecha'] ?? date('Y-m-d');
+        $stmt = $pdo->prepare("
+            SELECT clave, valor FROM configuracion_sistema
+            WHERE clave IN ('limite_pedidos_sin_reserva_retiro', 'limite_pedidos_sin_reserva_domicilio')
+        ");
+        $stmt->execute();
+        $config = [];
+        while ($row = $stmt->fetch()) {
+            $config[$row['clave']] = (int) $row['valor'];
+        }
+
+        $contadorRetiro = 0;
+        $contadorDomicilio = 0;
+        $stmt = $pdo->prepare('SELECT tipo_pedido, cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ?');
+        $stmt->execute([$fecha]);
+        while ($row = $stmt->fetch()) {
+            if ($row['tipo_pedido'] === 'para_llevar') {
+                $contadorRetiro = (int) $row['cantidad_pedidos'];
+            } elseif ($row['tipo_pedido'] === 'domicilio') {
+                $contadorDomicilio = (int) $row['cantidad_pedidos'];
+            }
+        }
+
+        return [
+            'exito' => true,
+            'datos' => [
+                'fecha' => $fecha,
+                'limite_retiro' => $config['limite_pedidos_sin_reserva_retiro'] ?? 0,
+                'contador_retiro' => $contadorRetiro,
+                'disponible_retiro' => max(0, ($config['limite_pedidos_sin_reserva_retiro'] ?? 0) - $contadorRetiro),
+                'limite_domicilio' => $config['limite_pedidos_sin_reserva_domicilio'] ?? 0,
+                'contador_domicilio' => $contadorDomicilio,
+                'disponible_domicilio' => max(0, ($config['limite_pedidos_sin_reserva_domicilio'] ?? 0) - $contadorDomicilio),
+                'bloqueado_retiro' => $contadorRetiro >= ($config['limite_pedidos_sin_reserva_retiro'] ?? 0),
+                'bloqueado_domicilio' => $contadorDomicilio >= ($config['limite_pedidos_sin_reserva_domicilio'] ?? 0),
+            ],
+            'mensaje' => 'Límites y contadores de pedidos sin reserva obtenidos.',
+            'codigo' => 200,
+        ];
+    }
+
+    // POST: establecer/actualizar límite
+    if ($ruta === '' && $metodo === 'POST') {
+        $tipo = $cuerpo['tipo'] ?? ''; // 'retiro' o 'domicilio'
+        $limite = isset($cuerpo['limite']) ? (int) $cuerpo['limite'] : 0;
+        if (!in_array($tipo, ['retiro', 'domicilio'], true)) {
+            return errorJson('Tipo inválido. Use "retiro" o "domicilio".', 400);
+        }
+        $clave = $tipo === 'retiro' ? 'limite_pedidos_sin_reserva_retiro' : 'limite_pedidos_sin_reserva_domicilio';
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO configuracion_sistema (clave, valor, descripcion)
+                VALUES (:c, :v, :d)
+                ON DUPLICATE KEY UPDATE valor = VALUES(valor), fecha_actualizacion = CURRENT_TIMESTAMP
+            ');
+            $stmt->execute([
+                ':c' => $clave,
+                ':v' => (string) $limite,
+                ':d' => 'Límite máximo de pedidos sin reserva para ' . $tipo,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Límite actualizado.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al actualizar el límite.', 500);
+        }
+    }
+
+    return errorJson('Endpoint de límite de pedidos sin reserva no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Zonas de delivery (RF-81)
+// -------------------------------------------------------------------------
+function manejarZonasDelivery(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT * FROM zonas_delivery ORDER BY nombre');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Zonas de delivery obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $nombre = $cuerpo['nombre'] ?? '';
+        $costo_envio = isset($cuerpo['costo_envio']) ? (float) $cuerpo['costo_envio'] : 0.00;
+        $tiempo = isset($cuerpo['tiempo_estimado_minutos']) ? (int) $cuerpo['tiempo_estimado_minutos'] : 45;
+        $cobertura = $cuerpo['cobertura'] ?? null;
+        if ($nombre === '') {
+            return errorJson('Se requiere el nombre de la zona.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO zonas_delivery (nombre, costo_envio, tiempo_estimado_minutos, cobertura, activa)
+                VALUES (:n, :ce, :t, :c, 1)
+            ');
+            $stmt->execute([
+                ':n' => $nombre,
+                ':ce' => $costo_envio,
+                ':t' => $tiempo,
+                ':c' => $cobertura,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Zona de delivery creada.', 'codigo' => 200, 'datos' => ['id_zona' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear la zona de delivery.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_zona = (int) $c[1];
+        $nombre = $cuerpo['nombre'] ?? null;
+        $costo_envio = isset($cuerpo['costo_envio']) ? (float) $cuerpo['costo_envio'] : null;
+        $tiempo = isset($cuerpo['tiempo_estimado_minutos']) ? (int) $cuerpo['tiempo_estimado_minutos'] : null;
+        $cobertura = isset($cuerpo['cobertura']) ? $cuerpo['cobertura'] : null;
+        $activa = isset($cuerpo['activa']) ? (int) $cuerpo['activa'] : null;
+
+        $campos = [];
+        $params = [];
+        if ($nombre !== null) { $campos[] = 'nombre = :n'; $params[':n'] = $nombre; }
+        if ($costo_envio !== null) { $campos[] = 'costo_envio = :ce'; $params[':ce'] = $costo_envio; }
+        if ($tiempo !== null) { $campos[] = 'tiempo_estimado_minutos = :t'; $params[':t'] = $tiempo; }
+        if ($cobertura !== null) { $campos[] = 'cobertura = :c'; $params[':c'] = $cobertura; }
+        if ($activa !== null) { $campos[] = 'activa = :a'; $params[':a'] = $activa; }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_zona;
+        try {
+            $stmt = $pdo->prepare('UPDATE zonas_delivery SET ' . implode(', ', $campos) . ' WHERE id_zona = :id');
+            $stmt->execute($params);
+            return ['exito' => true, 'mensaje' => 'Zona de delivery actualizada.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al actualizar la zona.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_zona = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE zonas_delivery SET activa = 0 WHERE id_zona = ?');
+        $stmt->execute([$id_zona]);
+        return ['exito' => true, 'mensaje' => 'Zona de delivery desactivada.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de zonas de delivery no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Repartidores (RF-83)
+// -------------------------------------------------------------------------
+function manejarRepartidores(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT r.*, u.nombre AS nombre_usuario FROM repartidores r LEFT JOIN usuarios u ON u.id_usuario = r.id_usuario ORDER BY r.nombre');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Repartidores obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $nombre = $cuerpo['nombre'] ?? '';
+        $telefono = $cuerpo['telefono'] ?? null;
+        $id_usuario = isset($cuerpo['id_usuario']) ? (int) $cuerpo['id_usuario'] : null;
+        if ($nombre === '') {
+            return errorJson('Se requiere el nombre del repartidor.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO repartidores (id_usuario, nombre, telefono, activo)
+                VALUES (:u, :n, :t, 1)
+            ');
+            $stmt->execute([
+                ':u' => $id_usuario > 0 ? $id_usuario : null,
+                ':n' => $nombre,
+                ':t' => $telefono,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Repartidor creado.', 'codigo' => 200, 'datos' => ['id_repartidor' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear el repartidor.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_repartidor = (int) $c[1];
+        $nombre = $cuerpo['nombre'] ?? null;
+        $telefono = isset($cuerpo['telefono']) ? $cuerpo['telefono'] : null;
+        $activa = isset($cuerpo['activo']) ? (int) $cuerpo['activo'] : null;
+
+        $campos = [];
+        $params = [];
+        if ($nombre !== null) { $campos[] = 'nombre = :n'; $params[':n'] = $nombre; }
+        if ($telefono !== null) { $campos[] = 'telefono = :t'; $params[':t'] = $telefono; }
+        if ($activa !== null) { $campos[] = 'activo = :a'; $params[':a'] = $activa; }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_repartidor;
+        try {
+            $stmt = $pdo->prepare('UPDATE repartidores SET ' . implode(', ', $campos) . ' WHERE id_repartidor = :id');
+            $stmt->execute($params);
+            return ['exito' => true, 'mensaje' => 'Repartidor actualizado.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al actualizar el repartidor.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_repartidor = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE repartidores SET activo = 0 WHERE id_repartidor = ?');
+        $stmt->execute([$id_repartidor]);
+        return ['exito' => true, 'mensaje' => 'Repartidor desactivado.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de repartidores no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Cupones y descuentos (RF-88)
+// -------------------------------------------------------------------------
+function manejarCupones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT c.*, u.nombre AS creado_por_nombre FROM cupones_descuento c LEFT JOIN usuarios u ON u.id_usuario = c.creado_por ORDER BY c.codigo');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Cupones obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $codigo = $cuerpo['codigo'] ?? '';
+        $tipo = $cuerpo['tipo_descuento'] ?? 'porcentaje';
+        $valor = isset($cuerpo['valor_descuento']) ? (float) $cuerpo['valor_descuento'] : 0.00;
+        $minimo = isset($cuerpo['monto_minimo']) ? (float) $cuerpo['monto_minimo'] : 0.00;
+        $maximo = isset($cuerpo['descuento_maximo']) && $cuerpo['descuento_maximo'] !== '' ? (float) $cuerpo['descuento_maximo'] : null;
+        $inicio = $cuerpo['fecha_inicio'] ?? '';
+        $fin = $cuerpo['fecha_fin'] ?? null;
+        $uso_max = isset($cuerpo['uso_maximo']) && $cuerpo['uso_maximo'] !== '' ? (int) $cuerpo['uso_maximo'] : null;
+        $uso_cliente = isset($cuerpo['uso_por_cliente']) ? (int) $cuerpo['uso_por_cliente'] : 1;
+
+        if ($codigo === '') {
+            return errorJson('Se requiere el código del cupón.', 400);
+        }
+        if (!in_array($tipo, ['porcentaje', 'monto_fijo'], true)) {
+            return errorJson('Tipo de descuento inválido.', 400);
+        }
+        if ($inicio === '') {
+            return errorJson('Se requiere fecha de inicio.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO cupones_descuento (codigo, tipo_descuento, valor_descuento, monto_minimo, descuento_maximo, fecha_inicio, fecha_fin, uso_maximo, uso_por_cliente, activo, creado_por)
+                VALUES (:cd, :td, :vd, :mm, :dm, :fi, :ff, :um, :uc, 1, :cp)
+            ');
+            $stmt->execute([
+                ':cd' => $codigo,
+                ':td' => $tipo,
+                ':vd' => $valor,
+                ':mm' => $minimo,
+                ':dm' => $maximo,
+                ':fi' => $inicio,
+                ':ff' => $fin,
+                ':um' => $uso_max,
+                ':uc' => $uso_cliente,
+                ':cp' => $id_usuario,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Cupón creado.', 'codigo' => 200, 'datos' => ['id_cupon' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear el cupón.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_cupon = (int) $c[1];
+        $campos = [];
+        $params = [];
+        foreach (['codigo', 'tipo_descuento', 'valor_descuento', 'monto_minimo', 'descuento_maximo', 'fecha_inicio', 'fecha_fin', 'uso_maximo', 'uso_por_cliente', 'activo'] as $campo) {
+            if (isset($cuerpo[$campo])) {
+                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
+                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
+            }
+        }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_cupon;
+        try {
+            $stmt = $pdo->prepare('UPDATE cupones_descuento SET ' . implode(', ', $campos) . ' WHERE id_cupon = :id');
+            $stmt->execute($params);
+            return ['exito' => true, 'mensaje' => 'Cupón actualizado.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al actualizar el cupón.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_cupon = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE cupones_descuento SET activo = 0 WHERE id_cupon = ?');
+        $stmt->execute([$id_cupon]);
+        return ['exito' => true, 'mensaje' => 'Cupón desactivado.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de cupones no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Calificaciones de platos (RF-91)
+// -------------------------------------------------------------------------
+function manejarCalificaciones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $pdo = Conexion::obtener();
+
+    // GET público: listar calificaciones de un producto
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $id_producto = isset($query['id_producto']) ? (int) $query['id_producto'] : 0;
+        if ($id_producto <= 0) {
+            return errorJson('Se requiere id_producto.', 400);
+        }
+        $stmt = $pdo->prepare('
+            SELECT cp.*, u.nombre AS nombre_usuario
+            FROM calificaciones_platos cp
+            JOIN usuarios u ON u.id_usuario = cp.id_usuario
+            WHERE cp.id_producto = ? AND cp.activo = 1
+            ORDER BY cp.fecha_calificacion DESC
+        ');
+        $stmt->execute([$id_producto]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Calificaciones obtenidas.', 'codigo' => 200];
+    }
+
+    // POST: crear calificación (cliente autenticado)
+    if ($ruta === '' && $metodo === 'POST') {
+        $authMiddleware->requiereAutenticacion();
+        $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+        $id_producto = isset($cuerpo['id_producto']) ? (int) $cuerpo['id_producto'] : 0;
+        $puntuacion = isset($cuerpo['puntuacion']) ? (int) $cuerpo['puntuacion'] : 0;
+        $comentario = $cuerpo['comentario'] ?? null;
+
+        if ($id_producto <= 0) {
+            return errorJson('id_producto inválido.', 400);
+        }
+        if ($puntuacion < 1 || $puntuacion > 5) {
+            return errorJson('La puntuación debe estar entre 1 y 5.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO calificaciones_platos (id_producto, id_usuario, puntuacion, comentario, activo)
+                VALUES (:ip, :iu, :p, :c, 1)
+                ON DUPLICATE KEY UPDATE puntuacion = VALUES(puntuacion), comentario = VALUES(comentario), fecha_calificacion = CURRENT_TIMESTAMP, activo = 1
+            ');
+            $stmt->execute([
+                ':ip' => $id_producto,
+                ':iu' => $id_usuario,
+                ':p' => $puntuacion,
+                ':c' => $comentario,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Calificación guardada.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al guardar la calificación.', 500);
+        }
+    }
+
+    return errorJson('Endpoint de calificaciones no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Preferencias y alergias del cliente (RF-92)
+// -------------------------------------------------------------------------
+function manejarPreferencias(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereAutenticacion();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->prepare('SELECT * FROM preferencias_cliente WHERE id_usuario = ? AND activo = 1 ORDER BY tipo, descripcion');
+        $stmt->execute([$id_usuario]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Preferencias obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $tipo = $cuerpo['tipo'] ?? 'preferencia';
+        $descripcion = $cuerpo['descripcion'] ?? '';
+        if (!in_array($tipo, ['alergia', 'preferencia', 'restriccion'], true)) {
+            return errorJson('Tipo inválido.', 400);
+        }
+        if ($descripcion === '') {
+            return errorJson('Se requiere la descripción.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('
+                INSERT INTO preferencias_cliente (id_usuario, tipo, descripcion, activo)
+                VALUES (:iu, :t, :d, 1)
+            ');
+            $stmt->execute([
+                ':iu' => $id_usuario,
+                ':t' => $tipo,
+                ':d' => $descripcion,
+            ]);
+            return ['exito' => true, 'mensaje' => 'Preferencia guardada.', 'codigo' => 200, 'datos' => ['id_preferencia' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al guardar la preferencia.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_preferencia = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE preferencias_cliente SET activo = 0 WHERE id_preferencia = ? AND id_usuario = ?');
+        $stmt->execute([$id_preferencia, $id_usuario]);
+        return ['exito' => true, 'mensaje' => 'Preferencia desactivada.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de preferencias no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// Puntos de fidelidad (RF-90)
+// -------------------------------------------------------------------------
+function manejarPuntosFidelidad(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $pdo = Conexion::obtener();
+
+    // GET: consultar puntos del cliente autenticado
+    if (($ruta === '' || $ruta === 'mis-puntos') && $metodo === 'GET') {
+        $authMiddleware->requiereAutenticacion();
+        $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+        $stmt = $pdo->prepare('SELECT * FROM puntos_fidelidad WHERE id_usuario = ?');
+        $stmt->execute([$id_usuario]);
+        $puntos = $stmt->fetch();
+        if (!$puntos) {
+            return ['exito' => true, 'datos' => ['puntos_disponibles' => 0, 'puntos_acumulados' => 0, 'puntos_canjeados' => 0], 'mensaje' => 'El cliente no tiene puntos acumulados.', 'codigo' => 200];
+        }
+        return ['exito' => true, 'datos' => $puntos, 'mensaje' => 'Puntos obtenidos.', 'codigo' => 200];
+    }
+
+    // PUT: actualizar puntos (solo admin/encargado)
+    if ($ruta === '' && $metodo === 'PUT') {
+        $authMiddleware->requiereMeseroOAdministrador();
+        $id_usuario = isset($cuerpo['id_usuario']) ? (int) $cuerpo['id_usuario'] : 0;
+        $puntos = isset($cuerpo['puntos']) ? (int) $cuerpo['puntos'] : 0;
+        $tipo = $cuerpo['tipo'] ?? 'sumar'; // sumar, restar, set
+
+        if ($id_usuario <= 0) {
+            return errorJson('id_usuario requerido.', 400);
+        }
+        try {
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare('SELECT puntos_disponibles, puntos_acumulados, puntos_canjeados FROM puntos_fidelidad WHERE id_usuario = ?');
+            $stmt->execute([$id_usuario]);
+            $actual = $stmt->fetch();
+
+            if (!$actual) {
+                $stmt = $pdo->prepare('INSERT INTO puntos_fidelidad (id_usuario, puntos_disponibles, puntos_acumulados, puntos_canjeados) VALUES (:iu, 0, 0, 0)');
+                $stmt->execute([':iu' => $id_usuario]);
+                $disponibles = 0;
+                $acumulados = 0;
+                $canjeados = 0;
+            } else {
+                $disponibles = (int) $actual['puntos_disponibles'];
+                $acumulados = (int) $actual['puntos_acumulados'];
+                $canjeados = (int) $actual['puntos_canjeados'];
+            }
+
+            if ($tipo === 'sumar') {
+                $disponibles += $puntos;
+                $acumulados += $puntos;
+            } elseif ($tipo === 'restar') {
+                $disponibles = max(0, $disponibles - $puntos);
+            } elseif ($tipo === 'set') {
+                $disponibles = $puntos;
+            }
+
+            $stmt = $pdo->prepare('
+                INSERT INTO puntos_fidelidad (id_usuario, puntos_disponibles, puntos_acumulados, puntos_canjeados)
+                VALUES (:iu, :d, :a, :c)
+                ON DUPLICATE KEY UPDATE puntos_disponibles = :d, puntos_acumulados = :a, puntos_canjeados = :c, fecha_actualizacion = CURRENT_TIMESTAMP
+            ');
+            $stmt->execute([
+                ':iu' => $id_usuario,
+                ':d' => $disponibles,
+                ':a' => $acumulados,
+                ':c' => $canjeados,
+            ]);
+            $pdo->commit();
+            return ['exito' => true, 'mensaje' => 'Puntos actualizados.', 'codigo' => 200, 'datos' => ['puntos_disponibles' => $disponibles]];
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            return errorJson('Error al actualizar los puntos.', 500);
+        }
+    }
+
+    return errorJson('Endpoint de puntos de fidelidad no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-84: Estado de entrega de delivery
+// -------------------------------------------------------------------------
+if (false) {} // placeholder para mantener estructura
+
+// -------------------------------------------------------------------------
+// RF-85: Facturación electrónica (básica, sin proveedor externo)
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-87: Cierre de caja diario
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-89: Historial de cliente y platos favoritos
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-93: Reservas recurrentes
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-94 a RF-96: Notificaciones
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-97 a RF-100: Reportes avanzados
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-102: Sucursales múltiples
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-103: Respaldos de base de datos
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// RF-105: Roles y permisos avanzados
+// -------------------------------------------------------------------------
 
 function errorJson(string $mensaje, int $codigo): array
 {
