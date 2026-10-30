@@ -73,4 +73,15 @@ class ServicioDeProductos
 
         return $this->productoDao->desactivar($id_producto);
     }
+
+    public function activarProducto(int $id_producto): bool
+    {
+        $producto = $this->productoDao->obtenerPorId($id_producto);
+        if ($producto === null) {
+            throw new \InvalidArgumentException('El producto no existe.');
+        }
+
+        $producto->activo = true;
+        return $this->productoDao->actualizar($producto);
+    }
 }

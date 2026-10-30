@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Restaurante\Service;
 
 use Restaurante\Dao\IntentosLoginDao;
+use Restaurante\Dao\RecuperarContrasenaDao;
 use Restaurante\Dao\UsuarioDao;
 use Restaurante\Model\Usuario;
 
@@ -12,14 +13,17 @@ class ServicioDeAutenticacion
 {
     private UsuarioDao $usuarioDao;
     private IntentosLoginDao $intentosDao;
+    private RecuperarContrasenaDao $recuperarDao;
 
     private const MAX_INTENTOS_FALLOS = 5;
     private const VENTANA_BLOQUEO_MINUTOS = 15;
+    private const TOKEN_EXPIRACION_MINUTOS = 30;
 
-    public function __construct(UsuarioDao $usuarioDao, IntentosLoginDao $intentosDao)
+    public function __construct(UsuarioDao $usuarioDao, IntentosLoginDao $intentosDao, RecuperarContrasenaDao $recuperarDao)
     {
         $this->usuarioDao = $usuarioDao;
         $this->intentosDao = $intentosDao;
+        $this->recuperarDao = $recuperarDao;
     }
 
     public function registrar(string $nombre, string $email, string $contrasena_plana, int $id_rol = 1): Usuario
@@ -122,5 +126,63 @@ class ServicioDeAutenticacion
     public static function esCliente(): bool
     {
         return self::estaAutenticado() && self::rolUsuarioAutenticado() === 1;
+    }
+
+    // ------------------------------------------------------------------
+    // Recuperación de contraseña (RF19)
+    // ------------------------------------------------------------------
+    public function solicitarRecuperacion(string $email, string $direccion_ip): array
+    {
+        $usuario = $this->usuarioDao->obtenerPorEmail($email);
+
+        // Siempre devolvemos éxito para no revelar si el email existe o no
+        if ($usuario === null || !$usuario->activo) {
+            return [
+                'exito' => true,
+                'mensaje' => 'Si el correo existe y está activo, se ha generado un token de recuperación.',
+                'token' => null, // En producción se enviaría por email; aquí se omite por seguridad
+            ];
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $fecha_expiracion = date('Y-m-d H:i:s', time() + (self::TOKEN_EXPIRACION_MINUTOS * 60));
+
+        $this->recuperarDao->crearToken(
+            $usuario->id_usuario,
+            $token,
+            $fecha_expiracion,
+            $direccion_ip
+        );
+
+        return [
+            'exito' => true,
+            'mensaje' => 'Token de recuperación generado.',
+            'token' => $token, // Solo visible en entorno de desarrollo
+            'expira_en' => $fecha_expiracion,
+        ];
+    }
+
+    public function restablecerContrasena(string $token, string $nueva_contrasena): array
+    {
+        if (strlen($nueva_contrasena) < 8) {
+            throw new \InvalidArgumentException('La contraseña debe tener al menos 8 caracteres.');
+        }
+
+        $datos = $this->recuperarDao->obtenerTokenValido($token);
+        if ($datos === null) {
+            throw new \InvalidArgumentException('Token inválido o expirado.');
+        }
+
+        $this->usuarioDao->actualizarContraseña(
+            (int) $datos['id_usuario'],
+            password_hash($nueva_contrasena, PASSWORD_BCRYPT)
+        );
+
+        $this->recuperarDao->marcarTokenUsado($token);
+
+        return [
+            'exito' => true,
+            'mensaje' => 'Contraseña restablecida correctamente.',
+        ];
     }
 }

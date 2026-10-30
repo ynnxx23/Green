@@ -14,6 +14,7 @@ use Restaurante\Dao\IntentosLoginDao;
 use Restaurante\Dao\MesaDao;
 use Restaurante\Dao\PedidoDao;
 use Restaurante\Dao\ProductoDao;
+use Restaurante\Dao\RecuperarContrasenaDao;
 use Restaurante\Dao\ReservaDao;
 use Restaurante\Dao\UsuarioDao;
 use Restaurante\Middleware\AuthMiddleware;
@@ -99,7 +100,8 @@ $productoDao = new ProductoDao();
 $detallePedidoDao = new DetallePedidoDao();
 $horarioDao = new HorarioFuncionamientoDao();
 $bloqueDao = new BloqueMesaDao();
-$auth = new ServicioDeAutenticacion($usuarioDao, $intentosDao);
+$recuperarDao = new RecuperarContrasenaDao();
+$auth = new ServicioDeAutenticacion($usuarioDao, $intentosDao, $recuperarDao);
 $servicioDeMesas = new ServicioDeMesas($areaDao, $mesaDao);
 $servicioDeDisponibilidad = new ServicioDeDisponibilidad();
 $validadorDeReserva = new ValidadorDeReserva($reservaDao, $mesaDao);
@@ -155,7 +157,7 @@ try {
         case str_starts_with($uri, '/api/auth'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/auth')), '/');
 
-            if (in_array($ruta_interna, ['login', 'registro'], true) && $metodo === 'POST') {
+            if (in_array($ruta_interna, ['login', 'registro', 'recuperar', 'restablecer'], true) && $metodo === 'POST') {
                 $cliente_id = $_SERVER['REMOTE_ADDR'] ?? 'desconocido';
                 $endpoint = $metodo . ':' . $uri;
                 $rateLimiter->consumir($cliente_id, $endpoint);
@@ -164,6 +166,102 @@ try {
             $respuesta = $authController->manejar($ruta_interna, $metodo);
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
+
+        case str_starts_with($uri, '/api/usuario'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/usuario')), '/');
+            $query_params = $_GET ?? [];
+            $cuerpo = leerCuerpoJson();
+
+            if ($ruta_interna === 'perfil' && $metodo === 'GET') {
+                $authMiddleware->requiereAutenticacion();
+                $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+                $usuario = $usuarioDao->obtenerPorId($id_usuario);
+                if ($usuario === null) {
+                    http_response_code(404);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Usuario no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                $respuesta = [
+                    'exito' => true,
+                    'datos' => [
+                        'id_usuario' => $usuario->id_usuario,
+                        'nombre' => $usuario->nombre,
+                        'email' => $usuario->email,
+                        'id_rol' => $usuario->id_rol,
+                        'rol_nombre' => $usuario->rol_nombre ?? null,
+                        'activo' => $usuario->activo,
+                        'fecha_creacion' => $usuario->fecha_creacion,
+                        'fecha_actualizacion' => $usuario->fecha_actualizacion,
+                    ],
+                    'mensaje' => 'Perfil obtenido.',
+                ];
+                $codigo_http = 200;
+                break;
+            }
+
+            if ($ruta_interna === 'perfil' && $metodo === 'PUT') {
+                $authMiddleware->requiereAutenticacion();
+                $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+                $nombre = $cuerpo['nombre'] ?? null;
+                $email = $cuerpo['email'] ?? null;
+                $contrasena = $cuerpo['contrasena'] ?? null;
+
+                if ($nombre === null && $email === null && $contrasena === null) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'No hay campos para actualizar.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Email inválido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                if ($contrasena !== null && strlen($contrasena) < 8) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'La contraseña debe tener al menos 8 caracteres.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                $usuarioExistente = $usuarioDao->obtenerPorId($id_usuario);
+                if ($usuarioExistente === null) {
+                    http_response_code(404);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Usuario no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                if ($email !== null && $email !== $usuarioExistente->email && $usuarioDao->existeEmail($email)) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Ya existe un usuario con ese email.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                try {
+                    $campos = [];
+                    $params = [];
+                    if ($nombre !== null) { $campos[] = 'nombre = :nombre'; $params[':nombre'] = $nombre; }
+                    if ($email !== null) { $campos[] = 'email = :email'; $params[':email'] = $email; }
+                    if ($contrasena !== null) { $campos[] = 'contrasena_hash = :contrasena_hash'; $params[':contrasena_hash'] = password_hash($contrasena, PASSWORD_BCRYPT); }
+                    $campos[] = 'fecha_actualizacion = CURRENT_TIMESTAMP';
+                    $params[':id_usuario'] = $id_usuario;
+                    $sql = 'UPDATE usuarios SET ' . implode(', ', $campos) . ' WHERE id_usuario = :id_usuario';
+                    $stmt = Conexion::obtener()->prepare($sql);
+                    $stmt->execute($params);
+
+                    $respuesta = ['exito' => true, 'mensaje' => 'Perfil actualizado correctamente.', 'codigo' => 200];
+                    $codigo_http = 200;
+                } catch (\PDOException $e) {
+                    http_response_code(500);
+                    $respuesta = ['exito' => false, 'datos' => null, 'mensaje' => 'Error al actualizar el perfil.', 'codigo' => 500];
+                    $codigo_http = 500;
+                }
+                break;
+            }
+
+            http_response_code(404);
+            echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Endpoint no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+            exit;
 
         case $uri === '/api/areas':
             if ($metodo !== 'GET') {
@@ -194,6 +292,52 @@ try {
             $ruta_interna = ltrim(substr($uri, strlen('/api/reservas')), '/');
             $query_params = $_GET ?? [];
 
+            // Endpoint: detalle de reserva (cliente dueño, o encargado/admin)
+            if (preg_match('/^(\d+)\/detalle$/', $ruta_interna, $c) && $metodo === 'GET') {
+                $authMiddleware->requiereAutenticacion();
+                $id_reserva = (int) $c[1];
+                $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+                $esAdmin = ServicioDeAutenticacion::esAdministrador();
+                $esEncargado = ServicioDeAutenticacion::esMesero();
+
+                $pdo = Conexion::obtener();
+                $stmt = $pdo->prepare('SELECT r.*, m.numero_mesa, u.nombre AS nombre_usuario, u.email AS email_usuario FROM reservas r JOIN mesas m ON m.id_mesa = r.id_mesa JOIN usuarios u ON u.id_usuario = r.id_usuario WHERE r.id_reserva = ?');
+                $stmt->execute([$id_reserva]);
+                $reserva = $stmt->fetch();
+                if (!$reserva) {
+                    http_response_code(404);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Reserva no encontrada.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                if (!($esAdmin || $esEncargado) && (int) $reserva['id_usuario'] !== $id_usuario) {
+                    http_response_code(403);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'No puede ver esta reserva.', 'codigo' => 403], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                $respuesta = [
+                    'exito' => true,
+                    'datos' => [
+                        'id_reserva' => (int) $reserva['id_reserva'],
+                        'id_mesa' => (int) $reserva['id_mesa'],
+                        'numero_mesa' => $reserva['numero_mesa'],
+                        'id_usuario' => (int) $reserva['id_usuario'],
+                        'nombre_usuario' => $reserva['nombre_usuario'],
+                        'email_usuario' => $reserva['email_usuario'],
+                        'fecha_reserva' => $reserva['fecha_reserva'],
+                        'hora_inicio' => $reserva['hora_inicio'],
+                        'hora_fin' => $reserva['hora_fin'],
+                        'estado' => $reserva['estado'],
+                        'observaciones' => $reserva['observaciones'] ?? null,
+                        'fecha_creacion' => $reserva['fecha_creacion'],
+                        'fecha_actualizacion' => $reserva['fecha_actualizacion'],
+                    ],
+                    'mensaje' => 'Detalle de reserva obtenido.',
+                ];
+                $codigo_http = 200;
+                break;
+            }
+
             $respuesta = $reservaController->manejar($ruta_interna, $metodo, $query_params);
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
@@ -201,6 +345,112 @@ try {
         case str_starts_with($uri, '/api/pedidos'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/pedidos')), '/');
             $query_params = $_GET ?? [];
+
+            // Endpoint: detalle de pedido con ítems (cliente dueño, o encargado/admin)
+            if (preg_match('/^(\d+)\/detalle$/', $ruta_interna, $c) && $metodo === 'GET') {
+                $authMiddleware->requiereAutenticacion();
+                $id_pedido = (int) $c[1];
+                $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+                $esAdmin = ServicioDeAutenticacion::esAdministrador();
+                $esEncargado = ServicioDeAutenticacion::esMesero();
+
+                $pdo = Conexion::obtener();
+                // Obtener pedido
+                $stmt = $pdo->prepare('SELECT * FROM pedidos WHERE id_pedido = ?');
+                $stmt->execute([$id_pedido]);
+                $pedido = $stmt->fetch();
+                if (!$pedido) {
+                    http_response_code(404);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Pedido no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                // Validar propiedad o rol
+                if (!($esAdmin || $esEncargado) && (int) $pedido['id_usuario'] !== $id_usuario) {
+                    http_response_code(403);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'No puede ver este pedido.', 'codigo' => 403], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                // Obtener detalles
+                $stmtDet = $pdo->prepare('SELECT dp.*, pr.nombre AS nombre_producto, pr.categoria FROM detalle_pedidos dp JOIN productos pr ON pr.id_producto = dp.id_producto WHERE dp.id_pedido = ?');
+                $stmtDet->execute([$id_pedido]);
+                $detalles = $stmtDet->fetchAll();
+
+                $respuesta = [
+                    'exito' => true,
+                    'datos' => [
+                        'pedido' => $pedido,
+                        'detalles' => array_map(function ($d) {
+                            return [
+                                'id_detalle' => (int) $d['id_detalle'],
+                                'id_producto' => (int) $d['id_producto'],
+                                'nombre_producto' => $d['nombre_producto'],
+                                'categoria' => $d['categoria'],
+                                'cantidad' => (int) $d['cantidad'],
+                                'precio_unitario' => (float) $d['precio_unitario'],
+                            ];
+                        }, $detalles),
+                    ],
+                    'mensaje' => 'Detalle de pedido obtenido.',
+                ];
+                $codigo_http = 200;
+                break;
+            }
+
+            // Endpoint: asignar mesero/responsable a un pedido (encargado/admin)
+            if (preg_match('/^(\d+)\/mesero$/', $ruta_interna, $c) && $metodo === 'PUT') {
+                $authMiddleware->requiereMeseroOAdministrador();
+                $id_pedido = (int) $c[1];
+                $cuerpo = leerCuerpoJson();
+                $id_mesero = isset($cuerpo['id_mesero']) ? (int) $cuerpo['id_mesero'] : null;
+
+                if ($id_mesero === null || $id_mesero <= 0) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Se requiere id_mesero válido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                $pdo = Conexion::obtener();
+                // Verificar que el pedido exista
+                $stmt = $pdo->prepare('SELECT id_pedido FROM pedidos WHERE id_pedido = ?');
+                $stmt->execute([$id_pedido]);
+                if (!$stmt->fetch()) {
+                    http_response_code(404);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Pedido no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                // Verificar que el mesero exista y sea encargado (rol 2) o administrador (rol 4)
+                $stmt = $pdo->prepare('SELECT id_usuario, id_rol FROM usuarios WHERE id_usuario = ? AND activo = 1');
+                $stmt->execute([$id_mesero]);
+                $mesero = $stmt->fetch();
+                if (!$mesero) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'El usuario especificado no existe o está inactivo.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                if (!in_array((int) $mesero['id_rol'], [2, 4], true)) {
+                    http_response_code(400);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'El mesero debe ser encargado o administrador.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+
+                $stmt = $pdo->prepare('UPDATE pedidos SET id_mesero = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_pedido = ?');
+                $stmt->execute([$id_mesero, $id_pedido]);
+
+                // Historial
+                $stmtHist = $pdo->prepare('INSERT INTO historial_movimientos (tabla_afectada, id_registro, accion, detalles, id_usuario, direccion_ip) VALUES (:ta, :ir, :ac, :de, :iu, :ip)');
+                $stmtHist->execute([
+                    ':ta' => 'pedidos',
+                    ':ir' => $id_pedido,
+                    ':ac' => 'ASIGNAR_MESERO',
+                    ':de' => json_encode(['id_pedido' => $id_pedido, 'id_mesero_asignado' => $id_mesero], JSON_UNESCAPED_UNICODE),
+                    ':iu' => ServicioDeAutenticacion::idUsuarioAutenticado(),
+                    ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                ]);
+
+                $respuesta = ['exito' => true, 'mensaje' => 'Mesero asignado correctamente.', 'codigo' => 200];
+                $codigo_http = 200;
+                break;
+            }
 
             // Endpoint específico para marcar seña como pagada
             if (preg_match('/^(\d+)\/seña$/', $ruta_interna, $c) && $metodo === 'POST') {
@@ -296,10 +546,30 @@ try {
 
         case str_starts_with($uri, '/api/admin/stock'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/admin/stock')), '/');
+            $query_params = $_GET ?? [];
             $cuerpo = leerCuerpoJson();
             if ($metodo === 'PUT' || $metodo === 'DELETE') {
                 $_REQUEST = array_merge($_REQUEST, $cuerpo);
             }
+
+            // Endpoint: stock bajo / alerta (encargado/admin)
+            if ($ruta_interna === 'bajo' && $metodo === 'GET') {
+                $authMiddleware->requiereMeseroOAdministrador();
+                $pdo = Conexion::obtener();
+                $umbral = isset($query_params['umbral']) ? (int) $query_params['umbral'] : 5;
+                $sql = 'SELECT sp.id_stock, sp.id_producto, p.nombre, p.categoria, sp.stock_actual, sp.limite_venta, sp.activo
+                        FROM stock_producto sp
+                        JOIN productos p ON p.id_producto = sp.id_producto
+                        WHERE sp.activo = 1 AND p.activo = 1
+                          AND (sp.stock_actual <= :umbral OR (sp.limite_venta > 0 AND sp.stock_actual <= sp.limite_venta))
+                        ORDER BY sp.stock_actual ASC';
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([':umbral' => $umbral]);
+                $respuesta = ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Productos con stock bajo obtenidos.', 'codigo' => 200];
+                $codigo_http = 200;
+                break;
+            }
+
             $respuesta = manejarStock($ruta_interna, $metodo, $query_params ?? [], $cuerpo, $authMiddleware, $auth);
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
@@ -738,6 +1008,55 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
     // 5. Historial de movimientos (vía /reportes/historial)
     if ($ruta === 'historial' && $metodo === 'GET') {
         return obtenerHistorial($query);
+    }
+
+    // 6. Exportar reporte de ventas a CSV (RF28)
+    if ($ruta === 'exportar' && $metodo === 'GET') {
+        $fechaDesde = $query['fecha_desde'] ?? '';
+        $fechaHasta = $query['fecha_hasta'] ?? '';
+        $formato = $query['formato'] ?? 'csv';
+
+        $sql = 'SELECT DATE(p.fecha_pedido) AS fecha, p.id_pedido, p.tipo_pedido, p.estado, p.total, p.seña, u.nombre AS nombre_usuario, m.numero_mesa
+                FROM pedidos p
+                LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
+                LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+                WHERE p.estado <> :cancelado';
+        $params = [':cancelado' => 'cancelado'];
+        if ($fechaDesde !== '') {
+            $sql .= ' AND DATE(p.fecha_pedido) >= :fd';
+            $params[':fd'] = $fechaDesde;
+        }
+        if ($fechaHasta !== '') {
+            $sql .= ' AND DATE(p.fecha_pedido) <= :fh';
+            $params[':fh'] = $fechaHasta;
+        }
+        $sql .= ' ORDER BY p.fecha_pedido DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $ventas = $stmt->fetchAll();
+
+        if ($formato === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="reporte_ventas.csv"');
+            $salida = fopen('php://output', 'w');
+            fputcsv($salida, ['Fecha', 'Pedido', 'Tipo', 'Estado', 'Total', 'Seña', 'Usuario', 'Mesa'], ';');
+            foreach ($ventas as $v) {
+                fputcsv($salida, [
+                    $v['fecha'],
+                    $v['id_pedido'],
+                    $v['tipo_pedido'],
+                    $v['estado'],
+                    $v['total'],
+                    $v['seña'],
+                    $v['nombre_usuario'] ?? '',
+                    $v['numero_mesa'] ?? '',
+                ], ';');
+            }
+            fclose($salida);
+            exit;
+        }
+
+        return ['exito' => true, 'datos' => $ventas, 'mensaje' => 'Datos de exportación obtenidos.', 'codigo' => 200];
     }
 
     return errorJson('Endpoint de reporte no encontrado.', 404);

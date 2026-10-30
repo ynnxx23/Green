@@ -114,8 +114,36 @@ class ApiClient {
   // ── Autenticación ──────────────────────────────────────────
   login(datos) { return this.post('/auth/login', datos); }
   registro(datos) { return this.post('/auth/registro', datos); }
+  recuperar(datos) { return this.post('/auth/recuperar', datos); }
+  restablecer(datos) { return this.post('/auth/restablecer', datos); }
   logout() { return this.post('/auth/logout', {}); }
   sesion() { return this.get('/auth/sesion'); }
+
+  // ── Perfil de usuario (RF20) ───────────────────────────────
+  perfil() { return this.get('/usuario/perfil'); }
+  actualizarPerfil(datos) { return this.put('/usuario/perfil', datos); }
+
+  // ── Detalle de pedido y reserva (RF21, RF22) ───────────────
+  detallePedido(id) { return this.get(`/pedidos/${id}/detalle`); }
+  detalleReserva(id) { return this.get(`/reservas/${id}/detalle`); }
+
+  // ── Asignar mesero a pedido (RF26) ─────────────────────────
+  asignarMesero(id, datos) { return this.put(`/pedidos/${id}/mesero`, datos); }
+
+  // ── Stock bajo (RF25) ──────────────────────────────────────
+  stockBajo(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.get(`/admin/stock/bajo${qs ? '?' + qs : ''}`);
+  }
+
+  // ── Productos: activar (RF24) ──────────────────────────────
+  activarProducto(id) { return this.put(`/productos/${id}/activar`, {}); }
+
+  // ── Reportes: exportar CSV (RF28) ──────────────────────────
+  exportarReporteVentas(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.get(`/admin/reportes/exportar${qs ? '?' + qs : ''}`);
+  }
 
   // ── Reportes ───────────────────────────────────────────────
   reportesVentas(params = {}) {

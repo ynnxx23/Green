@@ -20,7 +20,7 @@ class ProductoController
 
     public function manejar(string $ruta_interna, string $metodo): array
     {
-        $this->authMiddleware->requiereAdministrador();
+        $this->authMiddleware->requiereMeseroOAdministrador();
 
         if ($ruta_interna === 'activos') {
             if ($metodo !== 'GET') {
@@ -48,6 +48,10 @@ class ProductoController
 
             if ($metodo === 'DELETE') {
                 return $this->desactivarProducto($id_producto);
+            }
+
+            if ($metodo === 'PUT' && str_ends_with($ruta_interna, '/activar')) {
+                return $this->activarProducto($id_producto);
             }
         }
 
@@ -150,6 +154,26 @@ class ProductoController
             return $this->error($e->getMessage(), 400);
         } catch (\PDOException $e) {
             return $this->error('Error al desactivar el producto.', 500);
+        }
+    }
+
+    private function activarProducto(int $id_producto): array
+    {
+        try {
+            $resultado = $this->servicioDeProductos->activarProducto($id_producto);
+
+            if (!$resultado) {
+                return $this->error('El producto no existe.', 404);
+            }
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Producto activado correctamente.',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        } catch (\PDOException $e) {
+            return $this->error('Error al activar el producto.', 500);
         }
     }
 

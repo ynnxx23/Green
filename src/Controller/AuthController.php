@@ -53,6 +53,18 @@ class AuthController
                 }
                 return $this->verificarSesion();
 
+            case 'recuperar':
+                if ($metodo !== 'POST') {
+                    return $this->error('Método no permitido.', 405);
+                }
+                return $this->recuperar();
+
+            case 'restablecer':
+                if ($metodo !== 'POST') {
+                    return $this->error('Método no permitido.', 405);
+                }
+                return $this->restablecer();
+
             default:
                 return $this->error('Endpoint no encontrado.', 404);
         }
@@ -149,6 +161,55 @@ class AuthController
             ],
             'mensaje' => 'Sesión activa.',
         ];
+    }
+
+    private function recuperar(): array
+    {
+        $entrada = $this->leerCuerpoJson();
+        $email = $entrada['email'] ?? '';
+
+        if ($email === '') {
+            return $this->error('El correo electrónico es obligatorio.', 400);
+        }
+
+        $direccion_ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
+
+        try {
+            $resultado = $this->auth->solicitarRecuperacion($email, $direccion_ip);
+
+            return [
+                'exito' => true,
+                'datos' => [
+                    'token' => $resultado['token'] ?? null,
+                    'expira_en' => $resultado['expira_en'] ?? null,
+                ],
+                'mensaje' => $resultado['mensaje'],
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    private function restablecer(): array
+    {
+        $entrada = $this->leerCuerpoJson();
+        $token = $entrada['token'] ?? '';
+        $nueva_contrasena = $entrada['nueva_contrasena'] ?? '';
+
+        if ($token === '' || $nueva_contrasena === '') {
+            return $this->error('Se requieren token y nueva contraseña.', 400);
+        }
+
+        try {
+            $resultado = $this->auth->restablecerContrasena($token, $nueva_contrasena);
+
+            return [
+                'exito' => true,
+                'mensaje' => $resultado['mensaje'],
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        }
     }
 
     private function leerCuerpoJson(): array
