@@ -1,0 +1,137 @@
+/*
+  Iconos — Green en la Casa Blanca
+  Estilo: lineal elegante, coherente con identidad neoclásico-moderna
+  Colores de marca:
+    --color-primary:   #1B4332  Verde bosque
+    --color-secondary: #2D6A4F  Verde salvia
+    --color-accent:    #B8860B  Dorado neoclásico
+    --color-bg:        #F5F5DC  Crema cálido
+*/
+
+:root {
+  --icon-size: 24px;
+  --icon-color-primary: var(--color-primary, #1B4332);
+  --icon-color-secondary: var(--color-secondary, #2D6A4F);
+  --icon-color-accent: var(--color-accent, #B8860B);
+  --icon-color-bg: var(--color-bg, #F5F5DC);
+  --icon-stroke: 2px;
+  --icon-transition: all 0.2s ease;
+}
+
+/* Carga del sprite (incluir este SVG en el <head> o al inicio del <body>) */
+.icon-sprite {
+  width: 0;
+  height: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+/* Clase base del icono */
+.icon {
+  display: inline-block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  vertical-align: middle;
+  fill: currentColor;
+  color: var(--icon-color-primary);
+  transition: var(--icon-transition);
+}
+
+/* Tamaños */
+.icon--sm  { --icon-size: 16px; }
+.icon--md  { --icon-size: 24px; }
+.icon--lg  { --icon-size: 32px; }
+.icon--xl  { --icon-size: 48px; }
+
+/* Variantes de color de marca */
+.icon--primary   { color: var(--icon-color-primary); }
+.icon--secondary { color: var(--icon-color-secondary); }
+.icon--accent    { color: var(--icon-color-accent); }
+.icon--bg        { color: var(--icon-color-bg); }
+
+/* Estados hover (para botones/enlaces) */
+.icon:hover {
+  color: var(--icon-color-accent);
+  transform: scale(1.05);
+}
+
+/* Icono dentro de botón */
+.btn .icon {
+  color: inherit;
+}
+
+/* Icono en menú de navegación */
+.nav-icon {
+  margin-right: 0.5rem;
+  color: var(--icon-color-primary);
+}
+
+/* Icono en footer */
+.footer-icon {
+  color: var(--icon-color-bg);
+}
+
+/* Icono de reservas (destacado) */
+.icon-reserva {
+  color: var(--icon-color-accent);
+  font-size: 1.2rem;
+}
+
+/* Utilidad: ocultar texto y mostrar solo icono */
+.icon-only {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  overflow: hidden;
+  text-indent: -9999px;
+  white-space: nowrap;
+}
+
+/* Animación suave para check */
+.icon-check {
+  animation: checkDraw 0.5s ease forwards;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+}
+
+@keyframes checkDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Iconos PNG (logo y plato) — usados como imagen directa */
+.icon-png {
+  display: inline-block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  vertical-align: middle;
+}
+
+/* Logo PNG */
+.icon-logo {
+  background-image: url('logo.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Plato PNG */
+.icon-plato-png {
+  background-image: url('plato.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Responsive: iconos más pequeños en móvil */
+@media (max-width: 768px) {
+  :root {
+    --icon-size: 20px;
+  }
+}

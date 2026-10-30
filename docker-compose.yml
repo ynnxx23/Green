@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    container_name: restaurante_web
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    volumes:
+      - ./public:/var/www/html/public
+      - ./src:/var/www/html/src
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_URL=${APP_URL}
+      - DB_HOST=mariadb
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE}
+      - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE}
+      - RATE_LIMIT_CAPACITY=${RATE_LIMIT_CAPACITY}
+      - RATE_LIMIT_REFILL_RATE=${RATE_LIMIT_REFILL_RATE}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - restaurante_net
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: restaurante_mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - restaurante_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No exponer puerto al host por defecto (solo red interna)
+    # Descomentar la línea siguiente solo si se necesita acceso externo a la BD en desarrollo
+    # ports:
+    #   - "3306:3306"
+
+networks:
+  restaurante_net:
+    driver: bridge
+
+volumes:
+  mariadb_data:

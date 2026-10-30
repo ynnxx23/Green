@@ -1,0 +1,100 @@
+name: Integración Continua
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: restaurante_test
+          MYSQL_USER: restaurante
+          MYSQL_PASSWORD: restaurante
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, mbstring, openssl, session, json, filter
+          coverage: none
+
+      - name: Validar sintaxis PHP
+        run: |
+          find . -name '*.php' ! -path './vendor/*' ! -path './documentacion_desarrollo/*' -print0 | xargs -0 -I {} php -l {}
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          node --check public/assets/js/api.js
+          node --check public/assets/js/auth.js
+          node --check public/assets/js/ui.js
+          node --check public/assets/js/app.js
+          node --check public/assets/js/vistas.js
+
+      - name: Aplicar migraciones de base de datos
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: restaurante_test
+          DB_USER: restaurante
+          DB_PASSWORD: restaurante
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u restaurante -prestaurante restaurante_test < migrations/001_create_schema.sql
+          mysql -h 127.0.0.1 -P 3306 -u restaurante -prestaurante restaurante_test < migrations/003_datos_iniciales.sql
+
+      - name: Ejecutar prueba de humo (smoke test)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: restaurante_test
+          DB_USER: restaurante
+          DB_PASSWORD: restaurante
+          APP_ENV: testing
+          APP_URL: http://localhost
+          SESSION_COOKIE_SECURE: 0
+          SESSION_COOKIE_SAMESITE: Lax
+        run: |
+          php -S 127.0.0.1:8080 -t public > /tmp/php_server.log 2>&1 &
+          PHP_PID=$!
+          sleep 2
+
+          # Verificar que el servidor responde
+          curl -sf http://127.0.0.1:8080/ > /dev/null || { cat /tmp/php_server.log; exit 1; }
+
+          # Verificar endpoint de autenticación (registro)
+          curl -sf -X POST http://127.0.0.1:8080/api/auth/registro \
+            -H 'Content-Type: application/json' \
+            -d '{"nombre":"Usuario Prueba","email":"prueba@test.local","contrasena":"Password123"}' > /dev/null || { cat /tmp/php_server.log; exit 1; }
+
+          # Verificar endpoint de áreas
+          curl -sf http://127.0.0.1:8080/api/areas > /dev/null || { cat /tmp/php_server.log; exit 1; }
+
+          # Verificar endpoint de mesas (requiere id_area, debería devolver 400)
+          curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/mesas | grep -q "400" || { cat /tmp/php_server.log; exit 1; }
+
+          kill $PHP_PID
+
+      - name: Comprobar que no hay secretos hardcodeados
+        run: |
+          if grep -rEi '(password|secret|api_key|token)\s*=\s*["'"'"'][^"'"'"']{4,}' --include='*.php' --include='*.js' . --exclude-dir=vendor --exclude-dir=documentacion_desarrollo --exclude='.env.example'; then
+            echo "Posibles secretos hardcodeados encontrados."
+            exit 1
+          fi

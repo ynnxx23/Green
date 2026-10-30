@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administración — Green en la Casa Blanca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/icons/icons.css">
+<style>
+  .panel-grid { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 70px); }
+  .panel-sidebar { background: var(--color-primary); color: #fff; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .panel-sidebar .panel-brand { font-family: var(--font-heading); font-size: 1.35rem; letter-spacing: 2px; margin-bottom: 2rem; color: var(--color-accent); text-align: center; }
+  .panel-sidebar a { display: block; padding: 0.75rem 1rem; border-radius: var(--radius-md); color: rgba(245,245,220,0.9); font-size: 0.95rem; transition: var(--transition); text-decoration: none; }
+  .panel-sidebar a:hover, .panel-sidebar a.activo { background: rgba(245,245,220,0.15); color: #fff; }
+  .panel-sidebar a.cerrar { color: rgba(168,54,54,0.9); margin-top: auto; }
+  .panel-sidebar a.cerrar:hover { background: rgba(168,54,54,0.15); color: #a83636; }
+  .panel-main { background: var(--color-bg); padding: 2rem var(--space-md); overflow-y: auto; }
+  .panel-main h2 { font-size: 1.75rem; margin-bottom: 1.5rem; color: var(--color-primary); text-transform: uppercase; letter-spacing: 2px; }
+  .panel-main .divisor { width: 60px; height: 3px; background: var(--color-accent); margin: 0 0 2rem 0; border-radius: 2px; }
+  .panel-card { background: var(--color-surface); border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); }
+  .panel-card h3 { margin-top: 0; margin-bottom: 1rem; color: var(--color-primary); font-size: 1.15rem; text-transform: uppercase; letter-spacing: 1px; }
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(27,67,50,0.08); }
+  th { background: rgba(46,95,78,0.08); color: var(--color-primary); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+  tr:hover { background: rgba(46,95,78,0.05); }
+  .estado { padding: 0.25rem 0.6rem; border-radius: var(--radius-pill); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+  .estado--pendiente { background: rgba(184,134,11,0.12); color: #8a6200; }
+  .estado--confirmada { background: rgba(46,95,78,0.12); color: #1e4a33; }
+  .estado--completada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--cancelada { background: rgba(168,54,54,0.12); color: #a83636; }
+  .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
+  .alerta { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9rem; }
+  .alerta--exito { background: rgba(45,106,79,0.1); color: #2d6a4f; border: 1px solid #2d6a4f; }
+  .alerta--error { background: rgba(168,54,54,0.1); color: #a83636; border: 1px solid #a83636; }
+  select { padding: 0.35rem; border-radius: var(--radius-sm); border: 1px solid rgba(27,67,50,0.15); font-size: 0.85rem; background: #fff; }
+  .rol-chip { display: inline-block; padding: 0.2rem 0.55rem; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .rol--cliente { background: rgba(46,95,78,0.12); color: #1e4a33; }
+  .rol--mesero { background: rgba(184,134,11,0.12); color: #8a6200; }
+  .rol--administrador { background: rgba(27,67,50,0.2); color: #fff; }
+  .btn-accion { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn-accion:hover { background: var(--color-secondary); }
+  .btn-accion.sec { background: transparent; border: 1px solid var(--color-primary); color: var(--color-primary); }
+  .btn-accion.sec:hover { background: var(--color-primary); color: #fff; }
+  .btn-accion.danger { background: transparent; border: 1px solid #a83636; color: #a83636; }
+  .btn-accion.danger:hover { background: #a83636; color: #fff; }
+  @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr; } .panel-sidebar { display: none; } }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-wrap">
+    <button class="btn-menu" data-menu-toggle aria-label="Abrir menú" aria-expanded="false">☰</button>
+    <a href="index.html" class="logo nav-brand">
+      <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
+      <span class="logo-text">GREEN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="carta.html">Carta</a></li>
+      <li><a href="reservas.html">Reservas</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-acciones">
+      <div id="nav-sesion"></div>
+    </div>
+  </div>
+</nav>
+
+<div class="panel-grid">
+  <aside class="panel-sidebar">
+    <div class="panel-brand">Administrador</div>
+    <a href="#" class="activo">Encargados / Usuarios</a>
+    <a href="#" onclick="mostrar('reservas')">Todas las reservas</a>
+    <a href="#" onclick="mostrar('pedidos')">Todos los pedidos</a>
+    <a href="panel-reportes.html">Reportes y estadísticas</a>
+    <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
+  </aside>
+  <main class="panel-main">
+    <h2>Encargados y usuarios</h2>
+    <div class="divisor"></div>
+
+    <section id="vista-usuarios" class="panel-card">
+      <h3>Usuarios</h3>
+      <div id="alerta-usuarios" class="alerta" style="display:none;"></div>
+      <div class="form-grid">
+        <div><input type="text" id="inp-nombre" placeholder="Nombre completo"></div>
+        <div><input type="email" id="inp-email" placeholder="Correo electrónico"></div>
+        <div><input type="password" id="inp-clave" placeholder="Contraseña (mín. 8)"></div>
+        <div>
+          <select id="inp-rol">
+            <option value="1">Cliente</option>
+            <option value="2">Encargado del restaurante</option>
+            <option value="4">Administrador</option>
+          </select>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-crear-usuario">Crear usuario</button>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-usuarios"></div>
+    </section>
+
+    <section id="vista-reservas" class="panel-card" style="display:none;">
+      <h3>Todas las reservas</h3>
+      <div id="alerta-reservas" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-reservas"></div>
+    </section>
+
+    <section id="vista-pedidos" class="panel-card" style="display:none;">
+      <h3>Todos los pedidos</h3>
+      <div id="alerta-pedidos" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-pedidos"></div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="assets/js/api.js"></script>
+<script type="module" src="assets/js/main.js"></script>
+<script type="module">
+  import { api } from './api.js';
+
+  const ROLES = { 1: 'Cliente', 2: 'Encargado', 4: 'Administrador' };
+
+  function mostrar(vista) {
+    document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+    document.getElementById('vista-' + vista).style.display = 'block';
+    if (vista === 'usuarios') cargarUsuarios();
+    if (vista === 'reservas') cargarReservas();
+    if (vista === 'pedidos') cargarPedidos();
+  }
+
+  function cerrarSesion() {
+    api.logout().finally(() => { window.location.href = 'index.html'; });
+  }
+
+  function alerta(id, texto, tipo) {
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className = 'alerta alerta--' + tipo;
+    el.style.display = 'block';
+  }
+
+  async function cargarUsuarios() {
+    try {
+      const r = await api._request('/admin/usuarios', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-usuarios');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay usuarios.</p>'; return; }
+      let html = '<table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(u => {
+        const rolClase = 'rol--' + (ROLES[u.id_rol] || '').toLowerCase().replace(' ', '-');
+        html += `<tr>
+          <td>${u.nombre}</td>
+          <td>${u.email}</td>
+          <td><span class="rol-chip ${rolClase}">${ROLES[u.id_rol] || u.id_rol}</span></td>
+          <td>${u.activo ? 'Activo' : 'Inactivo'}</td>
+          <td>
+            <button class="btn-sm btn-accion" onclick="toggleUsuario(${u.id_usuario}, ${!u.activo})">${u.activo ? 'Desactivar' : 'Activar'}</button>
+            <button class="btn-sm btn-accion danger" style="margin-left:0.4rem;" onclick="eliminarUsuario(${u.id_usuario})">Eliminar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-usuarios').innerHTML = '<p class="vacio">No se pudieron cargar los usuarios.</p>';
+      console.error(e);
+    }
+  }
+
+  document.getElementById('btn-crear-usuario').addEventListener('click', async () => {
+    const nombre = document.getElementById('inp-nombre').value.trim();
+    const email = document.getElementById('inp-email').value.trim();
+    const clave = document.getElementById('inp-clave').value;
+    const rol = parseInt(document.getElementById('inp-rol').value, 10);
+    if (!nombre || !email || !clave) { alerta('alerta-usuarios', 'Complete nombre, email y contraseña.', 'error'); return; }
+    if (clave.length < 8) { alerta('alerta-usuarios', 'La contraseña debe tener al menos 8 caracteres.', 'error'); return; }
+    try {
+      await api._request('/admin/usuarios', { method: 'POST', body: JSON.stringify({ nombre, email, contrasena: clave, id_rol: rol }) });
+      alerta('alerta-usuarios', 'Usuario creado.', 'exito');
+      document.getElementById('inp-nombre').value = '';
+      document.getElementById('inp-email').value = '';
+      document.getElementById('inp-clave').value = '';
+      cargarUsuarios();
+    } catch (e) { alerta('alerta-usuarios', e.message || 'Error al crear usuario.', 'error'); }
+  });
+
+  window.toggleUsuario = async function (id, activar) {
+    try {
+      await api._request(`/admin/usuarios/${id}`, { method: 'PUT', body: JSON.stringify({ activo: activar ? 1 : 0 }) });
+      alerta('alerta-usuarios', `Usuario ${activar ? 'activado' : 'desactivado'}.`, 'exito');
+      cargarUsuarios();
+    } catch (e) { alerta('alerta-usuarios', e.message || 'Error.', 'error'); }
+  };
+
+  window.eliminarUsuario = async function (id) {
+    if (!confirm('¿Eliminar este usuario?')) return;
+    try {
+      await api._request(`/admin/usuarios/${id}`, { method: 'DELETE' });
+      alerta('alerta-usuarios', 'Usuario eliminado.', 'exito');
+      cargarUsuarios();
+    } catch (e) { alerta('alerta-usuarios', e.message || 'Error.', 'error'); }
+  };
+
+  async function cargarReservas() {
+    try {
+      const r = await api._request('/reservas', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-reservas');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay reservas.</p>'; return; }
+      let html = '<table><thead><tr><th>Reserva</th><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Usuario</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(res => {
+        const fin = res.hora_fin ? res.hora_fin.substring(0,5) : '';
+        const opts = ['pendiente','confirmada','cancelada','vencida','completada']
+          .map(e => `<option value="${e}" ${e === res.estado ? 'selected' : ''}>${e}</option>`).join('');
+        html += `<tr>
+          <td>#${res.id_reserva}</td>
+          <td>${res.fecha_reserva}</td>
+          <td>${res.hora_inicio.substring(0,5)} - ${fin}</td>
+          <td>Mesa ${res.id_mesa}</td>
+          <td>${res.nombre_usuario || res.id_usuario}</td>
+          <td><span class="estado estado--${res.estado}">${res.estado}</span></td>
+          <td>
+            <select class="estado-select" data-id="${res.id_reserva}">${opts}</select>
+            <button class="btn-sm btn-accion" onclick="cambiarEstadoReserva(${res.id_reserva})" style="margin-left:0.4rem;">Guardar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-reservas').innerHTML = '<p class="vacio">No se pudieron cargar las reservas.</p>';
+      console.error(e);
+    }
+  }
+
+  window.cambiarEstadoReserva = async function (id) {
+    const sel = document.querySelector(`select[data-id="${id}"]`);
+    try {
+      await api._request(`/reservas/${id}/estado`, { method: 'POST', body: JSON.stringify({ estado: sel.value }) });
+      alerta('alerta-reservas', 'Estado de reserva actualizado.', 'exito');
+      cargarReservas();
+    } catch (e) { alerta('alerta-reservas', e.message || 'Error.', 'error'); }
+  };
+
+  async function cargarPedidos() {
+    try {
+      const r = await api._request('/pedidos', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-pedidos');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay pedidos.</p>'; return; }
+      let html = '<table><thead><tr><th>Pedido</th><th>Fecha</th><th>Mesa</th><th>Mesero</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(p => {
+        const opts = ['pendiente','en_preparacion','listo','entregado','cancelado']
+          .map(e => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${e.replace('_',' ')}</option>`).join('');
+        html += `<tr>
+          <td>#${p.id_pedido}</td>
+          <td>${p.fecha_pedido ? p.fecha_pedido.substring(0,16) : '-'}</td>
+          <td>Mesa ${p.id_mesa}</td>
+          <td>${p.nombre_mesero || p.id_mesero}</td>
+          <td>$${(p.total || 0).toFixed(2)}</td>
+          <td><span class="estado estado--${p.estado}">${p.estado}</span></td>
+          <td>
+            <select class="estado-select" data-id="${p.id_pedido}">${opts}</select>
+            <button class="btn-sm btn-accion" onclick="cambiarEstadoPedidoAdmin(${p.id_pedido})" style="margin-left:0.4rem;">Guardar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los pedidos.</p>';
+      console.error(e);
+    }
+  }
+
+  window.cambiarEstadoPedidoAdmin = async function (id) {
+    const sel = document.querySelector(`select[data-id="${id}"]`);
+    try {
+      await api._request(`/pedidos/${id}/estado`, { method: 'POST', body: JSON.stringify({ estado: sel.value }) });
+      alerta('alerta-pedidos', 'Estado de pedido actualizado.', 'exito');
+      cargarPedidos();
+    } catch (e) { alerta('alerta-pedidos', e.message || 'Error.', 'error'); }
+  };
+
+  mostrar('usuarios');
+</script>
+</body>
+</html>

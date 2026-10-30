@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carta — Green en la Casa Blanca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/icons/icons.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-wrap">
+    <button class="btn-menu" data-menu-toggle aria-label="Abrir menú" aria-expanded="false">☰</button>
+    <a href="index.html" class="logo nav-brand">
+      <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
+      <span class="logo-text">GREEN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="nosotros.html">Nosotros</a></li>
+      <li><a href="reservas.html">Reservar mesa</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-acciones">
+      <div id="nav-sesion"></div>
+    </div>
+  </div>
+</nav>
+
+<section class="py-lg">
+  <div class="container">
+    <h2 class="section-title">Nuestra carta</h2>
+    <div class="divisor-ornamental">★ ✯ ★</div>
+
+    <div class="filtros-categoria">
+      <button class="filtro-btn activo" data-categoria="todos">Todos</button>
+      <button class="filtro-btn" data-categoria="entradas">Entradas</button>
+      <button class="filtro-btn" data-categoria="principales">Platos principales</button>
+      <button class="filtro-btn" data-categoria="postres">Postres</button>
+      <button class="filtro-btn" data-categoria="bebidas">Bebidas</button>
+    </div>
+
+    <div class="carta-seccion">
+      <div class="menu-grid" id="grid-productos">
+        <!-- Productos se cargan dinámicamente desde la API -->
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div id="estado-vacio" style="display:none; text-align:center; padding: 3rem; color: var(--color-text-muted);">
+      <p>No se encontraron platos en esta categoría.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="#" class="footer-logo">
+    <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="44" height="44">
+    <span>GREEN</span>
+  </a>
+  <div class="footer-redes">
+    <a href="#" aria-label="Instagram">★</a>
+    <a href="#" aria-label="Facebook">★</a>
+  </div>
+  <div class="footer-info">
+    <p><strong>Green en la Casa Blanca</strong><br>
+    Av. Principal 123, Ciudad<br>
+    Tel: +57 300 000 0000 | WhatsApp: +57 300 000 0001<br>
+    Lun a Sáb: 12:00 – 23:00 | Dom: cerrado</p>
+    <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.7;">© 2026 Green en la Casa Blanca. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<script type="module" src="assets/js/api.js"></script>
+<script type="module">
+  import { api } from './api.js';
+  import { formatearMoneda } from './main.js';
+
+  const grid = document.getElementById('grid-productos');
+  const estadoVacio = document.getElementById('estado-vacio');
+  const filtros = document.querySelectorAll('.filtro-btn');
+
+  let productos = [];
+
+  async function cargarProductos() {
+    try {
+      const respuesta = await api.productos();
+      if (respuesta.exito) {
+        productos = respuesta.datos || [];
+        render('todos');
+      } else {
+        console.error('Error cargando productos:', respuesta.mensaje);
+        grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">No se pudo cargar la carta.</p>';
+      }
+    } catch (err) {
+      console.error('Error productos:', err);
+      grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">Error al cargar la carta.</p>';
+    }
+  }
+
+  function render(categoria) {
+    grid.innerHTML = '';
+    let filtrados = categoria === 'todos'
+      ? productos
+      : productos.filter(p => (p.categoria || '').toLowerCase() === categoria.toLowerCase());
+
+    if (filtrados.length === 0) {
+      grid.style.display = 'none';
+      estadoVacio.style.display = 'block';
+      return;
+    }
+    grid.style.display = 'grid';
+    estadoVacio.style.display = 'none';
+
+    filtrados.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'menu-card';
+      card.innerHTML = `
+        <div class="menu-icon">🍽️</div>
+        <h3>${escapeHtml(p.nombre || 'Producto')}</h3>
+        <p>${escapeHtml(p.descripcion || 'Sin descripción disponible.')}</p>
+        <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  filtros.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filtros.forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+      render(btn.dataset.categoria);
+    });
+  });
+
+  cargarProductos();
+</script>
+
+</body>
+</html>

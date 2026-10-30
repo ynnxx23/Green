@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro — Green en la Casa Blanca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/icons/icons.css">
+<style>
+  .auth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    margin-top: 2rem;
+  }
+  @media (max-width: 768px) { .auth-grid { grid-template-columns: 1fr; gap: 2rem; } }
+  .auth-form-card {
+    background: var(--color-surface);
+    border: 1px solid rgba(27, 67, 50, 0.12);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-md);
+  }
+  .auth-form-card h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  .form-group label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    background: #FAFAF0;
+    border: 1px solid rgba(27, 67, 50, 0.15);
+    border-radius: var(--radius-md);
+    padding: 0.9rem;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+  .auth-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+  }
+  .auth-link a {
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+  .auth-link a:hover { color: var(--color-secondary); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-wrap">
+    <button class="btn-menu" data-menu-toggle aria-label="Abrir menú" aria-expanded="false">☰</button>
+    <a href="index.html" class="logo nav-brand">
+      <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
+      <span class="logo-text">GREEN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="carta.html">Carta</a></li>
+      <li><a href="reservas.html">Reservar mesa</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-acciones">
+      <div id="nav-sesion"></div>
+    </div>
+  </div>
+</nav>
+
+<section class="py-lg">
+  <div class="container" style="max-width: 900px;">
+    <h2 class="section-title">Registro de usuario</h2>
+    <div class="divisor-ornamental">★ ✯ ★</div>
+
+    <div class="auth-grid">
+      <div class="auth-form-card">
+        <h2>Crear cuenta</h2>
+        <form id="form-registro">
+          <div id="mensaje-estado" class="mensaje-estado"></div>
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" required placeholder="Juan Pérez">
+          </div>
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" name="email" required placeholder="juan@correo.com">
+          </div>
+          <div class="form-group">
+            <label for="contrasena">Contraseña (mín. 8 caracteres)</label>
+            <input type="password" id="contrasena" name="contrasena" required placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label for="id_rol">Tipo de usuario</label>
+            <select id="id_rol" name="id_rol">
+              <option value="1">Cliente</option>
+              <option value="2">Encargado del restaurante</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarme</button>
+        </form>
+      </div>
+      <div class="nosotros-text">
+        <span class="tag">Únase a nuestra casa</span>
+        <h2>Crea tu cuenta</h2>
+        <p>Al registrarse podrá hacer reservas, consultar su historial y recibir confirmaciones directamente por WhatsApp.</p>
+        <p style="margin-top: 1rem;">Sus datos están protegidos y solo se usan para gestionar su experiencia en el restaurante.</p>
+      </div>
+    </div>
+
+    <div class="auth-link">
+      Ya tiene cuenta? <a href="login.html">Inicie sesión aquí</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="#" class="footer-logo">
+    <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="44" height="44">
+    <span>GREEN</span>
+  </a>
+  <div class="footer-redes">
+    <a href="#" aria-label="Instagram">★</a>
+    <a href="#" aria-label="Facebook">★</a>
+  </div>
+  <div class="footer-info">
+    <p><strong>Green en la Casa Blanca</strong><br>
+    Av. Principal 123, Ciudad<br>
+    Tel: +57 300 000 0000 | WhatsApp: +57 300 000 0001<br>
+    Lun a Sáb: 12:00 – 23:00 | Dom: cerrado</p>
+    <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.7;">© 2026 Green en la Casa Blanca. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<script type="module" src="assets/js/api.js"></script>
+<script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/auth.js"></script>
+
+</body>
+</html>

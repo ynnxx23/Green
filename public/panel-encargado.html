@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Encargado — Green en la Casa Blanca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/icons/icons.css">
+<style>
+  .panel-grid { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 70px); }
+  .panel-sidebar { background: var(--color-primary); color: #fff; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .panel-sidebar .panel-brand { font-family: var(--font-heading); font-size: 1.35rem; letter-spacing: 2px; margin-bottom: 2rem; color: var(--color-accent); text-align: center; }
+  .panel-sidebar a { display: block; padding: 0.75rem 1rem; border-radius: var(--radius-md); color: rgba(245,245,220,0.9); font-size: 0.95rem; transition: var(--transition); text-decoration: none; }
+  .panel-sidebar a:hover, .panel-sidebar a.activo { background: rgba(245,245,220,0.15); color: #fff; }
+  .panel-sidebar a.cerrar { color: rgba(168,54,54,0.9); margin-top: auto; }
+  .panel-sidebar a.cerrar:hover { background: rgba(168,54,54,0.15); color: #a83636; }
+  .panel-main { background: var(--color-bg); padding: 2rem var(--space-md); overflow-y: auto; }
+  .panel-main h2 { font-size: 1.75rem; margin-bottom: 1.5rem; color: var(--color-primary); text-transform: uppercase; letter-spacing: 2px; }
+  .panel-main .divisor { width: 60px; height: 3px; background: var(--color-accent); margin: 0 0 2rem 0; border-radius: 2px; }
+  .panel-card { background: var(--color-surface); border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); }
+  .panel-card h3 { margin-top: 0; margin-bottom: 1rem; color: var(--color-primary); font-size: 1.15rem; text-transform: uppercase; letter-spacing: 1px; }
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(27,67,50,0.08); }
+  th { background: rgba(46,95,78,0.08); color: var(--color-primary); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+  tr:hover { background: rgba(46,95,78,0.05); }
+  .estado { padding: 0.25rem 0.6rem; border-radius: var(--radius-pill); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+  .estado--pendiente { background: rgba(184,134,11,0.12); color: #8a6200; }
+  .estado--confirmada { background: rgba(46,95,78,0.12); color: #1e4a33; }
+  .estado--completada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--cancelada { background: rgba(168,54,54,0.12); color: #a83636; }
+  .estado--en_preparacion { background: rgba(46,95,78,0.12); color: #1e4a33; }
+  .estado--listo { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--entregado { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--cancelado { background: rgba(168,54,54,0.12); color: #a83636; }
+  .estado--pagada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--pendiente-seña { background: rgba(184,134,11,0.12); color: #8a6200; }
+  .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
+  .alerta { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9rem; }
+  .alerta--exito { background: rgba(45,106,79,0.1); color: #2d6a4f; border: 1px solid #2d6a4f; }
+  .alerta--error { background: rgba(168,54,54,0.1); color: #a83636; border: 1px solid #a83636; }
+  .btn-accion { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn-accion:hover { background: var(--color-secondary); }
+  .btn-accion.sec { background: transparent; border: 1px solid var(--color-primary); color: var(--color-primary); }
+  .btn-accion.sec:hover { background: var(--color-primary); color: #fff; }
+  .btn-accion.danger { background: transparent; border: 1px solid #a83636; color: #a83636; }
+  .btn-accion.danger:hover { background: #a83636; color: #fff; }
+  select.estado-select { padding: 0.35rem; border-radius: var(--radius-sm); border: 1px solid rgba(27,67,50,0.15); font-size: 0.85rem; background: #fff; }
+  .dias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+  .dia-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 0.75rem; background: #fff; display: flex; flex-direction: column; gap: 0.4rem; }
+  .dia-card h4 { margin: 0; font-size: 0.95rem; color: var(--color-primary); }
+  .dia-card .hora-row { display: flex; gap: 0.4rem; align-items: center; }
+  .dia-card input { flex: 1; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); font-size: 0.85rem; }
+  .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .stock-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; display: flex; flex-direction: column; gap: 0.5rem; }
+  .stock-card h4 { margin: 0; font-size: 1rem; color: var(--color-primary); }
+  .stock-card .row { display: flex; gap: 0.5rem; align-items: center; }
+  .stock-card input { flex: 1; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); font-size: 0.85rem; }
+  .stock-card .limite { color: #8a6200; font-weight: 700; }
+  .stock-card .stock { color: #1e4a33; font-weight: 700; }
+  .btn-guardar-stock { margin-top: 0.5rem; align-self: flex-start; }
+  .menu-semanal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .menu-semana-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; }
+  .menu-semana-card h4 { margin: 0 0 0.5rem 0; color: var(--color-primary); }
+  .menu-items { display: flex; flex-direction: column; gap: 0.4rem; max-height: 300px; overflow-y: auto; }
+  .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem; border-bottom: 1px solid rgba(27,67,50,0.08); font-size: 0.85rem; }
+  .menu-item:last-child { border-bottom: none; }
+  .calendario { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4rem; max-width: 720px; }
+  .cal-dia-nombre { text-align: center; font-weight: 700; font-size: 0.85rem; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.5px; padding: 0.4rem 0; }
+  .cal-dia { aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; cursor: pointer; transition: var(--transition); user-select: none; }
+  .cal-dia.disponible { background: #e8f5e9; color: #1e4a33; border-color: #2d6a4f; }
+  .cal-dia.disponible:hover { background: #c8e6c9; transform: scale(1.05); }
+  .cal-dia.no-disponible { background: #f5f5f5; color: #bdbdbd; border-color: #e0e0e0; cursor: not-allowed; }
+  .cal-dia.seleccionado { background: var(--color-accent); color: #fff; border-color: #8a6200; }
+  .cal-dia.tiene-reserva { background: #fff8e1; color: #8a6200; border-color: #fbc02d; }
+  .cal-dia.hoy { font-weight: 700; }
+  .cal-semana { display: contents; }
+  .cal-mes { font-family: var(--font-heading); font-size: 1.5rem; color: var(--color-primary); margin-bottom: 1rem; }
+  .cal-nav { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .cal-btn { background: none; border: none; color: var(--color-primary); font-size: 1.2rem; cursor: pointer; padding: 0.2rem; }
+  .cal-btn:hover { color: var(--color-secondary); }
+  .legend { display: flex; gap: 1rem; font-size: 0.8rem; margin-bottom: 0.75rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr; } .panel-sidebar { display: none; } }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-wrap">
+    <button class="btn-menu" data-menu-toggle aria-label="Abrir menú" aria-expanded="false">☰</button>
+    <a href="index.html" class="logo nav-brand">
+      <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
+      <span class="logo-text">GREEN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="carta.html">Carta</a></li>
+      <li><a href="reservas.html">Reservas</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-acciones">
+      <div id="nav-sesion"></div>
+    </div>
+  </div>
+</nav>
+
+<div class="panel-grid">
+  <aside class="panel-sidebar">
+    <div class="panel-brand">Encargado</div>
+    <a href="#" class="activo">Pedidos</a>
+    <a href="#" onclick="mostrar('reservas')">Reservas</a>
+    <a href="#" onclick="mostrar('stock')">Stock y límites por plato</a>
+    <a href="#" onclick="mostrar('menu-semanal')">Menú semanal</a>
+    <a href="#" onclick="mostrar('disponibilidad')">Días y horas disponibles</a>
+    <a href="#" onclick="mostrar('bloques')">Bloques de mesas</a>
+    <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
+  </aside>
+  <main class="panel-main">
+    <h2>Pedidos</h2>
+    <div class="divisor"></div>
+
+    <section id="vista-pedidos" class="panel-card">
+      <h3>Pedidos</h3>
+      <div id="alerta-pedidos" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-pedidos"></div>
+    </section>
+
+    <section id="vista-reservas" class="panel-card" style="display:none;">
+      <h3>Todas las reservas</h3>
+      <div id="alerta-reservas" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-reservas"></div>
+    </section>
+
+    <section id="vista-stock" class="panel-card" style="display:none;">
+      <h3>Stock y límite de ventas por plato</h3>
+      <p>Controle cuántos pedidos se pueden tomar de cada plato. El límite de venta evita tomar más pedidos de los que se pueden gestionar.</p>
+      <div id="alerta-stock" class="alerta" style="display:none;"></div>
+      <div class="stock-grid" id="grid-stock"></div>
+      <div style="margin-top:1rem;">
+        <button type="button" class="btn btn-primary btn-accion btn-guardar-stock" id="btn-guardar-stock">Guardar cambios de stock</button>
+      </div>
+    </section>
+
+    <section id="vista-menu-semanal" class="panel-card" style="display:none;">
+      <h3>Menú semanal</h3>
+      <p>Publique y actualice el menú semanal con los platos disponibles cada semana.</p>
+      <div id="alerta-menu" class="alerta" style="display:none;"></div>
+      <div class="form-grid" style="margin-bottom:1rem;">
+        <div>
+          <label>Semana inicio (lunes)</label>
+          <input type="date" id="inp-menu-semana-inicio" required>
+        </div>
+        <div>
+          <label>Semana fin (domingo)</label>
+          <input type="date" id="inp-menu-semana-fin" required>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; align-items:flex-end; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-menu">Guardar menú semanal</button>
+          <button type="button" class="btn btn-accion sec" onclick="cargarMenuSemanalAdmin()">Refrescar</button>
+        </div>
+      </div>
+      <div class="menu-semanal-grid" id="grid-menu-semanal-admin"></div>
+    </section>
+
+    <section id="vista-disponibilidad" class="panel-card" style="display:none;">
+      <h3>Días y horas disponibles</h3>
+      <p>Abra disponibilidad para varias fechas a la vez. Días amarillos ya tienen disponibilidad creada. Seleccione días (verde pastel) y defina el horario.</p>
+      <div id="alerta-disp" class="alerta" style="display:none;"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9;border:2px solid #2d6a4f;"></div> Disponible</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fff8e1;border:2px solid #fbc02d;"></div> Ya tiene disponibilidad</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9;border:2px solid #8a6200;"></div> Seleccionado</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:2px solid #e0e0e0;"></div> Sin disponibilidad</div>
+      </div>
+      <div class="cal-nav">
+        <button class="cal-btn" onclick="mesAnteriorDisp()">&#9664;</button>
+        <span id="cal-mes-disp" class="cal-mes"></span>
+        <button class="cal-btn" onclick="mesSiguienteDisp()">&#9654;</button>
+      </div>
+      <div class="calendario" id="grid-calendario-disp"></div>
+      <p id="fecha-contador" style="margin:0.75rem 0; color:var(--color-primary); font-weight:700;">0 fechas seleccionadas</p>
+      <div class="form-grid" style="grid-template-columns: 160px 160px 120px 1fr;">
+        <div><label>Hora inicio</label><input type="time" id="disp-hora-inicio" value="12:00"></div>
+        <div><label>Hora fin</label><input type="time" id="disp-hora-fin" value="22:00"></div>
+        <div><label>Mesas disp.</label><input type="number" id="disp-mesas" value="1" min="1"></div>
+        <div style="display:flex; align-items:flex-end; gap:0.5rem;">
+          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-disp">Guardar disponibilidad</button>
+          <button type="button" class="btn btn-accion sec" id="btn-limpiar-disp">Limpiar selección</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="vista-bloques" class="panel-card" style="display:none;">
+      <h3>Bloques de mesas</h3>
+      <p>Bloquee mesas en fechas/horas donde no haya disponibilidad.</p>
+      <div id="alerta-bloques" class="alerta" style="display:none;"></div>
+      <div class="form-grid" style="grid-template-columns: 220px 1fr;">
+        <div>
+          <label>Mesa</label>
+          <select id="sel-mesa-bloque" required><option value="">Cargando mesas...</option></select>
+        </div>
+      </div>
+      <div class="tabla-wrap" id="tabla-bloques"></div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="assets/js/api.js"></script>
+<script type="module" src="assets/js/main.js"></script>
+<script type="module">
+  import { api } from './api.js';
+
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let areas = [];
+  let mesas = [];
+  let productos = [];
+  let stockProductos = [];
+  let fechasSeleccionadas = new Set();
+  let mesSeleccionado = new Date();
+
+  function mostrar(vista) {
+    document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+    document.getElementById('vista-' + vista).style.display = 'block';
+    if (vista === 'pedidos') cargarPedidos();
+    if (vista === 'reservas') cargarReservasAdmin();
+    if (vista === 'stock') { cargarProductos(); cargarStock(); }
+    if (vista === 'menu-semanal') { cargarProductos(); cargarSemanasMenuAdmin(); }
+    if (vista === 'disponibilidad') { cargarDatosBase(); renderCalendarioDisp(); }
+    if (vista === 'bloques') { cargarDatosBase(); cargarBloques(); }
+  }
+
+  function cerrarSesion() {
+    api.logout().finally(() => { window.location.href = 'index.html'; });
+  }
+
+  function alerta(id, texto, tipo) {
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className = 'alerta alerta--' + tipo;
+    el.style.display = 'block';
+  }
+
+  async function cargarDatosBase() {
+    try {
+      const ra = await api.areas();
+      areas = ra.datos || [];
+    } catch (e) { console.error('areas', e); }
+    try {
+      const rm = await api.mesas();
+      mesas = rm.datos || [];
+    } catch (e) { console.error('mesas', e); }
+    const selMesa = document.getElementById('sel-mesa-bloque');
+    selMesa.innerHTML = '<option value="">Seleccionar mesa</option>';
+    mesas.forEach(m => {
+      const o = document.createElement('option'); o.value = m.id_mesa; o.textContent = 'Mesa ' + (m.numero_mesa || m.id_mesa);
+      selMesa.appendChild(o);
+    });
+  }
+
+  // ── Pedidos ──
+  async function cargarPedidos() {
+    try {
+      const r = await api._request('/pedidos', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-pedidos');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay pedidos.</p>'; return; }
+      let html = '<table><thead><tr><th>Pedido</th><th>Fecha</th><th>Mesa</th><th>Tipo</th><th>Total</th><th>Seña</th><th>Estado seña</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(p => {
+        const señaEstado = p.estado_seña || 'pendiente';
+        const estadoOpts = ['pendiente','en_preparacion','listo','entregado','cancelado']
+          .map(e => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${e.replace('_',' ')}</option>`).join('');
+        const señaOpts = ['pendiente','pagada','devuelta']
+          .map(e => `<option value="${e}" ${e === señaEstado ? 'selected' : ''}>${e}</option>`).join('');
+        html += `<tr>
+          <td>#${p.id_pedido}</td>
+          <td>${p.fecha_pedido ? p.fecha_pedido.substring(0,16) : '-'}</td>
+          <td>Mesa ${p.id_mesa || '-'}</td>
+          <td>${p.tipo_pedido || 'con_reserva'}</td>
+          <td>$${(p.total || 0).toFixed(2)}</td>
+          <td>$${(p.seña || 0).toFixed(2)}</td>
+          <td><select class="estado-select" data-id="${p.id_pedido}" data-campo="seña">${señaOpts}</select></td>
+          <td><span class="estado estado--${p.estado}">${p.estado}</span></td>
+          <td>
+            <select class="estado-select" data-id="${p.id_pedido}" data-campo="estado">${estadoOpts}</select>
+            <button class="btn-sm btn-accion" onclick="guardarCambiosPedido(${p.id_pedido})" style="margin-left:0.4rem;">Guardar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los pedidos.</p>';
+      console.error(e);
+    }
+  }
+
+  window.guardarCambiosPedido = async function (id) {
+    const row = document.querySelector(`tr:has(select[data-id="${id}"][data-campo="estado"])`);
+    const selEstado = row.querySelector(`select[data-id="${id}"][data-campo="estado"]`);
+    const selSeña = row.querySelector(`select[data-id="${id}"][data-campo="seña"]`);
+    try {
+      await api._request(`/pedidos/${id}/estado`, { method: 'POST', body: JSON.stringify({ estado: selEstado.value }) });
+      if (selSeña.value !== 'pendiente') {
+        await api.actualizarSeñaPedido(id, selSeña.value);
+      }
+      alerta('alerta-pedidos', 'Pedido #${id} actualizado.'.replace('${id}', id), 'exito');
+      cargarPedidos();
+    } catch (e) { alerta('alerta-pedidos', e.message || 'Error.', 'error'); }
+  };
+
+  // ── Reservas admin ──
+  async function cargarReservasAdmin() {
+    try {
+      const r = await api._request('/reservas', { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-reservas');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay reservas.</p>'; return; }
+      let html = '<table><thead><tr><th>Reserva</th><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Usuario</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(res => {
+        const fin = res.hora_fin ? res.hora_fin.substring(0,5) : '';
+        const opts = ['pendiente','confirmada','cancelada','vencida','completada']
+          .map(e => `<option value="${e}" ${e === res.estado ? 'selected' : ''}>${e}</option>`).join('');
+        html += `<tr>
+          <td>#${res.id_reserva}</td>
+          <td>${res.fecha_reserva}</td>
+          <td>${res.hora_inicio.substring(0,5)} - ${fin}</td>
+          <td>Mesa ${res.id_mesa}</td>
+          <td>${res.nombre_usuario || res.id_usuario}</td>
+          <td><span class="estado estado--${res.estado}">${res.estado}</span></td>
+          <td>
+            <select class="estado-select" data-id="${res.id_reserva}">${opts}</select>
+            <button class="btn-sm btn-accion" onclick="cambiarEstadoReserva(${res.id_reserva})" style="margin-left:0.4rem;">Guardar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-reservas').innerHTML = '<p class="vacio">No se pudieron cargar las reservas.</p>';
+      console.error(e);
+    }
+  }
+
+  window.cambiarEstadoReserva = async function (id) {
+    const sel = document.querySelector(`select[data-id="${id}"]`);
+    try {
+      await api._request(`/reservas/${id}/estado`, { method: 'POST', body: JSON.stringify({ estado: sel.value }) });
+      alerta('alerta-reservas', 'Estado de reserva actualizado.', 'exito');
+      cargarReservasAdmin();
+    } catch (e) { alerta('alerta-reservas', e.message || 'Error.', 'error'); }
+  };
+
+  // ── Stock ──
+  async function cargarProductos() {
+    try {
+      const r = await api.productos();
+      productos = r.datos || [];
+    } catch (e) { console.error('productos', e); }
+  }
+
+  async function cargarStock() {
+    try {
+      const r = await api.stock();
+      stockProductos = r.datos || [];
+    } catch (e) {
+      stockProductos = [];
+      console.error('stock', e);
+    }
+    renderStock();
+  }
+
+  function renderStock() {
+    const grid = document.getElementById('grid-stock');
+    grid.innerHTML = '';
+    if (!productos.length) { grid.innerHTML = '<p class="vacio">No hay productos.</p>'; return; }
+    productos.forEach(p => {
+      const s = stockProductos.find(x => x.id_producto === p.id_producto) || { stock_actual: 0, limite_venta: 0 };
+      const card = document.createElement('div');
+      card.className = 'stock-card';
+      card.innerHTML = `
+        <h4>${escapeHtml(p.nombre)}</h4>
+        <div class="row"><span class="stock">Stock actual:</span><input type="number" min="0" value="${s.stock_actual}" data-id="${p.id_producto}" data-campo="stock_actual"></div>
+        <div class="row"><span class="limite">Límite venta:</span><input type="number" min="0" value="${s.limite_venta}" data-id="${p.id_producto}" data-campo="limite_venta" title="0 = sin límite"></div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  document.getElementById('btn-guardar-stock').addEventListener('click', async () => {
+    const inputs = document.querySelectorAll('#grid-stock input');
+    const cambios = [];
+    inputs.forEach(inp => {
+      cambios.push({
+        id_producto: parseInt(inp.dataset.id, 10),
+        [inp.dataset.campo]: parseInt(inp.value, 10)
+      });
+    });
+    try {
+      for (const c of cambios) {
+        await api.guardarStock(c);
+      }
+      alerta('alerta-stock', 'Stock y límites guardados.', 'exito');
+      cargarStock();
+    } catch (e) { alerta('alerta-stock', e.message || 'Error al guardar stock.', 'error'); }
+  };
+
+  // ── Menú semanal admin ──
+  async function cargarSemanasMenuAdmin() {
+    try {
+      const r = await api.menuSemanal();
+      const semanas = r.datos || [];
+      const grid = document.getElementById('grid-menu-semanal-admin');
+      grid.innerHTML = '';
+      if (!semanas.length) {
+        grid.innerHTML = '<p class="vacio">No hay menú semanal publicado.</p>';
+        return;
+      }
+      semanas.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'menu-semana-card';
+        card.innerHTML = `
+          <h4>Semana del ${s.semana_inicio} al ${s.semana_fin}</h4>
+          <div class="menu-items">
+            ${s.items ? s.items.map(it => `
+              <div class="menu-item">
+                <span>${it.nombre} (${it.categoria})</span>
+                <span>${it.disponible ? '✓' : '✗'} ${it.precio_semanal !== null ? formatearMoneda(it.precio_semanal) : formatearMoneda(it.precio)}</span>
+              </div>
+            `).join('') : '<p>Sin platos.</p>'}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    } catch (e) {
+      document.getElementById('grid-menu-semanal-admin').innerHTML = '<p class="vacio">No se pudo cargar el menú.</p>';
+      console.error(e);
+    }
+  }
+
+  document.getElementById('btn-guardar-menu').addEventListener('click', async () => {
+    const semana_inicio = document.getElementById('inp-menu-semana-inicio').value;
+    const semana_fin = document.getElementById('inp-menu-semana-fin').value;
+    if (!semana_inicio || !semana_fin) { alerta('alerta-menu', 'Ingrese ambas fechas.', 'error'); return; }
+
+    // Construir items desde productos disponibles
+    const items = productos.map(p => ({
+      id_producto: p.id_producto,
+      disponible: true,
+      precio_semanal: null
+    }));
+
+    try {
+      await api.guardarMenuSemanal({ semana_inicio, semana_fin, items });
+      alerta('alerta-menu', 'Menú semanal guardado.', 'exito');
+      cargarSemanasMenuAdmin();
+    } catch (e) { alerta('alerta-menu', e.message || 'Error al guardar menú.', 'error'); }
+  });
+
+  // ── Disponibilidad multifecha ──
+  async function renderCalendarioDisp() {
+    const grid = document.getElementById('grid-calendario-disp');
+    grid.innerHTML = '';
+    const anio = mesSeleccionado.getFullYear();
+    const mes = mesSeleccionado.getMonth();
+    document.getElementById('cal-mes-disp').textContent = MESES[mes] + ' ' + anio;
+
+    DIAS_SEM.forEach(d => {
+      const n = document.createElement('div');
+      n.className = 'cal-dia-nombre';
+      n.textContent = d;
+      grid.appendChild(n);
+    });
+
+    const primero = new Date(anio, mes, 1);
+    const offset = primero.getDay();
+    const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+    for (let i = 0; i < offset; i++) { grid.appendChild(document.createElement('div')); }
+
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    let existentes = {};
+    try {
+      const r = await api.adminDisponibilidad();
+      (r.datos || []).forEach(x => { existentes[x.fecha] = x; });
+    } catch (e) { console.error('disp existentes', e); }
+
+    for (let d = 1; d <= diasEnMes; d++) {
+      const fecha = new Date(anio, mes, d);
+      const fechaStr = fecha.toISOString().slice(0,10);
+      const dia = document.createElement('div');
+      dia.className = 'cal-dia';
+      dia.textContent = d;
+      if (fecha.getTime() === hoy.getTime()) dia.classList.add('hoy');
+
+      const yaExiste = existentes[fechaStr];
+      const seleccionada = fechasSeleccionadas.has(fechaStr);
+
+      if (seleccionada) {
+        dia.classList.add('seleccionado');
+      } else if (yaExiste) {
+        dia.classList.add('tiene-reserva');
+      } else {
+        dia.classList.add('disponible');
+      }
+      dia.onclick = () => toggleFecha(fechaStr, dia);
+      grid.appendChild(dia);
+    }
+    actualizarContador();
+  }
+
+  function toggleFecha(fechaStr, el) {
+    if (fechasSeleccionadas.has(fechaStr)) {
+      fechasSeleccionadas.delete(fechaStr);
+    } else {
+      fechasSeleccionadas.add(fechaStr);
+    }
+    renderCalendarioDisp();
+  }
+
+  function actualizarContador() {
+    document.getElementById('fecha-contador').textContent = fechasSeleccionadas.size + ' fechas seleccionadas';
+  }
+
+  async function mesAnteriorDisp() {
+    mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() - 1, 1);
+    fechasSeleccionadas.clear();
+    renderCalendarioDisp();
+  }
+  async function mesSiguienteDisp() {
+    mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() + 1, 1);
+    fechasSeleccionadas.clear();
+    renderCalendarioDisp();
+  }
+
+  document.getElementById('btn-limpiar-disp').addEventListener('click', () => {
+    fechasSeleccionadas.clear();
+    renderCalendarioDisp();
+  });
+
+  document.getElementById('btn-guardar-disp').addEventListener('click', async () => {
+    if (fechasSeleccionadas.size === 0) { alerta('alerta-disp', 'Seleccione al menos una fecha.', 'error'); return; }
+    const hora_inicio = document.getElementById('disp-hora-inicio').value;
+    const hora_fin = document.getElementById('disp-hora-fin').value;
+    const mesas_disp = parseInt(document.getElementById('disp-mesas').value, 10) || 1;
+    if (!hora_inicio || !hora_fin) { alerta('alerta-disp', 'Ingrese hora inicio y fin.', 'error'); return; }
+    try {
+      for (const fecha of fechasSeleccionadas) {
+        await api.guardarDisponibilidad({ fecha, hora_inicio, hora_fin, mesas_disponibles: mesas_disp });
+      }
+      alerta('alerta-disp', 'Disponibilidad guardada para ' + fechasSeleccionadas.size + ' fecha(s).', 'exito');
+      fechasSeleccionadas.clear();
+      renderCalendarioDisp();
+    } catch (e) { alerta('alerta-disp', e.message || 'Error al guardar disponibilidad.', 'error'); }
+  };
+
+  async function cargarBloques() {
+    const id_mesa = parseInt(document.getElementById('sel-mesa-bloque').value, 10);
+    if (!id_mesa) { document.getElementById('tabla-bloques').innerHTML = '<p class="vacio">Seleccione una mesa.</p>'; return; }
+    try {
+      const r = await api._request('/admin/bloques?mesa_id=' + id_mesa, { method: 'GET' });
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-bloques');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay bloques para esta mesa.</p>'; return; }
+      let html = '<table><thead><tr><th>Bloque</th><th>Inicio</th><th>Fin</th><th>Motivo</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(b => {
+        html += `<tr>
+          <td>#${b.id_bloque}</td>
+          <td>${b.fecha_inicio ? b.fecha_inicio.substring(0,16) : '-'}</td>
+          <td>${b.fecha_fin ? b.fecha_fin.substring(0,16) : '-'}</td>
+          <td>${b.motivo || '-'}</td>
+          <td><button class="btn-sm btn-accion danger" onclick="eliminarBloque(${b.id_bloque})">Eliminar</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-bloques').innerHTML = '<p class="vacio">No se pudieron cargar los bloques.</p>';
+      console.error(e);
+    }
+  }
+
+  window.eliminarBloque = async function (id) {
+    if (!confirm('¿Eliminar bloque?')) return;
+    try {
+      await api._request(`/admin/bloques/${id}`, { method: 'DELETE' });
+      alerta('alerta-bloques', 'Bloque eliminado.', 'exito');
+      const id_mesa = parseInt(document.getElementById('sel-mesa-bloque').value, 10);
+      if (id_mesa) cargarBloques();
+    } catch (e) { alerta('alerta-bloques', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('sel-mesa-bloque').addEventListener('change', () => cargarBloques());
+
+  function escapeHtml(texto) {
+    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
+  }
+
+  mostrar('pedidos');
+</script>
+</body>
+</html>
