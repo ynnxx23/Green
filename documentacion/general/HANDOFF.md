@@ -1,7 +1,15 @@
 # Handoff — Sistema de Gestión de Restaurante "Green en la Casa Blanca"
 
 ## Estado del Proyecto
-Sistema funcional completo con 3 roles, autenticación, reservas, pedidos, stock, menú semanal, historial y reportes. Listo para pruebas en entorno local (XAMPP/Docker).
+Sistema funcional completo con 3 roles, autenticación, reservas, pedidos, stock, menú semanal, historial y reportes.
+
+**Desplegado en Railway:** ✅ Online
+- Servicio web: Green (Online, región sfo)
+- Base de datos: MySQL (Online, región sfo)
+- Migraciones 001→007 aplicadas automáticamente
+- URL pública: obtener desde dashboard de Railway o ejecutar `railway open`
+
+## Estructura del Repositorio
 
 ## Estructura del Repositorio
 
@@ -104,6 +112,15 @@ Páginas en `public/`:
 - **Estados de seña:** pendiente, pagada, devuelta.
 
 ## Cómo Ejecutar (Producción/Pruebas)
+
+### Opción A: Despliegue en Railway (ya desplegado)
+El sistema está desplegado en Railway en el proyecto "rare-caring":
+- Servicio web "Green": Online (región sfo)
+- Base de datos MySQL: Online (región sfo)
+- Acceder desde el dashboard de Railway o ejecutar `railway open`
+- Usuario admin: `admin@restaurante.local` / `admin123`
+
+### Opción B: Entorno local (XAMPP)
 1. Copiar proyecto en `htdocs/Yensel/Morday/` (XAMPP) o usar Docker Compose.
 2. Copiar `.env.example` a `.env` y completar credenciales de BD.
 3. Crear base de datos y aplicar migraciones en orden: `001` → `002` → `003` → `004` → `005` → `006` → `007`.
