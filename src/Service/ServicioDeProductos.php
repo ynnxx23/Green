@@ -6,17 +6,27 @@ namespace Restaurante\Service;
 
 use Restaurante\Dao\ProductoDao;
 use Restaurante\Model\Producto;
-use Restaurante\Service\ServicioDeCloudinary;
 
 class ServicioDeProductos
 {
     private ProductoDao $productoDao;
-    private ?ServicioDeCloudinary $cloudinary;
 
-    public function __construct(ProductoDao $productoDao, ?ServicioDeCloudinary $cloudinary = null)
+    public function __construct(ProductoDao $productoDao)
     {
         $this->productoDao = $productoDao;
-        $this->cloudinary = $cloudinary;
+    }
+
+    // ========================================================================
+    // LISTADO PARA CARTA PÚBLICA
+    // ========================================================================
+    public function listarParaCarta(?string $categoria = null, ?string $busqueda = null): array
+    {
+        return $this->productoDao->listarActivosConDetalles($categoria, $busqueda);
+    }
+
+    public function listarCategorias(): array
+    {
+        return $this->productoDao->listarCategorias();
     }
 
     public function listarActivos(): array
@@ -29,11 +39,40 @@ class ServicioDeProductos
         return $this->productoDao->listarTodos();
     }
 
-    public function obtenerProducto(int $id_producto): ?Producto
+    // ========================================================================
+    // DETALLE DE PRODUCTO (para ver en la carta)
+    // ========================================================================
+    public function obtenerProducto(int $id_producto): ?array
     {
-        return $this->productoDao->obtenerPorId($id_producto);
+        $producto = $this->productoDao->obtenerPorId($id_producto);
+        if ($producto === null) {
+            return null;
+        }
+
+        $calificacionPromedio = $this->productoDao->obtenerCalificacionPromedio($id_producto);
+        $totalCalificaciones = $this->productoDao->contarCalificaciones($id_producto);
+
+        $stock = $this->productoDao->obtenerStock($id_producto);
+
+        return [
+            'id_producto' => $producto->id_producto,
+            'nombre' => $producto->nombre,
+            'categoria' => $producto->categoria,
+            'precio' => (float) $producto->precio,
+            'activo' => (bool) $producto->activo,
+            'imagen_url' => $producto->imagen_url,
+            'imagen_public_id' => $producto->imagen_public_id,
+            'fecha_creacion' => $producto->fecha_creacion,
+            'calificacion_promedio' => $calificacionPromedio,
+            'total_calificaciones' => $totalCalificaciones,
+            'stock_actual' => $stock ? (int) $stock['stock_actual'] : 0,
+            'disponible' => $stock ? (bool) ($stock['stock_actual'] > 0) : false,
+        ];
     }
 
+    // ========================================================================
+    // CRUD (administrador/encargado)
+    // ========================================================================
     public function crearProducto(string $nombre, float $precio, ?string $categoria = null, ?string $imagen_url = null, ?string $imagen_public_id = null): int
     {
         if (trim($nombre) === '') {
@@ -60,13 +99,6 @@ class ServicioDeProductos
             throw new \InvalidArgumentException('El precio no puede ser negativo.');
         }
 
-        // Si se sube una nueva imagen, se borra la anterior de Cloudinary si existía.
-        if ($imagen_public_id !== null && $imagen_public_id !== '' && $this->cloudinary !== null) {
-            if ($producto->imagen_public_id !== null && $producto->imagen_public_id !== '' && $producto->imagen_public_id !== $imagen_public_id) {
-                $this->cloudinary->borrarImagen($producto->imagen_public_id);
-            }
-        }
-
         $producto->nombre = $nombre;
         $producto->precio = $precio;
         $producto->categoria = $categoria;
@@ -74,11 +106,6 @@ class ServicioDeProductos
         $producto->imagen_public_id = $imagen_public_id;
 
         return $this->productoDao->actualizar($producto);
-    }
-
-    public function obtenerProductoConImagen(int $id_producto): ?Producto
-    {
-        return $this->productoDao->obtenerPorId($id_producto);
     }
 
     public function desactivarProducto(int $id_producto): bool
@@ -100,5 +127,30 @@ class ServicioDeProductos
 
         $producto->activo = true;
         return $this->productoDao->actualizar($producto);
+    }
+
+    // ========================================================================
+    // STOCK
+    // ========================================================================
+    public function actualizarStock(int $id_producto, int $stock_actual, int $limite_venta): bool
+    {
+        if ($stock_actual < 0) {
+            throw new \InvalidArgumentException('El stock no puede ser negativo.');
+        }
+        if ($limite_venta < 0) {
+            throw new \InvalidArgumentException('El límite de venta no puede ser negativo.');
+        }
+
+        return $this->productoDao->actualizarStock($id_producto, $stock_actual, $limite_venta);
+    }
+
+    public function obtenerStock(int $id_producto): ?array
+    {
+        return $this->productoDao->obtenerStock($id_producto);
+    }
+
+    public function listarStockBajo(): array
+    {
+        return $this->productoDao->listarStockBajo();
     }
 }

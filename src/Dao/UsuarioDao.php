@@ -89,6 +89,35 @@ class UsuarioDao
         $stmt->execute([':id_usuario' => $id_usuario]);
     }
 
+    public function actualizar(int $id_usuario, array $campos): bool
+    {
+        if (empty($campos)) {
+            return false;
+        }
+
+        $setParts = [];
+        $params = [':id_usuario' => $id_usuario];
+
+        foreach ($campos as $columna => $valor) {
+            if ($columna === 'id_usuario' || $columna === 'fecha_creacion') {
+                continue;
+            }
+            $claveParam = ':' . str_replace('_', '', $columna);
+            $setParts[] = $columna . ' = ' . $claveParam;
+            $params[$claveParam] = $valor;
+        }
+
+        if (empty($setParts)) {
+            return false;
+        }
+
+        $sql = 'UPDATE usuarios SET ' . implode(', ', $setParts) . ' WHERE id_usuario = :id_usuario';
+        $stmt = Conexion::obtener()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->rowCount() > 0;
+    }
+
     public function listarTodos(): array
     {
         $sql = 'SELECT u.*, r.nombre AS rol_nombre

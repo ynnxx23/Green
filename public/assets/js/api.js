@@ -3,7 +3,19 @@
   Consume la API REST del backend en public/index.php
 */
 
-const API_BASE = window.location.origin + '/api';
+// Detectar la ruta base del proyecto (ej: /Yensel/Morday/public) para que la API
+// funcione tanto en XAMPP local como en cualquier subruta de despliegue.
+// Busca el segmento 'public' en el path y construye la URL base desde ahí.
+const rutaActual = window.location.pathname;
+const partesRuta = rutaActual.split('/');
+let rutaBaseApi = '/api';
+const idxPublic = partesRuta.indexOf('public');
+if (idxPublic !== -1 && idxPublic >= 1) {
+    // Todo lo que está antes de 'public' es la ruta base del proyecto
+    const rutaProyecto = partesRuta.slice(0, idxPublic).join('/');
+    rutaBaseApi = rutaProyecto + '/public/api';
+}
+const API_BASE = window.location.origin + rutaBaseApi;
 
 class ApiClient {
   constructor(baseUrl = API_BASE) {

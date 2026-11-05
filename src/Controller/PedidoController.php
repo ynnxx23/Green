@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace Restaurante\Controller;
 
 use Restaurante\Middleware\AuthMiddleware;
-use Restaurante\Service\ServicioDePedidos;
 
 class PedidoController
 {
-    private ServicioDePedidos $servicioDePedidos;
     private AuthMiddleware $authMiddleware;
 
-    public function __construct(ServicioDePedidos $servicioDePedidos, AuthMiddleware $authMiddleware)
+    public function __construct(AuthMiddleware $authMiddleware)
     {
-        $this->servicioDePedidos = $servicioDePedidos;
         $this->authMiddleware = $authMiddleware;
     }
 
@@ -25,6 +22,13 @@ class PedidoController
                 return $this->error('Método no permitido.', 405);
             }
             return $this->misPedidos();
+        }
+
+        if ($ruta_interna === 'mis-pedidos-detalle') {
+            if ($metodo !== 'GET') {
+                return $this->error('Método no permitido.', 405);
+            }
+            return $this->misPedidosConDetalle();
         }
 
         if (preg_match('/^estado\/(.+)$/', $ruta_interna, $coincidencias)) {
@@ -44,6 +48,18 @@ class PedidoController
             return $this->error('Método no permitido.', 405);
         }
 
+        if (preg_match('/^(\d+)$/', $ruta_interna, $coincidencias)) {
+            $id_pedido = (int) $coincidencias[1];
+
+            if ($metodo === 'GET') {
+                return $this->obtenerDetalle($id_pedido);
+            }
+
+            if ($metodo === 'POST' && str_ends_with($ruta_interna, '/estado')) {
+                return $this->cambiarEstado($id_pedido);
+            }
+        }
+
         if (preg_match('/^(\d+)\/estado$/', $ruta_interna, $coincidencias)) {
             if ($metodo !== 'POST') {
                 return $this->error('Método no permitido.', 405);
@@ -51,9 +67,19 @@ class PedidoController
             return $this->cambiarEstado((int) $coincidencias[1]);
         }
 
+        if (preg_match('/^(\d+)\/seña$/', $ruta_interna, $coincidencias)) {
+            if ($metodo !== 'POST') {
+                return $this->error('Método no permitido.', 405);
+            }
+            return $this->actualizarSeña((int) $coincidencias[1]);
+        }
+
         return $this->error('Endpoint no encontrado.', 404);
     }
 
+    // ========================================================================
+    // REGISTRAR PEDIDO (con seña 50% automática y delivery)
+    // ========================================================================
     private function registrarPedido(): array
     {
         $this->authMiddleware->requiereAutenticacion();
@@ -63,12 +89,14 @@ class PedidoController
         $id_mesa = isset($entrada['id_mesa']) && $entrada['id_mesa'] !== '' ? (int) $entrada['id_mesa'] : null;
         $detalles = $entrada['detalles'] ?? [];
         $tipo_pedido = $entrada['tipo_pedido'] ?? 'con_reserva';
-        $seña = isset($entrada['seña']) ? (float) $entrada['seña'] : 0.00;
+        $seña_manual = isset($entrada['seña']) ? (float) $entrada['seña'] : -1.0; // -1 = no enviado, calcular automático
         $estado_seña = $entrada['estado_seña'] ?? 'pendiente';
         $direccion_domicilio = $entrada['direccion_domicilio'] ?? null;
         $id_zona_delivery = isset($entrada['id_zona_delivery']) && $entrada['id_zona_delivery'] !== '' ? (int) $entrada['id_zona_delivery'] : null;
-        $costo_envio = isset($entrada['costo_envio']) ? (float) $entrada['costo_envio'] : 0.00;
+        $costo_envio_manual = isset($entrada['costo_envio']) ? (float) $entrada['costo_envio'] : -1.0;
         $id_repartidor = isset($entrada['id_repartidor']) && $entrada['id_repartidor'] !== '' ? (int) $entrada['id_repartidor'] : null;
+        $observaciones = $entrada['observaciones'] ?? null;
+
         $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
         $id_mesero = $id_usuario;
 
@@ -96,57 +124,68 @@ class PedidoController
             $fecha = date('Y-m-d');
             $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
 
-            $stmt = $pdo->prepare('
-                SELECT c.valor AS limite
-                FROM configuracion_sistema c
-                WHERE c.clave = ?
-            ');
             $clave = $tipo_pedido === 'para_llevar' ? 'limite_pedidos_sin_reserva_retiro' : 'limite_pedidos_sin_reserva_domicilio';
+            $stmt = $pdo->prepare('SELECT valor AS limite FROM configuracion_sistema WHERE clave = ?');
             $stmt->execute([$clave]);
             $config = $stmt->fetch();
             $limite = $config ? (int) $config['limite'] : 0;
 
             if ($limite > 0) {
-                $stmt = $pdo->prepare('
-                    SELECT cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ? AND tipo_pedido = ?
-                ');
+                $stmt = $pdo->prepare('SELECT cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ? AND tipo_pedido = ?');
                 $stmt->execute([$fecha, $tipoContador]);
                 $contador = $stmt->fetch();
                 $cantidadActual = $contador ? (int) $contador['cantidad_pedidos'] : 0;
 
                 if ($cantidadActual >= $limite) {
-                    return $this->error('Se ha alcanzado el límite máximo de pedidos sin reserva para ' . ($tipo_pedido === 'para_llevar' ? 'retiro' : 'delivery') . ' hoy. Intente con una reserva de mesa o en otro horario.', 403);
+                    return $this->error(
+                        'Se ha alcanzado el límite máximo de pedidos sin reserva para ' .
+                        ($tipo_pedido === 'para_llevar' ? 'retiro' : 'delivery') .
+                        ' hoy. Intente con una reserva de mesa.',
+                        403
+                    );
                 }
             }
         }
 
         $pdo = \Restaurante\Database\Conexion::obtener();
 
-        // Validar stock y límite de venta por producto
+        // Validar productos, stock, límite de venta y calcular total
         $total_pedido = 0;
+        $detallesConPrecio = [];
+
         foreach ($detalles as $detalle) {
             $id_producto = (int) ($detalle['id_producto'] ?? 0);
             $cantidad = (int) ($detalle['cantidad'] ?? 0);
-            $precio_unitario = (float) ($detalle['precio_unitario'] ?? 0);
 
-            if ($id_producto <= 0 || $cantidad <= 0 || $precio_unitario < 0) {
+            if ($id_producto <= 0 || $cantidad <= 0) {
                 return $this->error('Datos de producto inválidos en el pedido.', 400);
             }
 
-            // Verificar stock existente
+            // Obtener precio del producto desde BD (no confiar en precio enviado por cliente)
+            $stmt = $pdo->prepare('SELECT precio FROM productos WHERE id_producto = ? AND activo = 1');
+            $stmt->execute([$id_producto]);
+            $producto = $stmt->fetch();
+
+            if (!$producto) {
+                return $this->error('El producto id ' . $id_producto . ' no existe o no está disponible.', 400);
+            }
+
+            $precio_unitario = (float) $producto['precio'];
+
+            // Verificar stock
             $stmt = $pdo->prepare('SELECT stock_actual, limite_venta FROM stock_producto WHERE id_producto = ? AND activo = 1');
             $stmt->execute([$id_producto]);
             $stock = $stmt->fetch();
 
             if (!$stock) {
-                return $this->error('El producto no tiene stock configurado.', 400);
+                return $this->error('El producto id ' . $id_producto . ' no tiene stock configurado.', 400);
             }
 
             if ((int) $stock['stock_actual'] < $cantidad) {
                 return $this->error('Stock insuficiente para el producto id ' . $id_producto . '.', 400);
             }
 
-            // Validar límite de venta (0 = sin límite)
+            // Validar límite de venta
             if ((int) $stock['limite_venta'] > 0) {
                 $stmt2 = $pdo->prepare('
                     SELECT COALESCE(SUM(dp.cantidad), 0) as vendidos
@@ -162,63 +201,108 @@ class PedidoController
                 }
             }
 
-            $total_pedido += $cantidad * $precio_unitario;
+            $subtotal = $cantidad * $precio_unitario;
+            $total_pedido += $subtotal;
+
+            $detallesConPrecio[] = [
+                'id_producto' => $id_producto,
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precio_unitario,
+                'subtotal' => $subtotal,
+            ];
         }
+
+        // Calcular seña automáticamente: 50% del total si no se envió manualmente
+        if ($seña_manual < 0) {
+            $seña = round($total_pedido * 0.50, 2);
+        } else {
+            $seña = $seña_manual;
+            if ($seña < 0 || $seña > $total_pedido) {
+                return $this->error('El monto de la seña debe estar entre 0 y el total del pedido.', 400);
+            }
+        }
+
+        // Calcular costo de envío para delivery
+        $costo_envio = 0.00;
+        if ($tipo_pedido === 'domicilio' && $id_zona_delivery !== null && $id_zona_delivery > 0) {
+            $stmt = $pdo->prepare('SELECT costo_envio FROM zonas_delivery WHERE id_zona_delivery = ? AND activa = 1');
+            $stmt->execute([$id_zona_delivery]);
+            $zona = $stmt->fetch();
+            if ($zona) {
+                $costo_envio = (float) $zona['costo_envio'];
+            }
+        } elseif ($costo_envio_manual >= 0) {
+            $costo_envio = $costo_envio_manual;
+        }
+
+        $total_con_envio = $total_pedido + $costo_envio;
+
+        // Si es domicilio y no hay seña manual, la seña es 50% del total (sin envío)
+        // El saldo pendiente es total - seña
+        $saldo_pendiente = round($total_con_envio - $seña, 2);
 
         try {
             $pdo->beginTransaction();
 
+            // Generar número de pedido
+            $numeroPedido = 'PED-' . date('Ymd') . '-' . str_pad((int) ($pdo->query('SELECT COUNT(*) FROM pedidos WHERE DATE(fecha_pedido) = CURRENT_DATE')->fetchColumn() + 1), 4, '0', STR_PAD_LEFT);
+
             // Registrar pedido
             $stmt = $pdo->prepare('
-                INSERT INTO pedidos (id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total, tipo_pedido, seña, estado_seña, direccion_domicilio, id_zona_delivery, costo_envio, id_repartidor, fecha_pedido_hora, fecha_creacion)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, \"pendiente\", ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                INSERT INTO pedidos (
+                    id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total,
+                    tipo_pedido, seña, estado_seña, saldo_pendiente, direccion_domicilio,
+                    id_zona_delivery, costo_envio, id_repartidor, numero_pedido,
+                    observaciones, fecha_pedido_hora, fecha_creacion
+                ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, "pendiente", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ');
             $stmt->execute([
                 $id_mesa,
                 $id_mesero,
                 $id_usuario,
-                $total_pedido,
+                $total_con_envio,
                 $tipo_pedido,
                 $seña,
                 $estado_seña,
+                $saldo_pendiente,
                 $direccion_domicilio,
                 $id_zona_delivery,
                 $costo_envio,
                 $id_repartidor,
+                $numeroPedido,
+                $observaciones,
             ]);
             $id_pedido = (int) $pdo->lastInsertId();
 
             // Insertar detalles y descontar stock
-            foreach ($detalles as $detalle) {
-                $id_producto = (int) ($detalle['id_producto'] ?? 0);
-                $cantidad = (int) ($detalle['cantidad'] ?? 0);
-                $precio_unitario = (float) ($detalle['precio_unitario'] ?? 0);
-
+            foreach ($detallesConPrecio as $detalle) {
                 $stmt = $pdo->prepare('
                     INSERT INTO detalle_pedidos (id_pedido, id_producto, cantidad, precio_unitario)
                     VALUES (?, ?, ?, ?)
                 ');
-                $stmt->execute([$id_pedido, $id_producto, $cantidad, $precio_unitario]);
+                $stmt->execute([$id_pedido, $detalle['id_producto'], $detalle['cantidad'], $detalle['precio_unitario']]);
 
                 // Descontar stock
                 $stmt = $pdo->prepare('
                     UPDATE stock_producto SET stock_actual = stock_actual - ?, fecha_actualizacion = CURRENT_TIMESTAMP
                     WHERE id_producto = ?
                 ');
-                $stmt->execute([$cantidad, $id_producto]);
+                $stmt->execute([$detalle['cantidad'], $detalle['id_producto']]);
             }
 
             $pdo->commit();
 
-            // Historial de movimiento
+            // Historial
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'CREAR_PEDIDO', [
+                'numero_pedido' => $numeroPedido,
                 'id_mesa' => $id_mesa,
-                'total' => $total_pedido,
-                'tipo_pedido' => $entrada['tipo_pedido'] ?? 'con_reserva',
-                'seña' => $entrada['seña'] ?? 0
+                'total' => $total_con_envio,
+                'tipo_pedido' => $tipo_pedido,
+                'seña' => $seña,
+                'saldo_pendiente' => $saldo_pendiente,
             ], $id_mesero);
 
-            // RF-69: Contabilizar pedidos sin reserva por día
+            // RF-69: Contabilizar pedidos sin reserva
             if ($tipo_pedido === 'para_llevar' || $tipo_pedido === 'domicilio') {
                 $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
                 $stmtContador = $pdo->prepare('
@@ -226,19 +310,23 @@ class PedidoController
                     VALUES (:f, :t, 1)
                     ON DUPLICATE KEY UPDATE cantidad_pedidos = cantidad_pedidos + 1, fecha_actualizacion = CURRENT_TIMESTAMP
                 ');
-                $stmtContador->execute([
-                    ':f' => date('Y-m-d'),
-                    ':t' => $tipoContador,
-                ]);
+                $stmtContador->execute([':f' => date('Y-m-d'), ':t' => $tipoContador]);
             }
 
             return [
                 'exito' => true,
                 'datos' => [
                     'id_pedido' => $id_pedido,
+                    'numero_pedido' => $numeroPedido,
                     'id_mesa' => $id_mesa,
                     'estado' => 'pendiente',
-                    'total' => $total_pedido,
+                    'total' => $total_con_envio,
+                    'subtotal_productos' => $total_pedido,
+                    'costo_envio' => $costo_envio,
+                    'seña' => $seña,
+                    'estado_seña' => $estado_seña,
+                    'saldo_pendiente' => $saldo_pendiente,
+                    'tipo_pedido' => $tipo_pedido,
                 ],
                 'mensaje' => 'Pedido registrado correctamente.',
             ];
@@ -251,12 +339,28 @@ class PedidoController
         }
     }
 
+    // ========================================================================
+    // MIS PEDIDOS (cliente)
+    // ========================================================================
     private function misPedidos(): array
     {
         $this->authMiddleware->requiereAutenticacion();
 
-        $id_mesero = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
-        $pedidos = $this->servicioDePedidos->listarPedidosMesero($id_mesero);
+        $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
+
+        $pdo = \Restaurante\Database\Conexion::obtener();
+        $stmt = $pdo->prepare('
+            SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
+                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   m.numero_mesa
+            FROM pedidos p
+            LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+            WHERE p.id_usuario = ?
+            ORDER BY p.fecha_pedido DESC
+        ');
+        $stmt->execute([$id_usuario]);
+        $pedidos = $stmt->fetchAll();
 
         return [
             'exito' => true,
@@ -265,11 +369,81 @@ class PedidoController
         ];
     }
 
+    private function misPedidosConDetalle(): array
+    {
+        $this->authMiddleware->requiereAutenticacion();
+
+        $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
+
+        $pdo = \Restaurante\Database\Conexion::obtener();
+        $stmt = $pdo->prepare('
+            SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
+                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   m.numero_mesa
+            FROM pedidos p
+            LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+            WHERE p.id_usuario = ?
+            ORDER BY p.fecha_pedido DESC
+        ');
+        $stmt->execute([$id_usuario]);
+        $pedidos = $stmt->fetchAll();
+
+        $resultado = [];
+        foreach ($pedidos as $pedido) {
+            $id_pedido = (int) $pedido['id_pedido'];
+
+            // Obtener detalles
+            $stmtDet = $pdo->prepare('
+                SELECT dp.id_producto, pr.nombre AS nombre_producto, dp.cantidad, dp.precio_unitario,
+                       (dp.cantidad * dp.precio_unitario) AS subtotal
+                FROM detalle_pedidos dp
+                JOIN productos pr ON pr.id_producto = dp.id_producto
+                WHERE dp.id_pedido = ?
+            ');
+            $stmtDet->execute([$id_pedido]);
+            $detalles = $stmtDet->fetchAll();
+
+            $resultado[] = array_merge($this->mapearPedido($pedido), [
+                'detalles' => array_map(function ($d) {
+                    return [
+                        'id_producto' => (int) $d['id_producto'],
+                        'nombre_producto' => $d['nombre_producto'],
+                        'cantidad' => (int) $d['cantidad'],
+                        'precio_unitario' => (float) $d['precio_unitario'],
+                        'subtotal' => (float) $d['subtotal'],
+                    ];
+                }, $detalles),
+            ]);
+        }
+
+        return [
+            'exito' => true,
+            'datos' => $resultado,
+            'mensaje' => 'Pedidos con detalle obtenidos correctamente.',
+        ];
+    }
+
+    // ========================================================================
+    // LISTAR TODOS (encargado/admin)
+    // ========================================================================
     private function listarTodos(): array
     {
         $this->authMiddleware->requiereMeseroOAdministrador();
 
-        $pedidos = $this->servicioDePedidos->listarTodosLosPedidos();
+        $pdo = \Restaurante\Database\Conexion::obtener();
+        $stmt = $pdo->query('
+            SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
+                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   m.numero_mesa,
+                   u.nombre AS nombre_usuario, u.email AS email_usuario
+            FROM pedidos p
+            LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+            LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
+            ORDER BY p.fecha_pedido DESC
+        ');
+        $pedidos = $stmt->fetchAll();
 
         return [
             'exito' => true,
@@ -278,6 +452,9 @@ class PedidoController
         ];
     }
 
+    // ========================================================================
+    // POR ESTADO
+    // ========================================================================
     private function porEstado(string $estado): array
     {
         $this->authMiddleware->requiereMeseroOAdministrador();
@@ -287,7 +464,21 @@ class PedidoController
             return $this->error('Estado no válido.', 400);
         }
 
-        $pedidos = $this->servicioDePedidos->listarPedidosPorEstado($estado);
+        $pdo = \Restaurante\Database\Conexion::obtener();
+        $stmt = $pdo->prepare('
+            SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
+                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   m.numero_mesa,
+                   u.nombre AS nombre_usuario
+            FROM pedidos p
+            LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+            LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
+            WHERE p.estado = ?
+            ORDER BY p.fecha_pedido DESC
+        ');
+        $stmt->execute([$estado]);
+        $pedidos = $stmt->fetchAll();
 
         return [
             'exito' => true,
@@ -296,6 +487,75 @@ class PedidoController
         ];
     }
 
+    // ========================================================================
+    // DETALLE DE PEDIDO
+    // ========================================================================
+    private function obtenerDetalle(int $id_pedido): array
+    {
+        $this->authMiddleware->requiereAutenticacion();
+
+        $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
+        $esAdmin = \Restaurante\Service\ServicioDeAutenticacion::esAdministrador();
+        $esEncargado = \Restaurante\Service\ServicioDeAutenticacion::esMesero();
+
+        $pdo = \Restaurante\Database\Conexion::obtener();
+        $stmt = $pdo->prepare('
+            SELECT p.*, m.numero_mesa, u.nombre AS nombre_usuario, u.email AS email_usuario
+            FROM pedidos p
+            LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
+            LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
+            WHERE p.id_pedido = ?
+        ');
+        $stmt->execute([$id_pedido]);
+        $pedido = $stmt->fetch();
+
+        if (!$pedido) {
+            return $this->error('Pedido no encontrado.', 404);
+        }
+
+        // Validar propiedad o rol
+        if (!($esAdmin || $esEncargado) && (int) $pedido['id_usuario'] !== $id_usuario) {
+            return $this->error('No puede ver este pedido.', 403);
+        }
+
+        // Obtener detalles
+        $stmtDet = $pdo->prepare('
+            SELECT dp.id_producto, pr.nombre AS nombre_producto, pr.categoria,
+                   dp.cantidad, dp.precio_unitario,
+                   (dp.cantidad * dp.precio_unitario) AS subtotal
+            FROM detalle_pedidos dp
+            JOIN productos pr ON pr.id_producto = dp.id_producto
+            WHERE dp.id_pedido = ?
+            ORDER BY pr.nombre
+        ');
+        $stmtDet->execute([$id_pedido]);
+        $detalles = $stmtDet->fetchAll();
+
+        return [
+            'exito' => true,
+            'datos' => array_merge($this->mapearPedido($pedido), [
+                'numero_mesa' => $pedido['numero_mesa'],
+                'nombre_usuario' => $pedido['nombre_usuario'],
+                'email_usuario' => $pedido['email_usuario'],
+                'observaciones' => $pedido['observaciones'] ?? null,
+                'detalles' => array_map(function ($d) {
+                    return [
+                        'id_producto' => (int) $d['id_producto'],
+                        'nombre_producto' => $d['nombre_producto'],
+                        'categoria' => $d['categoria'],
+                        'cantidad' => (int) $d['cantidad'],
+                        'precio_unitario' => (float) $d['precio_unitario'],
+                        'subtotal' => (float) $d['subtotal'],
+                    ];
+                }, $detalles),
+            ]),
+            'mensaje' => 'Detalle del pedido obtenido.',
+        ];
+    }
+
+    // ========================================================================
+    // CAMBIAR ESTADO
+    // ========================================================================
     private function cambiarEstado(int $id_pedido): array
     {
         $this->authMiddleware->requiereMeseroOAdministrador();
@@ -307,31 +567,131 @@ class PedidoController
             return $this->error('Se requiere el parámetro estado.', 400);
         }
 
+        $pdo = \Restaurante\Database\Conexion::obtener();
+
+        $stmt = $pdo->prepare('SELECT id_pedido, estado FROM pedidos WHERE id_pedido = ?');
+        $stmt->execute([$id_pedido]);
+        $pedido = $stmt->fetch();
+
+        if (!$pedido) {
+            return $this->error('Pedido no encontrado.', 404);
+        }
+
+        $estado_actual = $pedido['estado'];
+
+        $transicionesValidas = [
+            'pendiente' => ['en_preparacion', 'cancelado'],
+            'en_preparacion' => ['listo', 'cancelado'],
+            'listo' => ['entregado', 'cancelado'],
+            'entregado' => [],
+            'cancelado' => [],
+        ];
+
+        if ($estado_nuevo === $estado_actual) {
+            return $this->error('El pedido ya está en ese estado.', 400);
+        }
+
+        $permitidos = $transicionesValidas[$estado_actual] ?? [];
+        if (!in_array($estado_nuevo, $permitidos, true)) {
+            return $this->error(
+                "No se puede pasar de '{$estado_actual}' a '{$estado_nuevo}'.",
+                400
+            );
+        }
+
         try {
-            $resultado = $this->servicioDePedidos->cambiarEstadoPedido($id_pedido, $estado_nuevo);
+            $stmt = $pdo->prepare('UPDATE pedidos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_pedido = ?');
+            $stmt->execute([$estado_nuevo, $id_pedido]);
 
-            if (!$resultado) {
-                return $this->error('No se pudo cambiar el estado del pedido.', 400);
-            }
-
-            // Historial de movimiento
-            $pdo = \Restaurante\Database\Conexion::obtener();
+            // Historial
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'CAMBIAR_ESTADO_PEDIDO', [
                 'id_pedido' => $id_pedido,
-                'nuevo_estado' => $estado_nuevo
+                'estado_anterior' => $estado_actual,
+                'nuevo_estado' => $estado_nuevo,
             ], \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado());
 
             return [
                 'exito' => true,
                 'mensaje' => "Estado del pedido cambiado a '{$estado_nuevo}'.",
             ];
-        } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
         } catch (\PDOException $e) {
             return $this->error('Error al cambiar el estado del pedido.', 500);
         }
     }
 
+    // ========================================================================
+    // ACTUALIZAR SEÑA
+    // ========================================================================
+    private function actualizarSeña(int $id_pedido): array
+    {
+        $this->authMiddleware->requiereMeseroOAdministrador();
+
+        $entrada = $this->leerCuerpoJson();
+        $estado = $entrada['estado'] ?? 'pagada';
+        $monto = isset($entrada['monto']) ? (float) $entrada['monto'] : null;
+
+        if (!in_array($estado, ['pendiente', 'pagada', 'devuelta'], true)) {
+            return $this->error('Estado de seña inválido. Use: pendiente, pagada o devuelta.', 400);
+        }
+
+        $pdo = \Restaurante\Database\Conexion::obtener();
+
+        $stmt = $pdo->prepare('SELECT id_pedido, seña, estado_seña, total, saldo_pendiente FROM pedidos WHERE id_pedido = ?');
+        $stmt->execute([$id_pedido]);
+        $pedido = $stmt->fetch();
+
+        if (!$pedido) {
+            return $this->error('Pedido no encontrado.', 404);
+        }
+
+        $señaActual = (float) $pedido['seña'];
+        $saldoActual = (float) $pedido['saldo_pendiente'];
+
+        if ($estado === 'pagada') {
+            $nuevoSaldo = max(0, round($saldoActual - $señaActual, 2));
+        } elseif ($estado === 'devuelta') {
+            $nuevoSaldo = round($saldoActual + $señaActual, 2);
+        } else {
+            $nuevoSaldo = $saldoActual;
+        }
+
+        if ($monto !== null && $monto >= 0) {
+            $nuevoSaldo = max(0, round($saldoActual - $monto, 2));
+        }
+
+        try {
+            $stmt = $pdo->prepare('
+                UPDATE pedidos
+                SET estado_seña = ?, saldo_pendiente = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+                WHERE id_pedido = ?
+            ');
+            $stmt->execute([$estado, $nuevoSaldo, $id_pedido]);
+
+            // Historial
+            $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'ACTUALIZAR_SEÑA', [
+                'id_pedido' => $id_pedido,
+                'estado_seña_anterior' => $pedido['estado_seña'],
+                'nuevo_estado_seña' => $estado,
+                'saldo_pendiente_anterior' => $saldoActual,
+                'nuevo_saldo_pendiente' => $nuevoSaldo,
+            ], \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado());
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Estado de seña actualizado.',
+                'datos' => [
+                    'estado_seña' => $estado,
+                    'saldo_pendiente' => $nuevoSaldo,
+                ],
+            ];
+        } catch (\PDOException $e) {
+            return $this->error('Error al actualizar la seña.', 500);
+        }
+    }
+
+    // ========================================================================
+    // HELPERS
+    // ========================================================================
     private function insertarHistorial(\PDO $pdo, string $tabla, ?int $id_registro, string $accion, array $detalles, ?int $id_usuario): void
     {
         try {
@@ -377,22 +737,32 @@ class PedidoController
     {
         $resultado = [];
         foreach ($pedidos as $pedido) {
-            $resultado[] = [
-                'id_pedido' => (int) $pedido['id_pedido'],
-                'id_mesa' => $pedido['id_mesa'] !== null ? (int) $pedido['id_mesa'] : null,
-                'numero_mesa' => $pedido['numero_mesa'] ?? null,
-                'id_mesero' => $pedido['id_mesero'] !== null ? (int) $pedido['id_mesero'] : null,
-                'nombre_mesero' => $pedido['nombre_mesero'] ?? null,
-                'id_zona_delivery' => $pedido['id_zona_delivery'] !== null ? (int) $pedido['id_zona_delivery'] : null,
-                'costo_envio' => (float) ($pedido['costo_envio'] ?? 0),
-                'id_repartidor' => $pedido['id_repartidor'] !== null ? (int) $pedido['id_repartidor'] : null,
-                'fecha_pedido' => $pedido['fecha_pedido'] ?? null,
-                'estado' => $pedido['estado'],
-                'total' => (float) $pedido['total'],
-                'fecha_actualizacion' => $pedido['fecha_actualizacion'] ?? null,
-            ];
+            $resultado[] = $this->mapearPedido($pedido);
         }
-
         return $resultado;
+    }
+
+    private function mapearPedido(array $pedido): array
+    {
+        return [
+            'id_pedido' => (int) $pedido['id_pedido'],
+            'numero_pedido' => $pedido['numero_pedido'] ?? null,
+            'id_mesa' => $pedido['id_mesa'] !== null ? (int) $pedido['id_mesa'] : null,
+            'numero_mesa' => $pedido['numero_mesa'] ?? null,
+            'id_mesero' => $pedido['id_mesero'] !== null ? (int) $pedido['id_mesero'] : null,
+            'nombre_usuario' => $pedido['nombre_usuario'] ?? null,
+            'email_usuario' => $pedido['email_usuario'] ?? null,
+            'id_zona_delivery' => $pedido['id_zona_delivery'] !== null ? (int) $pedido['id_zona_delivery'] : null,
+            'costo_envio' => (float) ($pedido['costo_envio'] ?? 0),
+            'id_repartidor' => $pedido['id_repartidor'] !== null ? (int) $pedido['id_repartidor'] : null,
+            'fecha_pedido' => $pedido['fecha_pedido'] ?? null,
+            'estado' => $pedido['estado'],
+            'total' => (float) $pedido['total'],
+            'seña' => (float) ($pedido['seña'] ?? 0),
+            'estado_seña' => $pedido['estado_seña'] ?? 'pendiente',
+            'saldo_pendiente' => (float) ($pedido['saldo_pendiente'] ?? 0),
+            'tipo_pedido' => $pedido['tipo_pedido'],
+            'fecha_actualizacion' => $pedido['fecha_actualizacion'] ?? null,
+        ];
     }
 }

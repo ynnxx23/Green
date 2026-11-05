@@ -1,18 +1,9 @@
 RewriteEngine On
 
-# Servir index.html explícitamente en la raíz
-DirectoryIndex index.html index.php
-RewriteRule ^$ index.html [L]
+# Si el archivo o directorio existe físicamente, servirlo directamente
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Si el archivo o directorio existe, servirlo directamente
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
-# Enviar rutas de API a index.php (front controller del backend)
-RewriteCond %{REQUEST_URI} ^/api/
+# Todo lo demás se envía al front controller index.php
 RewriteRule ^ index.php [QSA,L]
-
-# El resto (rutas del frontend HTML) servir directamente o index.html
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.html [QSA,L]

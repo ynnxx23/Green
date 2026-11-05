@@ -6,6 +6,7 @@ namespace Restaurante;
 
 use Restaurante\Config\Config;
 use Restaurante\Database\Conexion;
+use Restaurante\Logger;
 use Restaurante\Dao\AreaDao;
 use Restaurante\Dao\BloqueMesaDao;
 use Restaurante\Dao\DetallePedidoDao;
@@ -75,6 +76,9 @@ if (is_file($envFile)) {
     }
 }
 
+$logDir = $_ENV['LOG_DIR'] ?? __DIR__ . '/../logs';
+Logger::init($logDir);
+
 ConfiguracionSesion::aplicar();
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -115,12 +119,12 @@ $servicioDeBloques = new ServicioDeBloques($bloqueDao);
 $authMiddleware = new AuthMiddleware($auth);
 $rateLimiter = new RateLimiterMiddleware();
 
-$authController = new AuthController($auth, $authMiddleware, $rateLimiter);
+$authController = new AuthController($auth, $authMiddleware, $rateLimiter, $usuarioDao);
 $areaController = new AreaController($servicioDeMesas);
 $mesaController = new MesaController($servicioDeMesas, $servicioDeDisponibilidad);
 $reservaController = new ReservaController($servicioDeReservas, $authMiddleware);
-$pedidoController = new PedidoController($servicioDePedidos, $authMiddleware);
-$productoController = new ProductoController($servicioDeProductos, $cloudinary, $authMiddleware);
+$pedidoController = new PedidoController($authMiddleware);
+$productoController = new ProductoController($servicioDeProductos);
 $usuarioAdminController = new UsuarioAdminController($usuarioDao, $authMiddleware, $auth);
 $areaAdminController = new AreaAdminController($areaDao, $authMiddleware);
 $mesaAdminController = new MesaAdminController($mesaDao, $authMiddleware);
@@ -144,6 +148,12 @@ try {
 
     switch (true) {
         case $uri === '/':
+            $htmlFile = __DIR__ . '/index.html';
+            if ($metodo === 'GET' && is_file($htmlFile)) {
+                http_response_code(200);
+                echo file_get_contents($htmlFile);
+                exit;
+            }
             $respuesta = [
                 'exito' => true,
                 'aplicacion' => 'Sistema de gestión de un restaurante',
@@ -520,6 +530,11 @@ try {
             $ruta_interna = ltrim(substr($uri, strlen('/api/productos')), '/');
             $cuerpo = leerCuerpoJson();
 
+            // Rutas de escritura requieren autenticación (encargado/administrador)
+            if (in_array($metodo, ['POST', 'PUT', 'DELETE'], true)) {
+                $authMiddleware->requiereMeseroOAdministrador();
+            }
+
             if ($metodo === 'PUT' || $metodo === 'DELETE') {
                 $_REQUEST = array_merge($_REQUEST, $cuerpo);
             }
@@ -890,6 +905,7 @@ try {
     if ($codigo_http < 400 || $codigo_http >= 600) {
         $codigo_http = 500;
     }
+    Logger::error($e->getMessage(), ['codigo' => $codigo_http, 'trace' => $e->getTraceAsString()]);
     http_response_code($codigo_http);
     $respuesta = [
         'exito' => false,
@@ -898,6 +914,7 @@ try {
         'codigo' => $codigo_http,
     ];
 } catch (\Throwable $e) {
+    Logger::error($e->getMessage(), ['tipo' => get_class($e), 'trace' => $e->getTraceAsString()]);
     http_response_code(500);
     $respuesta = [
         'exito' => false,
@@ -1996,6 +2013,509 @@ function manejarSubidaImagen(array $cuerpo, AuthMiddleware $authMiddleware): arr
         'mensaje' => 'Imagen subida correctamente.',
         'codigo' => 200,
     ];
+}
+
+// -------------------------------------------------------------------------
+// RF-84: Estado de entrega de delivery
+// -------------------------------------------------------------------------
+function manejarEstadoEntrega(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_pedido = (int) $c[1];
+        $estado = $cuerpo['estado'] ?? null;
+        if (!in_array($estado, ['pendiente','en_camino','entregado','fallido'], true)) {
+            return errorJson('Estado inválido. Use: pendiente, en_camino, entregado o fallido.', 400);
+        }
+        $stmt = $pdo->prepare('UPDATE pedidos SET estado_entrega = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_pedido = ?');
+        $stmt->execute([$estado, $id_pedido]);
+        if ($stmt->rowCount() === 0) {
+            return errorJson('Pedido no encontrado.', 404);
+        }
+        $stmtHist = $pdo->prepare('INSERT INTO historial_movimientos (tabla_afectada, id_registro, accion, detalles, id_usuario, direccion_ip) VALUES (:ta, :ir, :ac, :de, :iu, :ip)');
+        $stmtHist->execute([
+            ':ta' => 'pedidos',
+            ':ir' => $id_pedido,
+            ':ac' => 'CAMBIO_ESTADO_ENTREGA',
+            ':de' => json_encode(['id_pedido' => $id_pedido, 'estado_entrega' => $estado], JSON_UNESCAPED_UNICODE),
+            ':iu' => ServicioDeAutenticacion::idUsuarioAutenticado(),
+            ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
+        return ['exito' => true, 'mensaje' => 'Estado de entrega actualizado.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de estado de entrega no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-87: Cierre de caja diario
+// -------------------------------------------------------------------------
+function manejarCierreCaja(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if ($ruta === '' && $metodo === 'GET') {
+        $fecha = $query['fecha'] ?? date('Y-m-d');
+        $stmt = $pdo->prepare('SELECT * FROM cierre_caja WHERE fecha = ?');
+        $stmt->execute([$fecha]);
+        $cierre = $stmt->fetch();
+        if (!$cierre) {
+            return ['exito' => true, 'datos' => null, 'mensaje' => 'No hay cierre de caja para esa fecha.', 'codigo' => 200];
+        }
+        return ['exito' => true, 'datos' => $cierre, 'mensaje' => 'Cierre de caja obtenido.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $fecha = $cuerpo['fecha'] ?? date('Y-m-d');
+        $monto_apertura = isset($cuerpo['monto_apertura']) ? (float) $cuerpo['monto_apertura'] : 0.00;
+        $observaciones = $cuerpo['observaciones'] ?? null;
+        $stmt = $pdo->prepare('INSERT INTO cierre_caja (fecha, apertura_por, monto_apertura, estado, fecha_apertura, observaciones) VALUES (:f, :u, :ma, "abierto", CURRENT_TIMESTAMP, :o) ON DUPLICATE KEY UPDATE monto_apertura = VALUES(monto_apertura), observaciones = VALUES(observaciones)');
+        $stmt->execute([':f' => $fecha, ':u' => $id_usuario, ':ma' => $monto_apertura, ':o' => $observaciones]);
+        return ['exito' => true, 'mensaje' => 'Caja abierta para el día.', 'codigo' => 200];
+    }
+
+    if (preg_match('/^(\d+)\/cerrar$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_cierre = (int) $c[1];
+        $monto_cierre = isset($cuerpo['monto_cierre']) ? (float) $cuerpo['monto_cierre'] : 0.00;
+        $efectivo = isset($cuerpo['efectivo']) ? (float) $cuerpo['efectivo'] : 0.00;
+        $tarjeta = isset($cuerpo['tarjeta']) ? (float) $cuerpo['tarjeta'] : 0.00;
+        $transferencia = isset($cuerpo['transferencia']) ? (float) $cuerpo['transferencia'] : 0.00;
+        $observaciones = $cuerpo['observaciones'] ?? null;
+        $diferencia = $monto_cierre - ($efectivo + $tarjeta + $transferencia);
+        $stmt = $pdo->prepare('UPDATE cierre_caja SET monto_cierre = :mc, efectivo = :ef, tarjeta = :tj, transferencia = :tr, diferencia = :dif, estado = "cerrado", cierre_por = :cp, fecha_cierre = CURRENT_TIMESTAMP, observaciones = :o WHERE id_cierre = :id');
+        $stmt->execute([':mc' => $monto_cierre, ':ef' => $efectivo, ':tj' => $tarjeta, ':tr' => $transferencia, ':dif' => $diferencia, ':cp' => $id_usuario, ':o' => $observaciones, ':id' => $id_cierre]);
+        if ($stmt->rowCount() === 0) {
+            return errorJson('Cierre de caja no encontrado.', 404);
+        }
+        return ['exito' => true, 'mensaje' => 'Caja cerrada.', 'datos' => ['diferencia' => $diferencia], 'codigo' => 200];
+    }
+
+    if ($ruta === 'listar' && $metodo === 'GET') {
+        $fechaDesde = $query['fecha_desde'] ?? '';
+        $fechaHasta = $query['fecha_hasta'] ?? '';
+        $sql = 'SELECT c.*, u.nombre AS nombre_usuario FROM cierre_caja c LEFT JOIN usuarios u ON u.id_usuario = c.apertura_por WHERE 1=1';
+        $params = [];
+        if ($fechaDesde !== '') { $sql .= ' AND c.fecha >= :fd'; $params[':fd'] = $fechaDesde; }
+        if ($fechaHasta !== '') { $sql .= ' AND c.fecha <= :fh'; $params[':fh'] = $fechaHasta; }
+        $sql .= ' ORDER BY c.fecha DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Cierres de caja obtenidos.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de cierre de caja no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-89: Platos favoritos del cliente
+// -------------------------------------------------------------------------
+function manejarFavoritos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereAutenticacion();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->prepare('SELECT pf.id_favorito, pf.id_producto, p.nombre, p.categoria, p.precio, pf.fecha_agregado FROM platos_favoritos pf JOIN productos p ON p.id_producto = pf.id_producto WHERE pf.id_usuario = ? ORDER BY pf.fecha_agregado DESC');
+        $stmt->execute([$id_usuario]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Platos favoritos obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $id_producto = isset($cuerpo['id_producto']) ? (int) $cuerpo['id_producto'] : 0;
+        if ($id_producto <= 0) {
+            return errorJson('id_producto requerido.', 400);
+        }
+        try {
+            $pdo->prepare('INSERT IGNORE INTO platos_favoritos (id_usuario, id_producto) VALUES (:iu, :ip)')->execute([':iu' => $id_usuario, ':ip' => $id_producto]);
+            return ['exito' => true, 'mensaje' => 'Plato agregado a favoritos.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al agregar favorito.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_producto = (int) $c[1];
+        $stmt = $pdo->prepare('DELETE FROM platos_favoritos WHERE id_usuario = ? AND id_producto = ?');
+        $stmt->execute([$id_usuario, $id_producto]);
+        return ['exito' => true, 'mensaje' => 'Plato removido de favoritos.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de favoritos no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-93: Reservas recurrentes
+// -------------------------------------------------------------------------
+function manejarReservasRecurrentes(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereAutenticacion();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->prepare('SELECT rr.*, m.numero_mesa FROM reservas_recurrentes rr LEFT JOIN mesas m ON m.id_mesa = rr.id_mesa WHERE rr.id_usuario = ? AND rr.activa = 1 ORDER BY rr.dia_semana, rr.hora_inicio');
+        $stmt->execute([$id_usuario]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Reservas recurrentes obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $id_mesa = isset($cuerpo['id_mesa']) ? (int) $cuerpo['id_mesa'] : null;
+        $dia_semana = isset($cuerpo['dia_semana']) ? (int) $cuerpo['dia_semana'] : null;
+        $hora_inicio = $cuerpo['hora_inicio'] ?? '';
+        $hora_fin = $cuerpo['hora_fin'] ?? '';
+        $cantidad_personas = isset($cuerpo['cantidad_personas']) ? (int) $cuerpo['cantidad_personas'] : 1;
+        $fecha_inicio = $cuerpo['fecha_inicio'] ?? '';
+        $fecha_fin = $cuerpo['fecha_fin'] ?? null;
+        if ($dia_semana === null || $hora_inicio === '' || $hora_fin === '' || $fecha_inicio === '') {
+            return errorJson('Faltan datos: dia_semana, hora_inicio, hora_fin, fecha_inicio.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('INSERT INTO reservas_recurrentes (id_usuario, id_mesa, dia_semana, hora_inicio, hora_fin, cantidad_personas, fecha_inicio, fecha_fin, activa) VALUES (:iu, :im, :ds, :hi, :hf, :cp, :fi, :ff, 1)');
+            $stmt->execute([':iu' => $id_usuario, ':im' => $id_mesa, ':ds' => $dia_semana, ':hi' => $hora_inicio, ':hf' => $hora_fin, ':cp' => $cantidad_personas, ':fi' => $fecha_inicio, ':ff' => $fecha_fin]);
+            return ['exito' => true, 'mensaje' => 'Reserva recurrente creada.', 'codigo' => 200, 'datos' => ['id_reserva_recurrente' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear reserva recurrente.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_reserva_recurrente = (int) $c[1];
+        $campos = [];
+        $params = [];
+        foreach (['id_mesa','dia_semana','hora_inicio','hora_fin','cantidad_personas','fecha_inicio','fecha_fin','activa'] as $campo) {
+            if (isset($cuerpo[$campo])) {
+                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
+                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
+            }
+        }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_reserva_recurrente;
+        try {
+            $stmt = $pdo->prepare('UPDATE reservas_recurrentes SET ' . implode(', ', $campos) . ' WHERE id_reserva_recurrente = :id AND id_usuario = :iu');
+            $params[':iu'] = $id_usuario;
+            $stmt->execute($params);
+            if ($stmt->rowCount() === 0) {
+                return errorJson('Reserva recurrente no encontrada.', 404);
+            }
+            return ['exito' => true, 'mensaje' => 'Reserva recurrente actualizada.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al actualizar reserva recurrente.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_reserva_recurrente = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE reservas_recurrentes SET activa = 0 WHERE id_reserva_recurrente = ? AND id_usuario = ?');
+        $stmt->execute([$id_reserva_recurrente, $id_usuario]);
+        return ['exito' => true, 'mensaje' => 'Reserva recurrente desactivada.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de reservas recurrentes no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-94 a RF-96: Notificaciones
+// -------------------------------------------------------------------------
+function manejarNotificaciones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
+{
+    $authMiddleware->requiereAutenticacion();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+    $esAdmin = ServicioDeAutenticacion::esAdministrador();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $sql = 'SELECT * FROM notificaciones WHERE id_usuario = ?';
+        $params = [$id_usuario];
+        if (!$esAdmin && isset($query['solo_no_leidas']) && $query['solo_no_leidas'] === '1') {
+            $sql .= ' AND estado IN ("pendiente","enviado")';
+        }
+        $sql .= ' ORDER BY fecha_creacion DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Notificaciones obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $tipo = $cuerpo['tipo'] ?? 'sistema';
+        $canal = $cuerpo['canal'] ?? 'push';
+        $asunto = $cuerpo['asunto'] ?? '';
+        $mensaje = $cuerpo['mensaje'] ?? null;
+        if ($asunto === '') {
+            return errorJson('Se requiere asunto.', 400);
+        }
+        if (!in_array($tipo, ['reserva','pedido','pago','sistema'], true)) {
+            return errorJson('Tipo inválido.', 400);
+        }
+        if (!in_array($canal, ['whatsapp','email','push'], true)) {
+            return errorJson('Canal inválido.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('INSERT INTO notificaciones (id_usuario, tipo, canal, asunto, mensaje, estado) VALUES (:iu, :t, :c, :a, :m, "pendiente")');
+            $stmt->execute([':iu' => $id_usuario, ':t' => $tipo, ':c' => $canal, ':a' => $asunto, ':m' => $mensaje]);
+            return ['exito' => true, 'mensaje' => 'Notificación registrada (pendiente de envío).', 'codigo' => 200, 'datos' => ['id_notificacion' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al registrar notificación.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)\/leer$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_notificacion = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE notificaciones SET estado = "leido", fecha_lectura = CURRENT_TIMESTAMP WHERE id_notificacion = ? AND id_usuario = ?');
+        $stmt->execute([$id_notificacion, $id_usuario]);
+        return ['exito' => true, 'mensaje' => 'Notificación marcada como leída.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de notificaciones no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-97 a RF-100: Reportes avanzados
+// -------------------------------------------------------------------------
+function manejarReportesAvanzados(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereAdministrador();
+    $pdo = Conexion::obtener();
+    $fechaDesde = $query['fecha_desde'] ?? date('Y-m-01');
+    $fechaHasta = $query['fecha_hasta'] ?? date('Y-m-t');
+
+    if ($ruta === 'ventas-mensuales' && $metodo === 'GET') {
+        $sql = 'SELECT DATE_FORMAT(p.fecha_pedido, "%Y-%m") AS mes, SUM(p.total) AS total_ventas, COUNT(*) AS cantidad_pedidos FROM pedidos p WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY mes ORDER BY mes';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas mensuales obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === 'rentabilidad-platos' && $metodo === 'GET') {
+        $sql = 'SELECT pr.id_producto, pr.nombre, pr.categoria, pr.precio, SUM(dp.cantidad) AS cantidad_vendida, SUM(dp.cantidad * dp.precio_unitario) AS ingresos_totales FROM detalle_pedidos dp JOIN pedidos p ON p.id_pedido = dp.id_pedido JOIN productos pr ON pr.id_producto = dp.id_producto WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY pr.id_producto, pr.nombre, pr.categoria, pr.precio ORDER BY ingresos_totales DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Rentabilidad por plato obtenida.', 'codigo' => 200];
+    }
+
+    if ($ruta === 'desempeño-meseros' && $metodo === 'GET') {
+        $sql = 'SELECT u.id_usuario, u.nombre, COUNT(p.id_pedido) AS pedidos_atendidos, SUM(p.total) AS ventas_totales FROM pedidos p JOIN usuarios u ON u.id_usuario = p.id_mesero WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY u.id_usuario, u.nombre ORDER BY ventas_totales DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Desempeño de meseros obtenido.', 'codigo' => 200];
+    }
+
+    if ($ruta === 'horarios-pico' && $metodo === 'GET') {
+        $sql = 'SELECT HOUR(p.fecha_pedido) AS hora, COUNT(*) AS cantidad_pedidos, SUM(p.total) AS total_ventas FROM pedidos p WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY hora ORDER BY cantidad_pedidos DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Horarios pico obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === 'ocupacion-mesas' && $metodo === 'GET') {
+        $sql = 'SELECT DATE(r.fecha_reserva) AS fecha, COUNT(*) AS cantidad_reservas, COUNT(DISTINCT r.id_mesa) AS mesas_usadas FROM reservas r WHERE r.estado IN ("confirmada","completada") AND r.fecha_reserva BETWEEN :fd AND :fh GROUP BY fecha ORDER BY fecha';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ocupación de mesas obtenida.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de reporte avanzado no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-102: Sucursales múltiples
+// -------------------------------------------------------------------------
+function manejarSucursales(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereAdministrador();
+    $pdo = Conexion::obtener();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT * FROM sucursales ORDER BY nombre');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Sucursales obtenidas.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $nombre = $cuerpo['nombre'] ?? '';
+        $direccion = $cuerpo['direccion'] ?? null;
+        $telefono = $cuerpo['telefono'] ?? null;
+        $email = $cuerpo['email'] ?? null;
+        if ($nombre === '') {
+            return errorJson('Se requiere el nombre de la sucursal.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('INSERT INTO sucursales (nombre, direccion, telefono, email, activa) VALUES (:n, :d, :t, :e, 1)');
+            $stmt->execute([':n' => $nombre, ':d' => $direccion, ':t' => $telefono, ':e' => $email]);
+            return ['exito' => true, 'mensaje' => 'Sucursal creada.', 'codigo' => 200, 'datos' => ['id_sucursal' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear sucursal.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_sucursal = (int) $c[1];
+        $campos = [];
+        $params = [];
+        foreach (['nombre','direccion','telefono','email','activa'] as $campo) {
+            if (isset($cuerpo[$campo])) {
+                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
+                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
+            }
+        }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_sucursal;
+        $stmt = $pdo->prepare('UPDATE sucursales SET ' . implode(', ', $campos) . ' WHERE id_sucursal = :id');
+        $stmt->execute($params);
+        return ['exito' => true, 'mensaje' => 'Sucursal actualizada.', 'codigo' => 200];
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_sucursal = (int) $c[1];
+        $stmt = $pdo->prepare('UPDATE sucursales SET activa = 0 WHERE id_sucursal = ?');
+        $stmt->execute([$id_sucursal]);
+        return ['exito' => true, 'mensaje' => 'Sucursal desactivada.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de sucursales no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-103: Respaldos de base de datos
+// -------------------------------------------------------------------------
+function manejarRespaldos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereAdministrador();
+    $pdo = Conexion::obtener();
+    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT r.*, u.nombre AS nombre_usuario FROM respaldos_bd r LEFT JOIN usuarios u ON u.id_usuario = r.creado_por ORDER BY r.fecha_creacion DESC');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Respaldos obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $tipo = $cuerpo['tipo'] ?? 'manual';
+        if (!in_array($tipo, ['completo','parcial','programado','manual'], true)) {
+            return errorJson('Tipo inválido.', 400);
+        }
+        $nombreArchivo = 'backup_' . date('Ymd_His') . '.sql';
+        try {
+            $stmt = $pdo->prepare('INSERT INTO respaldos_bd (nombre_archivo, tipo, tamaño_bytes, creado_por, estado) VALUES (:n, :t, 0, :u, "exitoso")');
+            $stmt->execute([':n' => $nombreArchivo, ':t' => $tipo, ':u' => $id_usuario]);
+            return ['exito' => true, 'mensaje' => 'Respaldo registrado.', 'codigo' => 200, 'datos' => ['archivo' => $nombreArchivo, 'id_respaldo' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al registrar respaldo.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_respaldo = (int) $c[1];
+        $stmt = $pdo->prepare('DELETE FROM respaldos_bd WHERE id_respaldo = ?');
+        $stmt->execute([$id_respaldo]);
+        return ['exito' => true, 'mensaje' => 'Registro de respaldo eliminado.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de respaldos no encontrado.', 404);
+}
+
+// -------------------------------------------------------------------------
+// RF-105: Roles y permisos avanzados
+// -------------------------------------------------------------------------
+function manejarPermisos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereAdministrador();
+    $pdo = Conexion::obtener();
+
+    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
+        $stmt = $pdo->query('SELECT * FROM permisos ORDER BY modulo, nombre');
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Permisos obtenidos.', 'codigo' => 200];
+    }
+
+    if ($ruta === '' && $metodo === 'POST') {
+        $nombre = $cuerpo['nombre'] ?? '';
+        $codigo = $cuerpo['codigo'] ?? '';
+        $modulo = $cuerpo['modulo'] ?? '';
+        $descripcion = $cuerpo['descripcion'] ?? null;
+        if ($nombre === '' || $codigo === '' || $modulo === '') {
+            return errorJson('Se requieren nombre, código y módulo.', 400);
+        }
+        try {
+            $stmt = $pdo->prepare('INSERT INTO permisos (nombre, codigo, modulo, descripcion) VALUES (:n, :c, :m, :d)');
+            $stmt->execute([':n' => $nombre, ':c' => $codigo, ':m' => $modulo, ':d' => $descripcion]);
+            return ['exito' => true, 'mensaje' => 'Permiso creado.', 'codigo' => 200, 'datos' => ['id_permiso' => (int) $pdo->lastInsertId()]];
+        } catch (\PDOException $e) {
+            return errorJson('Error al crear permiso.', 500);
+        }
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
+        $id_permiso = (int) $c[1];
+        $campos = [];
+        $params = [];
+        foreach (['nombre','codigo','modulo','descripcion'] as $campo) {
+            if (isset($cuerpo[$campo])) {
+                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
+                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
+            }
+        }
+        if ($campos === []) {
+            return errorJson('No hay campos para actualizar.', 400);
+        }
+        $params[':id'] = $id_permiso;
+        $stmt = $pdo->prepare('UPDATE permisos SET ' . implode(', ', $campos) . ' WHERE id_permiso = :id');
+        $stmt->execute($params);
+        return ['exito' => true, 'mensaje' => 'Permiso actualizado.', 'codigo' => 200];
+    }
+
+    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
+        $id_permiso = (int) $c[1];
+        $stmt = $pdo->prepare('DELETE FROM permisos WHERE id_permiso = ?');
+        $stmt->execute([$id_permiso]);
+        return ['exito' => true, 'mensaje' => 'Permiso eliminado.', 'codigo' => 200];
+    }
+
+    // Asignar permiso a rol
+    if ($ruta === 'asignar' && $metodo === 'POST') {
+        $id_rol = isset($cuerpo['id_rol']) ? (int) $cuerpo['id_rol'] : 0;
+        $id_permiso = isset($cuerpo['id_permiso']) ? (int) $cuerpo['id_permiso'] : 0;
+        if ($id_rol <= 0 || $id_permiso <= 0) {
+            return errorJson('Se requieren id_rol e id_permiso.', 400);
+        }
+        try {
+            $pdo->prepare('INSERT IGNORE INTO roles_permisos (id_rol, id_permiso) VALUES (:r, :p)')->execute([':r' => $id_rol, ':p' => $id_permiso]);
+            return ['exito' => true, 'mensaje' => 'Permiso asignado al rol.', 'codigo' => 200];
+        } catch (\PDOException $e) {
+            return errorJson('Error al asignar permiso.', 500);
+        }
+    }
+
+    // Quitar permiso de rol
+    if ($ruta === 'desasignar' && $metodo === 'DELETE') {
+        $query_params = $query;
+        $id_rol = isset($query_params['id_rol']) ? (int) $query_params['id_rol'] : 0;
+        $id_permiso = isset($query_params['id_permiso']) ? (int) $query_params['id_permiso'] : 0;
+        if ($id_rol <= 0 || $id_permiso <= 0) {
+            return errorJson('Se requieren id_rol e id_permiso.', 400);
+        }
+        $pdo->prepare('DELETE FROM roles_permisos WHERE id_rol = ? AND id_permiso = ?')->execute([$id_rol, $id_permiso]);
+        return ['exito' => true, 'mensaje' => 'Permiso desasignado del rol.', 'codigo' => 200];
+    }
+
+    // Permisos de un rol
+    if ($ruta === 'rol-permisos' && $metodo === 'GET') {
+        $id_rol = isset($query['id_rol']) ? (int) $query['id_rol'] : 0;
+        if ($id_rol <= 0) {
+            return errorJson('Se requiere id_rol.', 400);
+        }
+        $stmt = $pdo->prepare('SELECT p.* FROM permisos p JOIN roles_permisos rp ON rp.id_permiso = p.id_permiso WHERE rp.id_rol = ? ORDER BY p.modulo, p.nombre');
+        $stmt->execute([$id_rol]);
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Permisos del rol obtenidos.', 'codigo' => 200];
+    }
+
+    return errorJson('Endpoint de permisos no encontrado.', 404);
 }
 
 function errorJson(string $mensaje, int $codigo): array

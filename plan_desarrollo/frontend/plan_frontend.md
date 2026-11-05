@@ -6,9 +6,15 @@ Sistema de gestión de un restaurante (frontend dinámico)
 
 ## 1. Estado actual
 
-El frontend **no está implementado**. El proyecto actualmente solo expone una API REST en JSON desde `public/index.php`. No hay pantallas visuales ni assets (CSS/JS) para usar el sistema desde el navegador.
+El frontend **está implementado** en `public/` con HTML5, CSS3 y JavaScript vanilla.
 
-Según la hoja de ruta (`documentacion_desarrollo/08_hoja_de_ruta.md`), esto corresponde a la **Fase F8 — Interfaz y frontend dinámico**, que depende de F3, F5, F6 y F7 (ya completadas en el backend).
+Páginas públicas: `index.html`, `carta.html`, `reservas.html`, `nosotros.html`, `contacto.html`, `login.html`, `registro.html`.
+
+Paneles autenticados: `panel.html`, `panel-cliente.html`, `panel-encargado.html`, `panel-admin.html`, `panel-reportes.html`, `gestion-productos.html`, `subir_imagenes.html`.
+
+Assets: `assets/css/` (design-tokens, componentes, main), `assets/js/` (api, auth, reservas, ui, app, vistas), `assets/icons/` (logo, plato, sprite.svg), `assets/img/platos/`.
+
+Diseño: neoclásico, colores verde bosque/salvia/dorado, tipografía Cinzel + Lato, responsive, accesible.
 
 ---
 
@@ -23,25 +29,44 @@ Según la hoja de ruta (`documentacion_desarrollo/08_hoja_de_ruta.md`), esto cor
 
 ---
 
-## 3. Estructura propuesta (pendiente de crear)
+## 3. Estructura actual (implementada)
 
 ```
 public/
-├── index.html               # Página de entrada (login)
+├── index.html               # Inicio público
+├── nosotros.html            # Nosotros
+├── carta.html               # Carta completa
+├── reservas.html            # Reservas públicas
+├── contacto.html            # Contacto
+├── login.html               # Login
+├── registro.html            # Registro
+├── panel.html               # Despachador por rol
+├── panel-cliente.html       # Panel cliente
+├── panel-encargado.html     # Panel encargado
+├── panel-admin.html         # Panel administrador
+├── panel-reportes.html      # Reportes admin
+├── gestion-productos.html   # Gestión productos
+├── subir_imagenes.html      # Subir imágenes
 ├── assets/
 │   ├── css/
-│   │   ├── design-tokens.css    # paleta, tipografía, espaciado
-│   │   ├── components.css       # botones, inputs, alertas, tarjetas
-│   │   └── layouts.css          # layouts responsive
+│   │   ├── design-tokens.css
+│   │   ├── componentes.css
+│   │   ├── components.css
+│   │   └── main.css
 │   ├── js/
-│   │   ├── api.js           # cliente fetch centralizado
-│   │   ├── auth.js          # login, registro, sesión
-│   │   ├── mesas.js         # consulta de áreas/mesas/disponibilidad
-│   │   ├── reservas.js      # crear, historial, cancelar reservas
-│   │   ├── pedidos.js       # registro y gestión de pedidos
-│   │   └── admin.js         # panel de administración
-│   └── img/
-└── views/                   # vistas HTML parciales (opcional)
+│   │   ├── api.js
+│   │   ├── auth.js
+│   │   ├── reservas.js
+│   │   ├── ui.js
+│   │   ├── app.js
+│   │   └── vistas.js
+│   ├── icons/
+│   │   ├── logo.png
+│   │   ├── plato.png
+│   │   ├── sprite.svg
+│   │   └── icons.css
+│   └── img/platos/          # imágenes de platos
+└── .htaccess                # mod_rewrite para front controller
 ```
 
 ---
@@ -81,10 +106,10 @@ public/
 
 ## 7. Archivos de referencia
 
-- `documentacion_desarrollo/04_diseno_y_accesibilidad.md` — Design tokens y accesibilidad.
-- `documentacion_desarrollo/08_hoja_de_ruta.md` — Fase F8 y criterios de completado.
-- `documentacion_desarrollo/02_stack_y_arquitectura.md` — Contratos frontend ↔ backend.
+- `documentacion/desarrollo/04_diseno_y_accesibilidad.md` — Design tokens y accesibilidad.
+- `documentacion/desarrollo/08_hoja_de_ruta.md` — Fase F8 y criterios de completado.
+- `documentacion/desarrollo/02_stack_y_arquitectura.md` — Contratos frontend ↔ backend.
 
 ---
 
-*Plan generado el 26/10/2026. Frontend pendiente de implementación.*
+*Plan generado el 26/10/2026. Frontend implementado.*

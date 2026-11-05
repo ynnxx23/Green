@@ -4,38 +4,46 @@ declare(strict_types=1);
 
 namespace Restaurante\Controller;
 
-use Restaurante\Middleware\AuthMiddleware;
-use Restaurante\Service\ServicioDeCloudinary;
 use Restaurante\Service\ServicioDeProductos;
 
 class ProductoController
 {
     private ServicioDeProductos $servicioDeProductos;
-    private ServicioDeCloudinary $cloudinary;
-    private AuthMiddleware $authMiddleware;
 
-    public function __construct(ServicioDeProductos $servicioDeProductos, ServicioDeCloudinary $cloudinary, AuthMiddleware $authMiddleware)
+    public function __construct(ServicioDeProductos $servicioDeProductos)
     {
         $this->servicioDeProductos = $servicioDeProductos;
-        $this->cloudinary = $cloudinary;
-        $this->authMiddleware = $authMiddleware;
     }
 
     public function manejar(string $ruta_interna, string $metodo): array
     {
-        // GET de listar productos es público (para carta.html y carta destacada)
-        if ($metodo === 'GET' && ($ruta_interna === '' || $ruta_interna === 'listar' || $ruta_interna === 'activos')) {
-            if ($ruta_interna === 'activos') {
-                return $this->listarActivos();
+        // GET público: listar productos para la carta
+        if ($metodo === 'GET') {
+            if ($ruta_interna === '' || $ruta_interna === 'listar' || $ruta_interna === 'activos') {
+                return $this->listarParaCarta();
             }
-            return $this->listarTodos();
+
+            if ($ruta_interna === 'categorias') {
+                return $this->listarCategorias();
+            }
+
+            if (preg_match('/^(\d+)$/', $ruta_interna, $c)) {
+                return $this->obtenerProducto((int) $c[1]);
+            }
+
+            if ($ruta_interna === 'buscar') {
+                return $this->buscar();
+            }
         }
 
-        // El resto de operaciones requieren autenticación
-        $this->authMiddleware->requiereMeseroOAdministrador();
+        // El resto requiere autenticación (encargado/administrador)
+        // Nota: el middleware se aplica en el router (index.php) para estas rutas
+        if ($metodo === 'POST' && ($ruta_interna === '' || $ruta_interna === 'listar')) {
+            return $this->crearProducto();
+        }
 
-        if (preg_match('/^(\d+)$/', $ruta_interna, $coincidencias)) {
-            $id_producto = (int) $coincidencias[1];
+        if (preg_match('/^(\d+)$/', $ruta_interna, $c)) {
+            $id_producto = (int) $c[1];
 
             if ($metodo === 'PUT') {
                 return $this->editarProducto($id_producto);
@@ -48,33 +56,80 @@ class ProductoController
             if ($metodo === 'PUT' && str_ends_with($ruta_interna, '/activar')) {
                 return $this->activarProducto($id_producto);
             }
+
+            if ($metodo === 'PUT' && str_ends_with($ruta_interna, '/stock')) {
+                return $this->actualizarStock($id_producto);
+            }
         }
 
         return $this->error('Endpoint no encontrado.', 404);
     }
 
-    private function listarActivos(): array
+    // ========================================================================
+    // CARTA PÚBLICA
+    // ========================================================================
+    private function listarParaCarta(): array
     {
-        $productos = $this->servicioDeProductos->listarActivos();
+        $categoria = $_GET['categoria'] ?? null;
+        $busqueda = $_GET['q'] ?? null;
+
+        $productos = $this->servicioDeProductos->listarParaCarta($categoria, $busqueda);
 
         return [
             'exito' => true,
-            'datos' => $this->mapearProductos($productos),
-            'mensaje' => 'Productos activos obtenidos correctamente.',
+            'datos' => $productos,
+            'total' => count($productos),
+            'mensaje' => 'Productos de la carta obtenidos correctamente.',
         ];
     }
 
-    private function listarTodos(): array
+    private function listarCategorias(): array
     {
-        $productos = $this->servicioDeProductos->listarTodos();
+        $categorias = $this->servicioDeProductos->listarCategorias();
 
         return [
             'exito' => true,
-            'datos' => $this->mapearProductos($productos),
-            'mensaje' => 'Todos los productos obtenidos correctamente.',
+            'datos' => $categorias,
+            'mensaje' => 'Categorías obtenidas correctamente.',
         ];
     }
 
+    private function obtenerProducto(int $id_producto): array
+    {
+        $producto = $this->servicioDeProductos->obtenerProducto($id_producto);
+
+        if ($producto === null) {
+            return $this->error('Producto no encontrado.', 404);
+        }
+
+        return [
+            'exito' => true,
+            'datos' => $producto,
+            'mensaje' => 'Producto obtenido correctamente.',
+        ];
+    }
+
+    private function buscar(): array
+    {
+        $q = $_GET['q'] ?? '';
+
+        if ($q === '') {
+            return $this->error('Se requiere el parámetro de búsqueda q.', 400);
+        }
+
+        $productos = $this->servicioDeProductos->listarParaCarta(null, $q);
+
+        return [
+            'exito' => true,
+            'datos' => $productos,
+            'total' => count($productos),
+            'mensaje' => 'Resultados de búsqueda obtenidos.',
+        ];
+    }
+
+    // ========================================================================
+    // CRUD ADMIN
+    // ========================================================================
     private function crearProducto(): array
     {
         $entrada = $this->leerEntrada();
@@ -82,28 +137,14 @@ class ProductoController
         $nombre = $entrada['nombre'] ?? '';
         $precio = (float) ($entrada['precio'] ?? 0);
         $categoria = $entrada['categoria'] ?? null;
+        $imagen_url = $entrada['imagen_url'] ?? null;
 
         if ($nombre === '') {
             return $this->error('El nombre es obligatorio.', 400);
         }
 
-        $imagen_url = $entrada['imagen_url'] ?? null;
-        $imagen_public_id = $entrada['imagen_public_id'] ?? null;
-
-        // Si viene archivo adjunto, subir a Cloudinary primero.
-        if (!empty($_FILES['imagen']['tmp_name'])) {
-            $subida = $this->cloudinary->subirImagen($_FILES['imagen']['tmp_name'], $_FILES['imagen']['name']);
-
-            if (!$subida['exito']) {
-                return $this->error($subida['mensaje'] ?? 'Error al subir la imagen.', 400);
-            }
-
-            $imagen_url = $subida['url'];
-            $imagen_public_id = $subida['public_id'];
-        }
-
         try {
-            $id_producto = $this->servicioDeProductos->crearProducto($nombre, $precio, $categoria, $imagen_url, $imagen_public_id);
+            $id_producto = $this->servicioDeProductos->crearProducto($nombre, $precio, $categoria, $imagen_url);
 
             return [
                 'exito' => true,
@@ -124,34 +165,14 @@ class ProductoController
         $nombre = $entrada['nombre'] ?? '';
         $precio = (float) ($entrada['precio'] ?? 0);
         $categoria = $entrada['categoria'] ?? null;
+        $imagen_url = $entrada['imagen_url'] ?? null;
 
         if ($nombre === '') {
             return $this->error('El nombre es obligatorio.', 400);
         }
 
-        $imagen_url = $entrada['imagen_url'] ?? null;
-        $imagen_public_id = $entrada['imagen_public_id'] ?? null;
-
-        // Si se quiere quitar la imagen, enviar imagen_public_id vacío o eliminar_imagen=1
-        $quitarImagen = isset($entrada['eliminar_imagen']) && $entrada['eliminar_imagen'] === '1';
-
-        // Si viene archivo adjunto, subir a Cloudinary primero.
-        if (!empty($_FILES['imagen']['tmp_name'])) {
-            $subida = $this->cloudinary->subirImagen($_FILES['imagen']['tmp_name'], $_FILES['imagen']['name']);
-
-            if (!$subida['exito']) {
-                return $this->error($subida['mensaje'] ?? 'Error al subir la imagen.', 400);
-            }
-
-            $imagen_url = $subida['url'];
-            $imagen_public_id = $subida['public_id'];
-        } elseif ($quitarImagen) {
-            $imagen_url = null;
-            $imagen_public_id = null;
-        }
-
         try {
-            $resultado = $this->servicioDeProductos->editarProducto($id_producto, $nombre, $precio, $categoria, $imagen_url, $imagen_public_id);
+            $resultado = $this->servicioDeProductos->editarProducto($id_producto, $nombre, $precio, $categoria, $imagen_url);
 
             if (!$resultado) {
                 return $this->error('El producto no existe.', 404);
@@ -208,6 +229,34 @@ class ProductoController
         }
     }
 
+    private function actualizarStock(int $id_producto): array
+    {
+        $entrada = $this->leerCuerpoJson();
+
+        $stock_actual = isset($entrada['stock_actual']) ? (int) $entrada['stock_actual'] : 0;
+        $limite_venta = isset($entrada['limite_venta']) ? (int) $entrada['limite_venta'] : 0;
+
+        try {
+            $resultado = $this->servicioDeProductos->actualizarStock($id_producto, $stock_actual, $limite_venta);
+
+            if (!$resultado) {
+                return $this->error('El producto no existe.', 404);
+            }
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Stock actualizado correctamente.',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 400);
+        } catch (\PDOException $e) {
+            return $this->error('Error al actualizar el stock.', 500);
+        }
+    }
+
+    // ========================================================================
+    // HELPERS
+    // ========================================================================
     private function leerCuerpoJson(): array
     {
         $cuerpo = file_get_contents('php://input');
@@ -216,21 +265,14 @@ class ProductoController
         return is_array($datos) ? $datos : [];
     }
 
-    /**
-     * Lee datos del cuerpo. Soporta application/json y multipart/form-data.
-     */
     private function leerEntrada(): array
     {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
         if (str_starts_with($contentType, 'multipart/form-data')) {
-            $datos = array_merge($_POST, [
+            return array_merge($_POST, [
                 'imagen_url' => $_POST['imagen_url'] ?? null,
-                'imagen_public_id' => $_POST['imagen_public_id'] ?? null,
-                'eliminar_imagen' => $_POST['eliminar_imagen'] ?? null,
             ]);
-
-            return $datos;
         }
 
         return $this->leerCuerpoJson();
@@ -246,24 +288,5 @@ class ProductoController
             'mensaje' => $mensaje,
             'codigo' => $codigo_http,
         ];
-    }
-
-    private function mapearProductos(array $productos): array
-    {
-        $resultado = [];
-        foreach ($productos as $producto) {
-            $resultado[] = [
-                'id_producto' => $producto->id_producto,
-                'nombre' => $producto->nombre,
-                'categoria' => $producto->categoria,
-                'precio' => $producto->precio,
-                'activo' => $producto->activo,
-                'fecha_creacion' => $producto->fecha_creacion,
-                'imagen_url' => $producto->imagen_url,
-                'imagen_public_id' => $producto->imagen_public_id,
-            ];
-        }
-
-        return $resultado;
     }
 }

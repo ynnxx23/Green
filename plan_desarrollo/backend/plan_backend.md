@@ -8,8 +8,9 @@ Sistema de gestión de un restaurante (API REST en PHP puro)
 
 El backend es una **API REST completa** construida en PHP 8.2+ sin frameworks, siguiendo arquitectura en capas (Controlador → Servicio → Validador → DAO → Modelo) y acceso a datos mediante PDO con consultas preparadas.
 
-Estado actual: **fases F1 a F7 implementadas y funcionando en XAMPP**.
-Faltan: **F8 (frontend dinámico)** y **F9 (pruebas, CI/CD, ajuste fino)** — estas pertenecen al plan de frontend y pruebas, no al backend core.
+Estado actual: **fases F1 a F15 implementadas y funcionando en XAMPP**.
+Backend completo: autenticación, mesas, reservas, pedidos, productos, áreas, horarios, bloques, stock, menú semanal, delivery, zonas, repartidores, cupones, calificaciones, preferencias, fidelidad, configuración, límite pedidos sin reserva, historial, reportes, cierre de caja, estado de entrega, platos favoritos, reservas recurrentes, notificaciones, reportes avanzados, sucursales, respaldos, roles y permisos avanzados.
+Faltan: **F8 (frontend dinámico ya existe en public/)** y **F9 (pruebas, CI/CD, ajuste fino)** — pendiente de completar.
 
 ---
 
@@ -125,7 +126,21 @@ src/
 migrations/
 ├── 001_create_schema.sql
 ├── 002_migraciones_control.sql
-└── 003_datos_iniciales.sql
+├── 003_datos_iniciales.sql
+├── 004_stock_y_disponibilidad.sql
+├── 005_pedidos_y_senas.sql
+├── 006_historial_y_reportes.sql
+├── 007_datos_prueba.sql
+├── 008_recuperar_contrasena_y_perfil.sql
+├── 009_configuracion_y_limites_pedidos.sql
+├── 010_cupones_descuento.sql
+├── 011_calificaciones_preferencias_fidelidad.sql
+├── 012_delivery_repartidores.sql
+├── 013_rf_pendientes.sql
+├── 014_cloudinary_imagenes_productos.sql
+├── 015_datos_prueba_completos.sql
+├── 016_datos_finales.sql
+└── 017_reparacion_productos.sql
 
 .env               # local, gitignored, valores reales (XAMPP)
 .env.example       # versionado, sin secretos
@@ -137,13 +152,14 @@ migrations/
 
 | Fase | Nombre | Estado | Qué se implementó |
 |------|--------|--------|-------------------|
-| F1 | Estructura base y configuración | ✅ Hecha | Carpetas, `.env.example`, `.env`, `Config.php`, `Conexion.php`, `Dockerfile`, `docker-compose.yml` |
-| F2 | Modelo de datos y migraciones | ✅ Hecha | 14 tablas, tabla de control `migraciones_aplicadas`, roles y admin inicial |
-| F3 | Autenticación y sesiones | ✅ Hecha | Registro con bcrypt, login/logout, sesión segura, rate limiting en login, `AuthMiddleware`, `IntentosLoginDao` |
+| F1 | Estructura base y configuración | ✅ Hecha | Carpetas, `.env.example`, `.env`, `Config.php`, `Conexion.php`, `Dockerfile`, `docker-compose.yml`, `.htaccess`, `Logger` |
+| F2 | Modelo de datos y migraciones | ✅ Hecha | 18 migraciones (001 → 018), tabla de control `migraciones_aplicadas`, roles y admin inicial, tablas RF pendientes (013), columnas saldo_pendiente y numero_pedido (018) |
+| F3 | Autenticación y sesiones | ✅ Rehecho | Registro con bcrypt (cost 12, validación mayúscula/número), login con bloqueo por intentos fallidos, sesión segura (HttpOnly, Secure, SameSite=Lax, 4h), `AuthMiddleware`, `IntentosLoginDao`, recuperación de contraseña, perfil, cambio de contraseña, validación de sesión expirada |
 | F4 | Áreas, mesas y disponibilidad | ✅ Hecha | Listar áreas, mesas por área, cálculo de disponibilidad respetando horarios, reservas y bloques |
-| F5 | Reservas | ✅ Hecha | Crear con transacción + `FOR UPDATE`, listar propias, cancelar, estados y transiciones, prevención de solapamiento |
-| F6 | Pedidos y productos | ✅ Hecha | Crear pedido asociado a mesa y mesero, listar pedidos, cambiar estado, CRUD productos (admin) |
+| F5 | Reservas | ✅ Hecha | Crear con transacción + `FOR UPDATE`, listar propias, cancelar, estados y transiciones, prevención de solapamiento, detalle de reserva |
+| F6 | Pedidos y productos | ✅ Rehecho | Pedidos con seña 50% automática, número de pedido (PED-YYYYMMDD-XXXX), saldo pendiente, delivery con zonas y costo de envío, validación de stock y límite de venta, descuento automático de stock, historial, estados de pedido |
 | F7 | Administración y autorización | ✅ Hecha | Middleware de roles, CRUD admin (usuarios, áreas, mesas, productos, horarios, bloques), 403 para roles no autorizados |
+| F8-F15 | Funcionalidades avanzadas (RF-68 a RF-105) | ✅ Hecha | Stock, menú semanal, delivery, zonas, repartidores, cupones, calificaciones, preferencias, fidelidad, reservas recurrentes, cierre de caja, estado de entrega, platos favoritos, notificaciones, reportes avanzados, sucursales, respaldos, roles y permisos granulares, subir imágenes, logging |
 
 ---
 
@@ -173,15 +189,41 @@ migrations/
 ### Pedidos (autenticado por rol)
 | Método | Ruta | Descripción | Acceso |
 |--------|------|-------------|--------|
-| POST | `/api/pedidos` | Registrar pedido | Mesero |
-| GET | `/api/pedidos` | Listar pedidos (propios o todos según rol) | Mesero/Cocinero/Admin |
-| PUT | `/api/pedidos/{id}/estado` | Cambiar estado de pedido | Mesero/Cocinero/Admin |
+| POST | `/api/pedidos` | Registrar pedido (seña 50% automática, número de pedido, saldo pendiente, delivery con zonas) | Autenticado |
+| GET | `/api/pedidos` | Listar pedidos (propios o todos según rol) | Autenticado |
+| GET | `/api/pedidos/mis-pedidos` | Pedidos propios del cliente | Autenticado (cliente) |
+| GET | `/api/pedidos/mis-pedidos-detalle` | Pedidos propios con detalle de items | Autenticado (cliente) |
+| GET | `/api/pedidos/{id}` | Detalle completo de un pedido con items | Autenticado |
+| GET | `/api/pedidos/estado/{estado}` | Pedidos filtrados por estado | Mesero/Admin |
+| POST | `/api/pedidos/{id}/estado` | Cambiar estado de pedido | Mesero/Admin |
+| POST | `/api/pedidos/{id}/seña` | Actualizar estado de seña y saldo pendiente | Mesero/Admin |
+| PUT | `/api/pedidos/{id}/entrega` | Cambiar estado de entrega (delivery) | Mesero/Admin |
 
-### Productos (admin)
+### Productos / Carta (público + admin)
 | Método | Ruta | Descripción | Acceso |
 |--------|------|-------------|--------|
-| GET | `/api/productos` | Listar productos | Público |
-| POST/PUT/DELETE | `/api/productos` | CRUD productos | Administrador |
+| GET | `/api/productos` | Listar productos para la carta (filtro: `?categoria=`, `?q=`) | Público |
+| GET | `/api/productos/categorias` | Listar categorías disponibles | Público |
+| GET | `/api/productos/{id}` | Detalle de producto con calificación promedio y stock | Público |
+| GET | `/api/productos/buscar?q=` | Buscar productos por nombre o categoría | Público |
+| POST | `/api/productos` | Crear producto | Mesero/Admin |
+| PUT | `/api/productos/{id}` | Editar producto | Mesero/Admin |
+| DELETE | `/api/productos/{id}` | Desactivar producto | Mesero/Admin |
+| PUT | `/api/productos/{id}/activar` | Activar producto | Mesero/Admin |
+| PUT | `/api/productos/{id}/stock` | Actualizar stock y límite de venta | Mesero/Admin |
+
+### Autenticación (público + autenticado)
+| Método | Ruta | Descripción | Acceso |
+|--------|------|-------------|--------|
+| POST | `/api/auth/login` | Iniciar sesión (sesión segura, cookies HttpOnly/Secure/SameSite) | Público |
+| POST | `/api/auth/registro` | Registrar cliente o encargado | Público |
+| POST | `/api/auth/logout` | Cerrar sesión | Autenticado |
+| GET | `/api/auth/sesion` | Verificar sesión activa | Autenticado |
+| GET | `/api/auth/perfil` | Obtener perfil del usuario autenticado | Autenticado |
+| PUT | `/api/auth/perfil` | Actualizar perfil (nombre, email, teléfono, avatar, etc.) | Autenticado |
+| PUT | `/api/auth/cambiar-contrasena` | Cambiar contraseña (requiere actual) | Autenticado |
+| POST | `/api/auth/recuperar` | Solicitar token de recuperación de contraseña | Público |
+| POST | `/api/auth/restablecer` | Restablecer contraseña con token | Público |
 
 ### Administración (solo `administrador`)
 | Método | Ruta | Descripción |
@@ -213,14 +255,17 @@ Se aplican en orden numérico, una sola vez por entorno:
 
 ## 8. Seguridad implementada
 
-- Contraseñas con `password_hash`/`password_verify` (bcrypt), nunca texto plano ni SHA-256.
+- Contraseñas con `password_hash`/`password_verify` (bcrypt, cost 12), nunca texto plano ni SHA-256.
+- Validación de contraseña: mínimo 8 caracteres, al menos una mayúscula y un número.
 - Consultas preparadas con PDO (previene inyección SQL).
-- Cookies de sesión `HttpOnly`, `SameSite=Lax`, `Secure=0` en HTTP local.
+- Cookies de sesión `HttpOnly`, `SameSite=Lax`, `Secure` (HTTPS), duración 4 horas.
+- Regeneración de ID de sesión tras login (`session_regenerate_id(true)`).
 - Middleware `AuthMiddleware` verifica sesión y rol en endpoints protegidos.
-- `RateLimiterMiddleware` (Token Bucket) limita peticiones en login.
+- `RateLimiterMiddleware` (Token Bucket) limita peticiones en login y recuperación.
 - `IntentosLoginDao` registra intentos fallidos y bloquea tras 5 fallos en 15 min.
-- Respuestas JSON estandarizadas sin revelar rutas internas ni consultas SQL.
 - Validación de reglas de negocio en servidor (nunca solo en cliente).
+- Logging de errores a archivo en `logs/YYYY-MM-DD.log` (sin secretos).
+- Tokens de recuperación de contraseña de un solo uso, expiración 30 min.
 
 ---
 
