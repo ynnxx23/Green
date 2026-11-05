@@ -23,24 +23,16 @@ class ProductoController
 
     public function manejar(string $ruta_interna, string $metodo): array
     {
+        // GET de listar productos es público (para carta.html y carta destacada)
+        if ($metodo === 'GET' && ($ruta_interna === '' || $ruta_interna === 'listar' || $ruta_interna === 'activos')) {
+            if ($ruta_interna === 'activos') {
+                return $this->listarActivos();
+            }
+            return $this->listarTodos();
+        }
+
+        // El resto de operaciones requieren autenticación
         $this->authMiddleware->requiereMeseroOAdministrador();
-
-        if ($ruta_interna === 'activos') {
-            if ($metodo !== 'GET') {
-                return $this->error('Método no permitido.', 405);
-            }
-            return $this->listarActivos();
-        }
-
-        if ($ruta_interna === '' || $ruta_interna === 'listar') {
-            if ($metodo === 'GET') {
-                return $this->listarTodos();
-            }
-            if ($metodo === 'POST') {
-                return $this->crearProducto();
-            }
-            return $this->error('Método no permitido.', 405);
-        }
 
         if (preg_match('/^(\d+)$/', $ruta_interna, $coincidencias)) {
             $id_producto = (int) $coincidencias[1];

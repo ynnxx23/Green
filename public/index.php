@@ -483,6 +483,39 @@ try {
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
 
+        // -------------------------------------------------------------------------
+        // Productos más vendidos (público - para carta destacada)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/productos-mas-vendidos'):
+            $ruta_interna = ltrim(substr($uri, strlen('/api/productos-mas-vendidos')), '/');
+            if ($ruta_interna === '' || $ruta_interna === 'listar') {
+                if ($metodo !== 'GET') {
+                    http_response_code(405);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Método no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                $pdo = Conexion::obtener();
+                $sql = 'SELECT pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url,
+                               SUM(dp.cantidad) AS cantidad_vendida
+                        FROM detalle_pedidos dp
+                        JOIN pedidos p ON p.id_pedido = dp.id_pedido
+                        JOIN productos pr ON pr.id_producto = dp.id_producto
+                        WHERE p.estado <> :cancelado AND pr.activo = 1
+                        GROUP BY pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url
+                        ORDER BY cantidad_vendida DESC';
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([':cancelado' => 'cancelado']);
+                $datos = $stmt->fetchAll();
+                return [
+                    'exito' => true,
+                    'datos' => $datos,
+                    'mensaje' => 'Productos más vendidos obtenidos.',
+                    'codigo' => 200,
+                ];
+            }
+            return errorJson('Endpoint de productos más vendidos no encontrado.', 404);
+            break;
+
         case str_starts_with($uri, '/api/productos'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/productos')), '/');
             $cuerpo = leerCuerpoJson();
@@ -832,39 +865,6 @@ try {
                 break;
             }
             return errorJson('Método no permitido.', 405);
-            break;
-
-        // -------------------------------------------------------------------------
-        // Productos más vendidos (público - para carta destacada)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/productos-mas-vendidos'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/productos-mas-vendidos')), '/');
-            if ($ruta_interna === '' || $ruta_interna === 'listar') {
-                if ($metodo !== 'GET') {
-                    http_response_code(405);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Método no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
-                    exit;
-                }
-                $pdo = Conexion::obtener();
-                $sql = 'SELECT pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url,
-                               SUM(dp.cantidad) AS cantidad_vendida
-                        FROM detalle_pedidos dp
-                        JOIN pedidos p ON p.id_pedido = dp.id_pedido
-                        JOIN productos pr ON pr.id_producto = dp.id_producto
-                        WHERE p.estado <> :cancelado AND pr.activo = 1
-                        GROUP BY pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url
-                        ORDER BY cantidad_vendida DESC';
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([':cancelado' => 'cancelado']);
-                $datos = $stmt->fetchAll();
-                return [
-                    'exito' => true,
-                    'datos' => $datos,
-                    'mensaje' => 'Productos más vendidos obtenidos.',
-                    'codigo' => 200,
-                ];
-            }
-            return errorJson('Endpoint de productos más vendidos no encontrado.', 404);
             break;
 
         default:
