@@ -163,8 +163,8 @@ nav {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../icons/plato.png') center / cover no-repeat;
-  opacity: 0.22;
+  background: url('../imagenes/comida.webp') center / cover no-repeat;
+  opacity: 0.25;
   pointer-events: none;
   z-index: 0;
 }
