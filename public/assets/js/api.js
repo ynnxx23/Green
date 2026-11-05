@@ -3,7 +3,7 @@
   Consume la API REST del backend en public/index.php
 */
 
-const API_BASE = 'http://localhost/Yensel/Morday/public/api';
+const API_BASE = window.location.origin + '/public/api';
 
 class ApiClient {
   constructor(baseUrl = API_BASE) {

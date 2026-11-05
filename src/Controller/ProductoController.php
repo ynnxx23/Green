@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Restaurante\Controller;
 
 use Restaurante\Middleware\AuthMiddleware;
+use Restaurante\Service\ServicioDeCloudinary;
 use Restaurante\Service\ServicioDeProductos;
 
 class ProductoController
 {
     private ServicioDeProductos $servicioDeProductos;
+    private ServicioDeCloudinary $cloudinary;
     private AuthMiddleware $authMiddleware;
 
-    public function __construct(ServicioDeProductos $servicioDeProductos, AuthMiddleware $authMiddleware)
+    public function __construct(ServicioDeProductos $servicioDeProductos, ServicioDeCloudinary $cloudinary, AuthMiddleware $authMiddleware)
     {
         $this->servicioDeProductos = $servicioDeProductos;
+        $this->cloudinary = $cloudinary;
         $this->authMiddleware = $authMiddleware;
     }
 
@@ -82,7 +85,7 @@ class ProductoController
 
     private function crearProducto(): array
     {
-        $entrada = $this->leerCuerpoJson();
+        $entrada = $this->leerEntrada();
 
         $nombre = $entrada['nombre'] ?? '';
         $precio = (float) ($entrada['precio'] ?? 0);
@@ -92,8 +95,23 @@ class ProductoController
             return $this->error('El nombre es obligatorio.', 400);
         }
 
+        $imagen_url = $entrada['imagen_url'] ?? null;
+        $imagen_public_id = $entrada['imagen_public_id'] ?? null;
+
+        // Si viene archivo adjunto, subir a Cloudinary primero.
+        if (!empty($_FILES['imagen']['tmp_name'])) {
+            $subida = $this->cloudinary->subirImagen($_FILES['imagen']['tmp_name'], $_FILES['imagen']['name']);
+
+            if (!$subida['exito']) {
+                return $this->error($subida['mensaje'] ?? 'Error al subir la imagen.', 400);
+            }
+
+            $imagen_url = $subida['url'];
+            $imagen_public_id = $subida['public_id'];
+        }
+
         try {
-            $id_producto = $this->servicioDeProductos->crearProducto($nombre, $precio, $categoria);
+            $id_producto = $this->servicioDeProductos->crearProducto($nombre, $precio, $categoria, $imagen_url, $imagen_public_id);
 
             return [
                 'exito' => true,
@@ -109,7 +127,7 @@ class ProductoController
 
     private function editarProducto(int $id_producto): array
     {
-        $entrada = $this->leerCuerpoJson();
+        $entrada = $this->leerEntrada();
 
         $nombre = $entrada['nombre'] ?? '';
         $precio = (float) ($entrada['precio'] ?? 0);
@@ -119,8 +137,29 @@ class ProductoController
             return $this->error('El nombre es obligatorio.', 400);
         }
 
+        $imagen_url = $entrada['imagen_url'] ?? null;
+        $imagen_public_id = $entrada['imagen_public_id'] ?? null;
+
+        // Si se quiere quitar la imagen, enviar imagen_public_id vacío o eliminar_imagen=1
+        $quitarImagen = isset($entrada['eliminar_imagen']) && $entrada['eliminar_imagen'] === '1';
+
+        // Si viene archivo adjunto, subir a Cloudinary primero.
+        if (!empty($_FILES['imagen']['tmp_name'])) {
+            $subida = $this->cloudinary->subirImagen($_FILES['imagen']['tmp_name'], $_FILES['imagen']['name']);
+
+            if (!$subida['exito']) {
+                return $this->error($subida['mensaje'] ?? 'Error al subir la imagen.', 400);
+            }
+
+            $imagen_url = $subida['url'];
+            $imagen_public_id = $subida['public_id'];
+        } elseif ($quitarImagen) {
+            $imagen_url = null;
+            $imagen_public_id = null;
+        }
+
         try {
-            $resultado = $this->servicioDeProductos->editarProducto($id_producto, $nombre, $precio, $categoria);
+            $resultado = $this->servicioDeProductos->editarProducto($id_producto, $nombre, $precio, $categoria, $imagen_url, $imagen_public_id);
 
             if (!$resultado) {
                 return $this->error('El producto no existe.', 404);
@@ -185,6 +224,26 @@ class ProductoController
         return is_array($datos) ? $datos : [];
     }
 
+    /**
+     * Lee datos del cuerpo. Soporta application/json y multipart/form-data.
+     */
+    private function leerEntrada(): array
+    {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+        if (str_starts_with($contentType, 'multipart/form-data')) {
+            $datos = array_merge($_POST, [
+                'imagen_url' => $_POST['imagen_url'] ?? null,
+                'imagen_public_id' => $_POST['imagen_public_id'] ?? null,
+                'eliminar_imagen' => $_POST['eliminar_imagen'] ?? null,
+            ]);
+
+            return $datos;
+        }
+
+        return $this->leerCuerpoJson();
+    }
+
     private function error(string $mensaje, int $codigo_http): array
     {
         http_response_code($codigo_http);
@@ -208,6 +267,8 @@ class ProductoController
                 'precio' => $producto->precio,
                 'activo' => $producto->activo,
                 'fecha_creacion' => $producto->fecha_creacion,
+                'imagen_url' => $producto->imagen_url,
+                'imagen_public_id' => $producto->imagen_public_id,
             ];
         }
 

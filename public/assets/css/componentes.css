@@ -621,3 +621,190 @@ footer {
     padding: 0.4rem 1rem;
   }
 }
+
+/* =============================================================================
+   Carta destacada - Tarjetas con imagen y barra dorada animada
+   ============================================================================= */
+.carta-destacada {
+  background: var(--color-surface);
+}
+
+.carta-subtitulo {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin-bottom: 3rem;
+  font-size: 1.1rem;
+}
+
+.categoria-fila {
+  margin-bottom: 3.5rem;
+}
+
+.categoria-titulo {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--color-accent);
+  padding-left: 1rem;
+}
+
+/* Tarjeta de plato con imagen */
+.menu-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #B8860B, #d4a017);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.4s ease;
+}
+
+.menu-card:hover::before {
+  transform: scaleY(1);
+}
+
+.menu-card:hover {
+  border-color: var(--color-secondary);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.plato-imagen {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.1);
+  display: block;
+}
+
+.plato-contenido {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menu-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.menu-card p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.menu-precio {
+  font-family: var(--font-heading);
+  color: var(--color-secondary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: auto;
+  display: block;
+}
+
+/* Tarjetas del grid de productos en carta.html */
+.menu-card img.plato-imagen {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.plato-contenido {
+  padding: 1rem;
+}
+
+/* Calendario de disponibilidad - mejoras */
+.cal-dia {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+  background: #fff;
+}
+
+.cal-dia.disponible {
+  background: #e8f5e9;
+  color: #1e4a33;
+  border-color: #2d6a4f;
+}
+
+.cal-dia.disponible:hover {
+  background: #c8e6c9;
+  transform: scale(1.05);
+}
+
+.cal-dia.no-disponible {
+  background: #f5f5f5;
+  color: #bdbdbd;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+}
+
+.cal-dia.seleccionado {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: #8a6200;
+}
+
+.cal-dia.tiene-reserva {
+  background: #fff8e1;
+  color: #8a6200;
+  border-color: #fbc02d;
+}
+
+.cal-dia.hoy {
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(46, 95, 78, 0.3);
+}
+
+/* Selects mejorados */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E5F4E'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px;
+  padding-right: 2.5rem;
+}
+
+/* Inputs y selects mejorados */
+input, select, textarea {
+  transition: var(--transition);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+}

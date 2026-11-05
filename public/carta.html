@@ -103,6 +103,10 @@
     }
   }
 
+  function escapeHtml(texto) {
+    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
+  }
+
   function render(categoria) {
     grid.innerHTML = '';
     let filtrados = categoria === 'todos'
@@ -120,11 +124,14 @@
     filtrados.forEach(p => {
       const card = document.createElement('div');
       card.className = 'menu-card';
+      const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
       card.innerHTML = `
-        <div class="menu-icon">🍽️</div>
-        <h3>${escapeHtml(p.nombre || 'Producto')}</h3>
-        <p>${escapeHtml(p.descripcion || 'Sin descripción disponible.')}</p>
-        <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
+        <img src="${escapeHtml(imagen)}" alt="${escapeHtml(p.nombre)}" class="plato-imagen">
+        <div class="plato-contenido">
+          <h3>${escapeHtml(p.nombre || 'Producto')}</h3>
+          <p>${escapeHtml(p.categoria || '')}</p>
+          <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
+        </div>
       `;
       grid.appendChild(card);
     });

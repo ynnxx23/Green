@@ -108,9 +108,12 @@
             <label for="email">Correo electrónico</label>
             <input type="email" id="email" name="email" required placeholder="juan@correo.com">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="position: relative;">
             <label for="contrasena">Contraseña</label>
-            <input type="password" id="contrasena" name="contrasena" required placeholder="••••••••">
+            <div style="position: relative; width: 100%;">
+              <input type="password" id="contrasena" name="contrasena" required placeholder="••••••••" style="width: 100%; padding-right: 2.5rem;">
+              <button type="button" id="toggle-contrasena" style="position: absolute; right: 0.5rem; top: 0.5rem; background: none; border: none; cursor: pointer; color: var(--color-text-muted); font-size: 1rem;">👁️</button>
+            </div>
           </div>
           <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar sesión</button>
         </form>
@@ -150,6 +153,18 @@
 <script type="module" src="assets/js/api.js"></script>
 <script type="module" src="assets/js/main.js"></script>
 <script type="module" src="assets/js/auth.js"></script>
+
+<script>
+  // Toggle ver contraseña
+  const btnToggle = document.getElementById('toggle-contrasena');
+  const inputContrasena = document.getElementById('contrasena');
+  let mostrando = false;
+  btnToggle.addEventListener('click', () => {
+    mostrando = !mostrando;
+    inputContrasena.type = mostrando ? 'text' : 'password';
+    btnToggle.textContent = mostrando ? '🙈' : '👁️';
+  });
+</script>
 
 </body>
 </html>

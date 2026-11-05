@@ -21,6 +21,7 @@
       <span class="logo-text">GREEN</span>
     </a>
     <ul class="nav-links">
+      <li><a href="#inicio" class="nav-link-inicio">Inicio</a></li>
       <li><a href="#nosotros">Nosotros</a></li>
       <li><a href="carta.html">Carta</a></li>
       <li><a href="reservas.html">Reservar mesa</a></li>
@@ -61,35 +62,34 @@
 </section>
 
 <!-- Carta destacada (inicio) -->
-<section class="carta-seccion py-lg">
+<section class="carta-destacada py-lg">
   <div class="container">
     <h2 class="section-title">Carta destacada</h2>
     <div class="divisor-ornamental">★ ✯ ★</div>
-    <div class="menu-grid">
-      <div class="menu-card">
-        <div class="menu-icon">🥗</div>
-        <h3>Entradas</h3>
-        <p>Aperitivos frescos y coloridos para comenzar la experiencia.</p>
-        <span class="menu-precio">Desde $8.500</span>
-      </div>
-      <div class="menu-card">
-        <div class="menu-icon">🍽️</div>
-        <h3>Platos principales</h3>
-        <p>Carnes selectas, pescados del día y opciones vegetarianas creativas.</p>
-        <span class="menu-precio">Desde $16.000</span>
-      </div>
-      <div class="menu-card">
-        <div class="menu-icon">🍯</div>
-        <h3>Postres</h3>
-        <p>Creaciones dulces que cierran cada comida con un toque especial.</p>
-        <span class="menu-precio">Desde $6.500</span>
-      </div>
-      <div class="menu-card">
-        <div class="menu-icon">🍸</div>
-        <h3>Coctelería</h3>
-        <p>Cocteles de autor y clásicos internacionales en nuestra barra.</p>
-        <span class="menu-precio">Desde $7.000</span>
-      </div>
+    <p class="carta-subtitulo">Los platos más vendidos de este mes, organizados por categoría.</p>
+    
+    <!-- Fila 1: Entradas -->
+    <div class="categoria-fila">
+      <h3 class="categoria-titulo">Entradas</h3>
+      <div class="menu-grid" id="grid-entradas"></div>
+    </div>
+
+    <!-- Fila 2: Principales -->
+    <div class="categoria-fila">
+      <h3 class="categoria-titulo">Platos principales</h3>
+      <div class="menu-grid" id="grid-principales"></div>
+    </div>
+
+    <!-- Fila 3: Postres -->
+    <div class="categoria-fila">
+      <h3 class="categoria-titulo">Postres</h3>
+      <div class="menu-grid" id="grid-postres"></div>
+    </div>
+
+    <!-- Fila 4: Coctelería -->
+    <div class="categoria-fila">
+      <h3 class="categoria-titulo">Coctelería</h3>
+      <div class="menu-grid" id="grid-bebidas"></div>
     </div>
   </div>
 </section>
@@ -127,6 +127,68 @@
 
 <script type="module" src="assets/js/api.js"></script>
 <script type="module" src="assets/js/main.js"></script>
+<script type="module">
+  import { api } from './api.js';
+  import { formatearMoneda } from './main.js';
+
+  const gridIds = {
+    entradas: 'grid-entradas',
+    principales: 'grid-principales',
+    postres: 'grid-postres',
+    bebidas: 'grid-bebidas',
+  };
+
+  async function cargarPlatosDestacados() {
+    try {
+      const respuesta = await api._request('/api/productos-mas-vendidos', { method: 'GET' });
+      if (!respuesta.exito) throw new Error(respuesta.mensaje);
+      const productos = respuesta.datos || [];
+
+      // Agrupar por categoría
+      const porCategoria = {};
+      productos.forEach(p => {
+        const cat = (p.categoria || '').toLowerCase();
+        if (!porCategoria[cat]) porCategoria[cat] = [];
+        porCategoria[cat].push(p);
+      });
+
+      // Para cada categoría, tomar los 4 primeros (simulando "más vendidos" por ahora)
+      // En el futuro se puede ordenar por ventas reales desde detalle_pedidos
+      for (const [categoria, gridId] of Object.entries(gridIds)) {
+        const platos = (porCategoria[categoria] || []).slice(0, 4);
+        const grid = document.getElementById(gridId);
+        if (!grid) continue;
+        grid.innerHTML = '';
+        if (platos.length === 0) {
+          grid.innerHTML = '<p class="vacio">No hay platos disponibles.</p>';
+          continue;
+        }
+        platos.forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'menu-card';
+          const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+          card.innerHTML = `
+            <img src="${escapeHtml(imagen)}" alt="${escapeHtml(p.nombre)}" class="plato-imagen">
+            <div class="plato-contenido">
+              <h3>${escapeHtml(p.nombre)}</h3>
+              <p>${escapeHtml(p.categoria || '')}</p>
+              <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      });
+    } catch (err) {
+      console.error('Error cargando platos destacados:', err);
+    }
+  }
+
+  function escapeHtml(texto) {
+    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
+  }
+
+  cargarPlatosDestacados();
+</script>
 
 </body>
 </html>

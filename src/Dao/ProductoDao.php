@@ -49,14 +49,16 @@ class ProductoDao
 
     public function crear(Producto $producto): int
     {
-        $sql = 'INSERT INTO productos (nombre, categoria, precio, activo, fecha_creacion)
-                VALUES (:nombre, :categoria, :precio, :activo, CURRENT_TIMESTAMP)';
+        $sql = 'INSERT INTO productos (nombre, categoria, precio, activo, imagen_url, imagen_public_id, fecha_creacion)
+                VALUES (:nombre, :categoria, :precio, :activo, :imagen_url, :imagen_public_id, CURRENT_TIMESTAMP)';
         $stmt = Conexion::obtener()->prepare($sql);
         $stmt->execute([
             ':nombre' => $producto->nombre,
             ':categoria' => $producto->categoria,
             ':precio' => $producto->precio,
             ':activo' => $producto->activo ? 1 : 0,
+            ':imagen_url' => $producto->imagen_url,
+            ':imagen_public_id' => $producto->imagen_public_id,
         ]);
 
         return (int) Conexion::obtener()->lastInsertId();
@@ -66,6 +68,7 @@ class ProductoDao
     {
         $sql = 'UPDATE productos
                     SET nombre = :nombre, categoria = :categoria, precio = :precio, activo = :activo,
+                        imagen_url = :imagen_url, imagen_public_id = :imagen_public_id,
                         fecha_actualizacion = CURRENT_TIMESTAMP
                   WHERE id_producto = :id_producto';
         $stmt = Conexion::obtener()->prepare($sql);
@@ -74,6 +77,8 @@ class ProductoDao
             ':categoria' => $producto->categoria,
             ':precio' => $producto->precio,
             ':activo' => $producto->activo ? 1 : 0,
+            ':imagen_url' => $producto->imagen_url,
+            ':imagen_public_id' => $producto->imagen_public_id,
             ':id_producto' => $producto->id_producto,
         ]);
 
@@ -92,7 +97,13 @@ class ProductoDao
 
     private function mapearProducto(array $fila): Producto
     {
-        $producto = new Producto($fila['nombre'], (float) $fila['precio'], $fila['categoria']);
+        $producto = new Producto(
+            $fila['nombre'],
+            (float) $fila['precio'],
+            $fila['categoria'],
+            $fila['imagen_url'] ?? null,
+            $fila['imagen_public_id'] ?? null
+        );
         $producto->id_producto = (int) $fila['id_producto'];
         $producto->activo = (bool) $fila['activo'];
         $producto->fecha_creacion = $fila['fecha_creacion'] ?? null;

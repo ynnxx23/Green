@@ -124,6 +124,7 @@
     <a href="#" onclick="mostrar('repartidores')">Repartidores</a>
     <a href="#" onclick="mostrar('cupones')">Cupones y descuentos</a>
     <a href="#" onclick="mostrar('limite-pedidos')">Límite pedidos sin reserva</a>
+    <a href="#" onclick="mostrar('productos')">Gestión de productos</a>
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
@@ -339,6 +340,50 @@
         </div>
       </div>
       <div class="tabla-wrap" id="tabla-limite-pedidos"></div>
+    </section>
+
+    <!-- Gestión de productos -->
+    <section id="vista-productos" class="panel-card" style="display:none;">
+      <h3>Gestión de productos</h3>
+      <p>Administra el catálogo de productos del restaurante.</p>
+      <div id="alerta-productos" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-productos"></div>
+      <div class="panel-card" style="margin-top: 1.5rem;">
+        <h3>Agregar / Editar producto</h3>
+        <div id="vista-producto-form" style="display:none;">
+          <div class="form-grid">
+            <div>
+              <label>Producto (seleccionar para editar)</label>
+              <select id="inp-producto-nombre" onchange="cargarProductoSeleccionado()">
+                <option value="">Seleccionar producto existente</option>
+              </select>
+            </div>
+            <div>
+              <label>Nombre del producto</label>
+              <input type="text" id="inp-producto-nombre-display" readonly placeholder="Nombre del producto">
+            </div>
+            <div>
+              <label>Precio ($)</label>
+              <input type="number" id="inp-producto-precio" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div>
+              <label>Categoría</label>
+              <input type="text" id="inp-producto-categoria" placeholder="Ej. Principales">
+            </div>
+            <div>
+              <label>URL de imagen (Cloudinary)</label>
+              <input type="text" id="inp-producto-imagen-url" placeholder="https://...">
+            </div>
+            <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+              <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-producto">Guardar producto</button>
+              <button type="button" class="btn btn-accion sec" id="btn-cancelar-producto">Cancelar</button>
+            </div>
+          </div>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem; margin-bottom: 1rem;">
+          <button type="button" class="btn btn-accion sec" onclick="document.getElementById('vista-producto-form').style.display='block'">Agregar producto nuevo</button>
+        </div>
+      </div>
     </section>
   </main>
 </div>
@@ -974,6 +1019,121 @@
     } catch (e) { alerta('alerta-limite', e.message || 'Error.', 'error'); }
   });
 
+  // ── Gestión de productos ──
+  async function cargarProductosAdmin() {
+    try {
+      const r = await api.productos();
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-productos');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay productos.</p>'; return; }
+      let html = '<table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Imagen</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(p => {
+        const img = p.imagen_url ? `<img src="${p.imagen_url}" class="plato-imagen-mini" alt="${p.nombre}">` : '<span class="sin-imagen">Sin imagen</span>';
+        html += `<tr>
+          <td>${escapeHtml(p.nombre)}</td>
+          <td>${p.categoria}</td>
+          <td>$${(p.precio || 0).toFixed(2)}</td>
+          <td>${img}</td>
+          <td><span class="estado estado--${p.activo ? 'confirmada' : 'cancelada'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <button class="btn-sm btn-accion" onclick="editarProducto(${p.id_producto})">Editar</button>
+            <button class="btn-sm btn-accion danger" onclick="toggleProducto(${p.id_producto}, ${!p.activo})">${p.activo ? 'Desactivar' : 'Activar'}</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    } catch (e) {
+      document.getElementById('tabla-productos').innerHTML = '<p class="vacio">No se pudieron cargar los productos.</p>';
+      console.error(e);
+    }
+  }
+
+  async function cargarProductosParaMenu() {
+    try {
+      const r = await api.productos();
+      const datos = r.datos || [];
+      const sel = document.getElementById('inp-producto-nombre');
+      sel.innerHTML = '<option value="">Seleccionar producto existente</option>';
+      datos.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.id_producto;
+        o.textContent = p.nombre + ' ($' + p.precio.toFixed(2) + ')';
+        sel.appendChild(o);
+      });
+    } catch (e) { console.error('productos para menu', e); }
+  }
+
+  window.editarProducto = async function (id) {
+    const producto = productos.find(p => p.id_producto === id);
+    if (!producto) return;
+    document.getElementById('inp-producto-nombre').value = producto.id_producto;
+    document.getElementById('inp-producto-nombre-display').textContent = producto.nombre;
+    document.getElementById('inp-producto-precio').value = producto.precio;
+    document.getElementById('inp-producto-categoria').value = producto.categoria || '';
+    document.getElementById('inp-producto-imagen-url').value = producto.imagen_url || '';
+    document.getElementById('vista-producto-form').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.toggleProducto = async function (id, activar) {
+    try {
+      await api._request(`/productos/${id}`, {
+        method: activar ? 'PUT' : 'DELETE',
+        body: JSON.stringify({ activo: activar ? 1 : 0 })
+      });
+      alerta('alerta-productos', 'Producto ' + (activar ? 'activado' : 'desactivado') + '.', 'exito');
+      cargarProductosAdmin();
+    } catch (e) { alerta('alerta-productos', e.message || 'Error.', 'error'); }
+  };
+
+  document.getElementById('btn-guardar-producto').addEventListener('click', async () => {
+    const id = document.getElementById('inp-producto-nombre').value;
+    const nombre = document.getElementById('inp-producto-nombre-display').textContent;
+    const precio = parseFloat(document.getElementById('inp-producto-precio').value) || 0;
+    const categoria = document.getElementById('inp-producto-categoria').value;
+    const imagen_url = document.getElementById('inp-producto-imagen-url').value.trim() || null;
+
+    if (!nombre) { alerta('alerta-productos', 'Ingrese nombre del producto.', 'error'); return; }
+
+    try {
+      const datos = { nombre, precio, categoria, imagen_url };
+      const metodo = id ? 'PUT' : 'POST';
+      const url = id ? `/productos/${id}` : '/productos';
+      await api._request(url, { method: metodo, body: JSON.stringify(datos) });
+      alerta('alerta-productos', id ? 'Producto actualizado.' : 'Producto creado.', 'exito');
+      document.getElementById('vista-producto-form').style.display = 'none';
+      document.getElementById('inp-producto-nombre').value = '';
+      document.getElementById('inp-producto-nombre-display').textContent = '';
+      document.getElementById('inp-producto-precio').value = '';
+      document.getElementById('inp-producto-categoria').value = '';
+      document.getElementById('inp-producto-imagen-url').value = '';
+      cargarProductosAdmin();
+    } catch (e) { alerta('alerta-productos', e.message || 'Error.', 'error'); }
+  });
+
+  document.getElementById('btn-cancelar-producto').addEventListener('click', () => {
+    document.getElementById('vista-producto-form').style.display = 'none';
+    document.getElementById('inp-producto-nombre').value = '';
+    document.getElementById('inp-producto-nombre-display').textContent = '';
+    document.getElementById('inp-producto-precio').value = '';
+    document.getElementById('inp-producto-categoria').value = '';
+    document.getElementById('inp-producto-imagen-url').value = '';
+  });
+
+  window.cargarProductoSeleccionado = function() {
+    const id = document.getElementById('inp-producto-nombre').value;
+    if (!id) return;
+    const producto = productos.find(p => p.id_producto == id);
+    if (!producto) return;
+    document.getElementById('inp-producto-nombre-display').textContent = producto.nombre;
+    document.getElementById('inp-producto-precio').value = producto.precio;
+    document.getElementById('inp-producto-categoria').value = producto.categoria || '';
+    document.getElementById('inp-producto-imagen-url').value = producto.imagen_url || '';
+    document.getElementById('vista-producto-form').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Actualizar mostrar() para incluir las nuevas vistas
   const _mostrar = mostrar;
   mostrar = function(vista) {
@@ -982,6 +1142,7 @@
     if (vista === 'repartidores') cargarRepartidores();
     if (vista === 'cupones') cargarCupones();
     if (vista === 'limite-pedidos') cargarLimitePedidos();
+    if (vista === 'productos') cargarProductosAdmin();
   };
 
   function escapeHtml(texto) {

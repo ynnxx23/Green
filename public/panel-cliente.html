@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi panel — Green en la Casa Blanca</title>
+<title>Panel Cliente — Green en la Casa Blanca</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
@@ -33,17 +33,9 @@
   .estado--confirmada { background: rgba(46,95,78,0.12); color: #1e4a33; }
   .estado--completada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
   .estado--cancelada { background: rgba(168,54,54,0.12); color: #a83636; }
-  .estado--pagada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
-  .estado--pendiente-seña { background: rgba(184,134,11,0.12); color: #8a6200; }
+  .estado--vencida { background: rgba(168,54,54,0.12); color: #a83636; }
   .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-  .producto-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; display: flex; flex-direction: column; gap: 0.5rem; }
-  .producto-card h4 { margin: 0; font-size: 1rem; color: var(--color-primary); }
-  .producto-card p { margin: 0; font-size: 0.85rem; color: var(--color-text-muted); flex: 1; }
-  .producto-card .precio { font-weight: 700; color: var(--color-accent); }
-  .cantidad { display: flex; align-items: center; gap: 0.5rem; }
-  .cantidad input { width: 45px; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); text-align: center; }
   .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
   .alerta { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9rem; }
   .alerta--exito { background: rgba(45,106,79,0.1); color: #2d6a4f; border: 1px solid #2d6a4f; }
@@ -54,10 +46,23 @@
   .btn-accion.sec:hover { background: var(--color-primary); color: #fff; }
   .btn-accion.danger { background: transparent; border: 1px solid #a83636; color: #a83636; }
   .btn-accion.danger:hover { background: #a83636; color: #fff; }
-  .btn-accion:disabled { opacity: 0.5; cursor: not-allowed; }
-  .radio-group { display: flex; gap: 1rem; margin: 0.5rem 0; }
-  .radio-label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem; }
-  .radio-label input { margin: 0; }
+  select.estado-select { padding: 0.35rem; border-radius: var(--radius-sm); border: 1px solid rgba(27,67,50,0.15); font-size: 0.85rem; background: #fff; }
+  .dias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+  .dia-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 0.75rem; background: #fff; display: flex; flex-direction: column; gap: 0.4rem; }
+  .dia-card h4 { margin: 0; font-size: 0.95rem; color: var(--color-primary); }
+  .dia-card .hora-row { display: flex; gap: 0.4rem; align-items: center; }
+  .dia-card input { flex: 1; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); font-size: 0.85rem; }
+  .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .stock-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; display: flex; flex-direction: column; gap: 0.5rem; }
+  .stock-card h4 { margin: 0; font-size: 1rem; color: var(--color-primary); }
+  .stock-card .row { display: flex; gap: 0.5rem; align-items: center; }
+  .stock-card input { flex: 1; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); font-size: 0.85rem; }
+  .menu-semanal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .menu-semana-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; }
+  .menu-semana-card h4 { margin: 0 0 0.5rem 0; color: var(--color-primary); }
+  .menu-items { display: flex; flex-direction: column; gap: 0.4rem; max-height: 300px; overflow-y: auto; }
+  .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem; border-bottom: 1px solid rgba(27,67,50,0.08); font-size: 0.85rem; }
+  .menu-item:last-child { border-bottom: none; }
   .calendario { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4rem; max-width: 720px; }
   .cal-dia-nombre { text-align: center; font-weight: 700; font-size: 0.85rem; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.5px; padding: 0.4rem 0; }
   .cal-dia { aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; cursor: pointer; transition: var(--transition); user-select: none; }
@@ -65,32 +70,40 @@
   .cal-dia.disponible:hover { background: #c8e6c9; transform: scale(1.05); }
   .cal-dia.no-disponible { background: #f5f5f5; color: #bdbdbd; border-color: #e0e0e0; cursor: not-allowed; }
   .cal-dia.seleccionado { background: var(--color-accent); color: #fff; border-color: #8a6200; }
+  .cal-dia.tiene-reserva { background: #fff8e1; color: #8a6200; border-color: #fbc02d; }
   .cal-dia.hoy { font-weight: 700; }
   .cal-semana { display: contents; }
   .cal-mes { font-family: var(--font-heading); font-size: 1.5rem; color: var(--color-primary); margin-bottom: 1rem; }
   .cal-nav { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
   .cal-btn { background: none; border: none; color: var(--color-primary); font-size: 1.2rem; cursor: pointer; padding: 0.2rem; }
   .cal-btn:hover { color: var(--color-secondary); }
-  .hora-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
-  .hora-btn { padding: 0.5rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); background: #fff; color: var(--color-primary); cursor: pointer; font-size: 0.85rem; text-align: center; }
-  .hora-btn:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-  .hora-btn.seleccionada { background: var(--color-accent); color: #fff; border-color: #8a6200; }
-  .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
-  .mesa-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 0.75rem; background: #fff; text-align: center; cursor: pointer; transition: var(--transition); }
-  .mesa-card:hover { border-color: var(--color-primary); background: #f5f5f5; }
-  .mesa-card.seleccionada { background: var(--color-primary); color: #fff; border-color: #8a6200; }
-  .mesa-card h4 { margin: 0; font-size: 1rem; color: var(--color-primary); }
-  .mesa-card.seleccionada h4 { color: #fff; }
-  .mesa-card p { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); }
-  .mesa-card.seleccionada p { color: rgba(255,255,255,0.9); }
-  .seña-info { background: rgba(184,134,11,0.1); border: 1px solid #8a6200; border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; color: #8a6200; font-size: 0.9rem; }
-  .domicilio-fields { background: #f5f5f5; border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; display: none; }
-  .estrella { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #bdbdbd; padding: 0; }
-  .estrella:hover { color: #8a6200; }
+  .legend { display: flex; gap: 1rem; font-size: 0.8rem; margin-bottom: 0.75rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .form-reserva input, .form-reserva select {
+    background: #FAFAF0;
+    border: 1px solid rgba(27, 67, 50, 0.15);
+    border-radius: var(--radius-md);
+    padding: 0.9rem;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    width: 100%;
+  }
+  .form-reserva input::placeholder {
+    color: var(--color-text-muted);
+  }
+  .form-reserva input:focus,
+  .form-reserva select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+  }
   @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr; } .panel-sidebar { display: none; } }
 </style>
 </head>
 <body>
+
 <nav>
   <div class="nav-wrap">
     <button class="btn-menu" data-menu-toggle aria-label="Abrir menú" aria-expanded="false">☰</button>
@@ -112,189 +125,77 @@
 
 <div class="panel-grid">
   <aside class="panel-sidebar">
-    <div class="panel-brand">Mi Panel</div>
-    <a href="#" class="activo" onclick="mostrar('reservas')">Mis reservas</a>
-    <a href="#" onclick="mostrar('nueva-reserva')">Hacer reserva</a>
-    <a href="#" onclick="mostrar('menu-semanal')">Menú semanal</a>
-    <a href="#" onclick="mostrar('nuevo-pedido')">Hacer pedido</a>
+    <div class="panel-brand">Cliente</div>
+    <a href="#" class="activo">Mis reservas</a>
+    <a href="#" onclick="mostrar('nueva-reserva')">Nueva reserva</a>
     <a href="#" onclick="mostrar('mis-pedidos')">Mis pedidos</a>
-    <a href="#" onclick="mostrar('calificaciones')">Calificar platos</a>
-    <a href="#" onclick="mostrar('preferencias')">Mis preferencias</a>
-    <a href="#" onclick="mostrar('puntos')">Puntos de fidelidad</a>
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
-    <h2>Mis reservas</h2>
-    <div class="divisor"></div>
-
-    <section id="vista-reservas" class="panel-card">
+    
+    <!-- Mis reservas -->
+    <section id="vista-mis-reservas" class="panel-card">
       <h3>Mis reservas</h3>
-      <div id="alerta-reservas" class="alerta" style="display:none;"></div>
-      <div class="tabla-wrap" id="tabla-reservas"></div>
+      <div id="alerta-mis-reservas" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-mis-reservas"></div>
     </section>
 
-    <section id="vista-nueva-reserva" class="panel-card">
-      <h3>Hacer reserva</h3>
-      <p>Selecciona una fecha verde (disponible), una mesa y una hora.</p>
+    <!-- Nueva reserva -->
+    <section id="vista-nueva-reserva" class="panel-card" style="display:none;">
+      <h3>Nueva reserva</h3>
+      <p>Selecciona una fecha disponible (días verdes) y una hora para tu reserva.</p>
       <div id="alerta-nueva-reserva" class="alerta" style="display:none;"></div>
-
-      <div class="cal-nav">
-        <button class="cal-btn" onclick="mesAnterior()">&#9664;</button>
-        <span id="cal-mes" class="cal-mes"></span>
-        <button class="cal-btn" onclick="mesSiguiente()">&#9654;</button>
-      </div>
-      <div class="calendario" id="grid-calendario"></div>
-
-      <div id="seleccion-info" style="margin:1rem 0; color:var(--color-primary); font-weight:700; display:none;">
-        Fecha: <span id="info-fecha"></span> · Hora: <span id="info-hora"></span>
-      </div>
-
-      <div class="form-grid" style="margin-top:1rem;">
-        <div>
-          <label>Mesa</label>
-          <select id="sel-mesa" required><option value="">Seleccionar mesa</option></select>
-        </div>
-        <div style="grid-column: 1 / -1;">
-          <input type="hidden" id="inp-fecha-reserva">
-          <input type="hidden" id="inp-hora-inicio">
-          <input type="hidden" id="inp-hora-fin">
-          <button type="button" class="btn btn-primary btn-accion" id="btn-crear-reserva" disabled>Crear reserva</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="vista-menu-semanal" class="panel-card">
-      <h3>Menú semanal</h3>
-      <p>Consulta los platos disponibles esta semana en el restaurante.</p>
-      <div id="alerta-menu" class="alerta" style="display:none;"></div>
-      <div class="form-grid" style="margin-bottom:1rem;">
-        <div>
-          <label>Semana</label>
-          <select id="sel-semana-menu" onchange="cargarMenuSemanal()"><option value="">Cargando semanas...</option></select>
-        </div>
-      </div>
-      <div class="card-grid" id="grid-menu-semanal"></div>
-    </section>
-
-    <section id="vista-nuevo-pedido" class="panel-card">
-      <h3>Hacer pedido</h3>
-      <p>Selecciona platos del menú y el tipo de entrega. Con reserva: seña 50% por platos y mesa. Sin reserva: para llevar o domicilio, seña 50%.</p>
-      <div id="alerta-pedido" class="alerta" style="display:none;"></div>
-      <div id="seña-info" class="seña-info" style="display:none;">
-        <strong>Seña del 50%:</strong> Al confirmar este pedido se aplicará una seña del 50% del total. El restante se paga al retirar o al entregar.
-      </div>
-      <div class="form-grid">
-        <div style="grid-column: 1 / -1;">
-          <label>Tipo de pedido</label>
-          <div class="radio-group">
-            <label class="radio-label"><input type="radio" name="tipo-pedido" value="con_reserva" checked onchange="cambiarTipoPedido(this.value)"> Con reserva de mesa</label>
-            <label class="radio-label"><input type="radio" name="tipo-pedido" value="para_llevar" onchange="cambiarTipoPedido(this.value)"> Para llevar</label>
-            <label class="radio-label"><input type="radio" name="tipo-pedido" value="domicilio" onchange="cambiarTipoPedido(this.value)"> Domicilio</label>
+      <form id="form-nueva-reserva" class="form-reserva">
+        <div class="form-grid">
+          <div>
+            <label for="fecha-reserva">Fecha</label>
+            <input type="date" id="fecha-reserva" name="fecha" required>
+          </div>
+          <div>
+            <label for="hora-reserva">Hora</label>
+            <select id="hora-reserva" name="hora" required>
+              <option value="">Seleccionar hora</option>
+              <option value="12:00">12:00</option>
+              <option value="13:30">13:30</option>
+              <option value="15:00">15:00</option>
+              <option value="19:00">19:00</option>
+              <option value="20:30">20:30</option>
+              <option value="22:00">22:00</option>
+            </select>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label for="comensales-reserva">Número de comensales</label>
+            <select id="comensales-reserva" name="comensales" required>
+              <option value="1">1 persona</option>
+              <option value="2">2 personas</option>
+              <option value="3">3 personas</option>
+              <option value="4">4 personas</option>
+              <option value="5">5 personas</option>
+              <option value="6">6 o más personas</option>
+            </select>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label for="comentarios-reserva">Comentarios adicionales (opcional)</label>
+            <textarea id="comentarios-reserva" name="comentarios" rows="3" placeholder="Alergias, preferencias de mesa, solicitudes especiales..."></textarea>
           </div>
         </div>
-        <div id="grupo-mesa-pedido">
-          <label>Mesa</label>
-          <select id="sel-mesa-pedido" required><option value="">Seleccionar mesa</option></select>
-        </div>
-        <div id="grupo-direccion" class="domicilio-fields">
-          <label>Dirección de entrega</label>
-          <input type="text" id="inp-direccion" placeholder="Calle, número, barrio, referencia">
-          <label style="margin-top:0.5rem; display:block;">Zona de delivery</label>
-          <select id="sel-zona-delivery" style="width:100%; padding:0.35rem; border:1px solid rgba(27,67,50,0.15); border-radius:var(--radius-sm);"><option value="">Seleccionar zona</option></select>
-          <label style="margin-top:0.5rem; display:block;">Repartidor</label>
-          <select id="sel-repartidor" style="width:100%; padding:0.35rem; border:1px solid rgba(27,67,50,0.15); border-radius:var(--radius-sm);"><option value="">Sin asignar</option></select>
-        </div>
-      </div>
-      <div id="lista-productos" class="card-grid"></div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
-        <strong>Total: <span id="total-pedido">$0</span></strong>
-        <button type="button" class="btn btn-primary btn-accion" id="btn-crear-pedido">Enviar pedido</button>
+        <div id="mensaje-estado-reserva" class="mensaje-estado"></div>
+        <button type="submit" class="btn btn-reserva">Crear reserva</button>
+      </form>
+      <div id="calendario-reserva" style="margin-top: 2rem;">
+        <h4>Días disponibles</h4>
+        <div class="calendario" id="grid-calendario-reserva"></div>
+        <p id="fecha-seleccionada" style="margin-top: 1rem; color: var(--color-primary); font-weight: 700;"></p>
       </div>
     </section>
 
-    <section id="vista-mis-pedidos" class="panel-card">
+    <!-- Mis pedidos -->
+    <section id="vista-mis-pedidos" class="panel-card" style="display:none;">
       <h3>Mis pedidos</h3>
-      <div class="tabla-wrap" id="tabla-pedidos"></div>
+      <div id="alerta-mis-pedidos" class="alerta" style="display:none;"></div>
+      <div class="tabla-wrap" id="tabla-mis-pedidos"></div>
     </section>
 
-    <section id="vista-calificaciones" class="panel-card" style="display:none;">
-      <h3>Calificar platos</h3>
-      <p>Califique los platos que ha probado (1 a 5 estrellas).</p>
-      <div id="alerta-calificaciones" class="alerta" style="display:none;"></div>
-      <div class="form-grid">
-        <div>
-          <label>Plato</label>
-          <select id="sel-cal-plato"><option value="">Cargando platos...</option></select>
-        </div>
-        <div>
-          <label>Puntuación</label>
-          <div style="display:flex; gap:0.25rem;">
-            <button type="button" class="estrella" data-val="1" onclick="seleccionarEstrella(this, 1)">★</button>
-            <button type="button" class="estrella" data-val="2" onclick="seleccionarEstrella(this, 2)">★</button>
-            <button type="button" class="estrella" data-val="3" onclick="seleccionarEstrella(this, 3)">★</button>
-            <button type="button" class="estrella" data-val="4" onclick="seleccionarEstrella(this, 4)">★</button>
-            <button type="button" class="estrella" data-val="5" onclick="seleccionarEstrella(this, 5)">★</button>
-          </div>
-          <input type="hidden" id="inp-cal-puntuacion" value="0">
-        </div>
-        <div style="grid-column: 1 / -1;">
-          <label>Comentario</label>
-          <textarea id="inp-cal-comentario" rows="3" placeholder="Su opinión sobre este plato..."></textarea>
-        </div>
-        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
-          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-calificacion">Guardar calificación</button>
-          <button type="button" class="btn btn-accion sec" onclick="cargarCalificaciones()">Refrescar</button>
-        </div>
-      </div>
-      <div class="tabla-wrap" id="tabla-calificaciones"></div>
-    </section>
-
-    <section id="vista-preferencias" class="panel-card" style="display:none;">
-      <h3>Mis preferencias y alergias</h3>
-      <p>Registre sus preferencias alimentarias y alergias para el personal del restaurante.</p>
-      <div id="alerta-preferencias" class="alerta" style="display:none;"></div>
-      <div class="form-grid">
-        <div>
-          <label>Tipo</label>
-          <select id="inp-pref-tipo">
-            <option value="alergia">Alergia</option>
-            <option value="preferencia">Preferencia</option>
-            <option value="restriccion">Restricción</option>
-          </select>
-        </div>
-        <div style="grid-column: 1 / -1;">
-          <label>Descripción</label>
-          <input type="text" id="inp-pref-descripcion" placeholder="Ej. Alérgico a los mariscos">
-        </div>
-        <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
-          <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-preferencia">Guardar preferencia</button>
-          <button type="button" class="btn btn-accion sec" onclick="cargarPreferencias()">Refrescar</button>
-        </div>
-      </div>
-      <div class="tabla-wrap" id="tabla-preferencias"></div>
-    </section>
-
-    <section id="vista-puntos" class="panel-card" style="display:none;">
-      <h3>Puntos de fidelidad</h3>
-      <p>Acumule puntos por cada compra y canjéelos por descuentos.</p>
-      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
-          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos disponibles</div>
-          <div style="font-size:2rem; font-weight:700; color:var(--color-primary);" id="puntos-disponibles">0</div>
-        </div>
-        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
-          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos acumulados</div>
-          <div style="font-size:2rem; font-weight:700; color:#8a6200;" id="puntos-acumulados">0</div>
-        </div>
-        <div style="text-align:center; padding:1rem; background:#fff; border-radius:var(--radius-md); border:1px solid rgba(27,67,50,0.12);">
-          <div style="font-size:0.85rem; color:var(--color-text-muted);">Puntos canjeados</div>
-          <div style="font-size:2rem; font-weight:700; color:#a83636;" id="puntos-canjeados">0</div>
-        </div>
-      </div>
-      <div style="margin-top:1.5rem;">
-        <button type="button" class="btn btn-accion sec" onclick="cargarPuntos()">Refrescar puntos</button>
-      </div>
-    </section>
   </main>
 </div>
 
@@ -304,34 +205,22 @@
   import { api } from './api.js';
   import { formatearMoneda } from './main.js';
 
-  let mesas = [];
-  let productos = [];
-  let menuSemanal = [];
-  let fechaSeleccionada = null;
-  let horaSeleccionada = null;
-  let disponibilidadFecha = null;
-  let mesaSeleccionadaId = null;
-  let tipoPedido = 'con_reserva';
-  let carrito = []; // {id_producto, cantidad, precio_unitario}
-  let mesSeleccionado = new Date();
-  let zonasDelivery = [];
-  let repartidores = [];
-
   const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let fechaSeleccionada = null;
+  let disponibilidadDisponible = new Set();
 
   function mostrar(vista) {
     document.querySelectorAll('section').forEach(s => s.style.display = 'none');
     document.getElementById('vista-' + vista).style.display = 'block';
-    if (vista === 'reservas') cargarMisReservas();
-    if (vista === 'nueva-reserva') { cargarMesas(); renderCalendario(); }
-    if (vista === 'menu-semanal') { cargarSemanasMenu(); cargarMenuSemanal(); }
-    if (vista === 'nuevo-pedido') { cargarMesas(); cargarProductos(); cargarMenuSemanal(); cargarZonasRepartidores(); actualizarTotal(); }
+    if (vista === 'mis-reservas') cargarMisReservas();
+    if (vista === 'nueva-reserva') { cargarDisponibilidad(); cargarCalendarioReserva(); }
     if (vista === 'mis-pedidos') cargarMisPedidos();
   }
 
-  function cerrarSesion() {
-    api.logout().finally(() => { window.location.href = 'index.html'; });
+  async function cerrarSesion() {
+    await api.logout();
+    window.location.href = 'index.html';
   }
 
   function alerta(id, texto, tipo) {
@@ -341,153 +230,89 @@
     el.style.display = 'block';
   }
 
-  async function cargarMesas() {
+  async function cargarMisReservas() {
     try {
-      const r = await api.mesas();
-      mesas = r.datos || [];
-      const sel = document.getElementById('sel-mesa');
-      const selP = document.getElementById('sel-mesa-pedido');
-      [sel, selP].forEach(s => {
-        s.innerHTML = '<option value="">Seleccionar mesa</option>';
-        mesas.forEach(m => {
-          if (m.activo === 0) return;
-          const o = document.createElement('option');
-          o.value = m.id_mesa;
-          o.textContent = 'Mesa ' + (m.numero_mesa || m.id_mesa) + ' · cap. ' + (m.capacidad || '-');
-          s.appendChild(o.cloneNode(true));
-        });
+      const r = await api.reservas();
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-mis-reservas');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No tienes reservas.</p>'; return; }
+      let html = '<table><thead><tr><th>Reserva</th><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      datos.forEach(res => {
+        const fin = res.hora_fin ? res.hora_fin.substring(0,5) : '';
+        const opts = ['pendiente','confirmada','cancelada','vencida','completada']
+          .map(e => `<option value="${e}" ${e === res.estado ? 'selected' : ''}>${e}</option>`).join('');
+        html += `<tr>
+          <td>#${res.id_reserva}</td>
+          <td>${res.fecha_reserva}</td>
+          <td>${res.hora_inicio.substring(0,5)} - ${fin}</td>
+          <td>Mesa ${res.id_mesa}</td>
+          <td><span class="estado estado--${res.estado}">${res.estado}</span></td>
+          <td>
+            ${res.estado === 'pendiente' || res.estado === 'confirmada'
+              ? `<button class="btn-sm btn-accion danger" onclick="cancelarReserva(${res.id_reserva})">Cancelar</button>`
+              : ''
+            }
+          </td>
+        </tr>`;
       });
-    } catch (e) { console.error('mesas', e); }
-  }
-
-  async function cargarProductos() {
-    try {
-      const r = await api.productos();
-      productos = r.datos || [];
-    } catch (e) { console.error('productos', e); }
-  }
-
-  // ── Menú semanal ──
-  async function cargarSemanasMenu() {
-    try {
-      const r = await api.menuSemanal();
-      const semanas = r.datos || [];
-      const sel = document.getElementById('sel-semana-menu');
-      sel.innerHTML = '<option value="">Seleccionar semana</option>';
-      semanas.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.semana_inicio;
-        o.textContent = `Del ${s.semana_inicio} al ${s.semana_fin}`;
-        sel.appendChild(o);
-      });
-      if (semanas.length > 0) {
-        sel.value = semanas[0].semana_inicio;
-        cargarMenuSemanal();
-      }
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
     } catch (e) {
-      document.getElementById('grid-menu-semanal').innerHTML = '<p class="vacio">No hay menú semanal disponible.</p>';
+      document.getElementById('tabla-mis-reservas').innerHTML = '<p class="vacio">No se pudieron cargar las reservas.</p>';
       console.error(e);
     }
   }
 
-  async function cargarMenuSemanal() {
-    const semana = document.getElementById('sel-semana-menu').value;
-    if (!semana) return;
+  window.cancelarReserva = async function (id) {
+    if (!confirm('¿Cancelar reserva?')) return;
     try {
-      const r = await api.menuSemanal({ semana });
-      menuSemanal = r.datos || [];
-      renderMenuSemanal();
+      await api.cancelarReserva(id);
+      alerta('alerta-mis-reservas', 'Reserva cancelada.', 'exito');
+      cargarMisReservas();
+    } catch (e) { alerta('alerta-mis-reservas', e.message || 'Error.', 'error'); }
+  };
+
+  async function cargarMisPedidos() {
+    try {
+      const r = await api.pedidos();
+      const datos = r.datos || [];
+      const wrap = document.getElementById('tabla-mis-pedidos');
+      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No tienes pedidos.</p>'; return; }
+      let html = '<table><thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Seña</th></tr></thead><tbody>';
+      datos.forEach(p => {
+        html += `<tr>
+          <td>#${p.id_pedido}</td>
+          <td>${p.fecha_pedido ? p.fecha_pedido.substring(0,16) : '-'}</td>
+          <td><span class="estado estado--${p.estado}">${p.estado}</span></td>
+          <td>$${(p.total || 0).toFixed(2)}</td>
+          <td><span class="estado estado--${p.estado_seña || 'pendiente'}">${p.estado_seña || 'pendiente'}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
     } catch (e) {
-      document.getElementById('grid-menu-semanal').innerHTML = '<p class="vacio">No se pudo cargar el menú.</p>';
+      document.getElementById('tabla-mis-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los pedidos.</p>';
       console.error(e);
     }
+  };
+
+  async function cargarDisponibilidad() {
+    try {
+      const r = await api.disponibilidad();
+      const datos = r.datos || [];
+      disponibilidadDisponible = new Set(datos.map(d => d.fecha));
+      renderCalendarioReserva();
+    } catch (e) {
+      console.error('disponibilidad', e);
+    }
   }
 
-  function renderMenuSemanal() {
-    const grid = document.getElementById('grid-menu-semanal');
+  async function cargarCalendarioReserva() {
+    const grid = document.getElementById('grid-calendario-reserva');
     grid.innerHTML = '';
-    if (!menuSemanal.length) {
-      grid.innerHTML = '<p class="vacio">No hay platos publicados para esta semana.</p>';
-      return;
-    }
-    menuSemanal.forEach(semana => {
-      const h3 = document.createElement('h3');
-      h3.textContent = `Semana del ${semana.semana_inicio} al ${semana.semana_fin}`;
-      grid.appendChild(h3);
-      const sub = document.createElement('div');
-      sub.className = 'card-grid';
-      if (!semana.items || !semana.items.length) {
-        sub.innerHTML = '<p class="vacio">Sin platos esta semana.</p>';
-        grid.appendChild(sub);
-        return;
-      }
-      semana.items.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'producto-card';
-        const precio = p.precio_semanal !== null ? p.precio_semanal : p.precio;
-        card.innerHTML = `
-          <h4>${escapeHtml(p.nombre)}</h4>
-          <p>${escapeHtml(p.categoria || '')} · ${p.disponible ? 'Disponible' : 'No disponible'}</p>
-          <span class="precio">${formatearMoneda(precio)}</span>
-          ${tipoPedido === 'con_reserva' || tipoPedido === 'para_llevar' || tipoPedido === 'domicilio'
-            ? `<div class="cantidad"><span>Cant.</span><input type="number" min="1" value="1" data-id="${p.id_producto}" data-precio="${precio}" data-nombre="${escapeHtml(p.nombre)}" ${!p.disponible ? 'disabled' : ''}></div>`
-            : ''}
-        `;
-        sub.appendChild(card);
-      });
-      grid.appendChild(sub);
-    });
-    actualizarCarritoDesdeInputs();
-  }
-
-  function actualizarCarritoDesdeInputs() {
-    carrito = [];
-    document.querySelectorAll('#grid-menu-semanal input[data-id]').forEach(inp => {
-      const cant = parseInt(inp.value, 10);
-      if (cant >= 1) {
-        carrito.push({
-          id_producto: parseInt(inp.dataset.id, 10),
-          cantidad: cant,
-          precio_unitario: parseFloat(inp.dataset.precio) || 0,
-          nombre: inp.dataset.nombre || ''
-        });
-      }
-    });
-    actualizarTotal();
-  }
-
-  function actualizarTotal() {
-    const total = carrito.reduce((sum, c) => sum + c.cantidad * c.precio_unitario, 0);
-    let costoEnvio = 0;
-    if (tipoPedido === 'domicilio') {
-      const zonaId = parseInt(document.getElementById('sel-zona-delivery').value, 10);
-      const zona = zonasDelivery.find(z => z.id_zona === zonaId);
-      if (zona) costoEnvio = parseFloat(zona.costo_envio) || 0;
-    }
-    const totalConEnvio = total + costoEnvio;
-    document.getElementById('total-pedido').textContent = formatearMoneda(totalConEnvio);
-    const señaInfo = document.getElementById('seña-info');
-    if (totalConEnvio > 0) {
-      señaInfo.style.display = 'block';
-    } else {
-      señaInfo.style.display = 'none';
-    }
-  }
-
-  document.getElementById('grid-menu-semanal').addEventListener('input', (e) => {
-    if (e.target.matches('input[data-id]')) {
-      actualizarCarritoDesdeInputs();
-    }
-  });
-
-  // ── Calendario reservas ──
-  async function renderCalendario() {
-    const grid = document.getElementById('grid-calendario');
-    grid.innerHTML = '';
-    const anio = mesSeleccionado.getFullYear();
-    const mes = mesSeleccionado.getMonth();
-    document.getElementById('cal-mes').textContent = MESES[mes] + ' ' + anio;
-
+    const anio = 2026;
+    const mes = 10; // Noviembre (0-indexed)
+    
     DIAS_SEM.forEach(d => {
       const n = document.createElement('div');
       n.className = 'cal-dia-nombre';
@@ -509,429 +334,82 @@
       const dia = document.createElement('div');
       dia.className = 'cal-dia';
       dia.textContent = d;
-      if (fecha.getTime() === hoy.getTime()) dia.classList.add('hoy');
+      
+      const esDisponible = disponibilidadDisponible.has(fechaStr);
+      const esHoy = fecha.getTime() === hoy.getTime();
+      const esSeleccionada = fechaSeleccionada === fechaStr;
 
-      try {
-        const r = await api.disponibilidad({ fecha: fechaStr });
-        const datos = r.datos || [];
-        if (datos.length > 0) {
-          dia.classList.add('disponible');
-          dia.onclick = () => seleccionarFecha(fechaStr, datos);
-        } else {
-          dia.classList.add('no-disponible');
-        }
-      } catch (e) {
+      if (esDisponible) {
+        dia.classList.add('disponible');
+        dia.onclick = () => seleccionarFecha(fechaStr, dia);
+      } else {
         dia.classList.add('no-disponible');
+        dia.style.cursor = 'not-allowed';
       }
+
+      if (esHoy) dia.classList.add('hoy');
+      if (esSeleccionada) dia.classList.add('seleccionado');
+
       grid.appendChild(dia);
     }
   }
 
-  async function mesAnterior() {
-    mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() - 1, 1);
-    renderCalendario();
-  }
-  async function mesSiguiente() {
-    mesSeleccionado = new Date(mesSeleccionado.getFullYear(), mesSeleccionado.getMonth() + 1, 1);
-    renderCalendario();
-  }
-
-  function seleccionarFecha(fechaStr, datos) {
+  function seleccionarFecha(fechaStr, elemento) {
     fechaSeleccionada = fechaStr;
-    disponibilidadFecha = datos;
-    document.getElementById('inp-fecha-reserva').value = fechaStr;
-
-    const info = document.getElementById('seleccion-info');
-    info.style.display = 'block';
-    document.getElementById('info-fecha').textContent = fechaStr;
-
-    const d = datos[0];
-    const inicio = d.hora_inicio.substring(0,5);
-    const fin = d.hora_fin.substring(0,5);
-    const bloques = generarBloquesHorarios(inicio, fin);
-
-    const grid = document.getElementById('grid-horas');
-    if (!grid) {
-      const contenedor = document.createElement('div');
-      contenedor.id = 'grid-horas';
-      contenedor.className = 'hora-grid';
-      document.getElementById('seleccion-info').insertAdjacentElement('afterend', contenedor);
-    }
-    const horaGrid = document.getElementById('grid-horas');
-    horaGrid.innerHTML = '<div style="grid-column:1/-1; font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.5rem;">Seleccionar hora:</div>';
-    bloques.forEach(b => {
-      const btn = document.createElement('button');
-      btn.className = 'hora-btn';
-      btn.textContent = b;
-      btn.onclick = () => seleccionarHora(b, btn);
-      horaGrid.appendChild(btn);
-    });
-
-    document.getElementById('btn-crear-reserva').disabled = true;
-    document.getElementById('inp-hora-inicio').value = '';
-    document.getElementById('inp-hora-fin').value = '';
-    horaSeleccionada = null;
+    document.getElementById('fecha-reserva').value = fechaStr;
+    document.getElementById('fecha-seleccionada').textContent = 'Fecha seleccionada: ' + fechaStr;
+    
+    // Resetear selección previa
+    document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('seleccionado'));
+    elemento.classList.add('seleccionado');
   }
 
-  function generarBloquesHorarios(inicio, fin) {
-    const bloques = [];
-    const [hi, mi] = inicio.split(':').map(Number);
-    const [hf, mf] = fin.split(':').map(Number);
-    let h = hi, m = mi;
-    while (h < hf || (h === hf && m < mf)) {
-      bloques.push((h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m);
-      m += 30;
-      if (m >= 60) { m = 0; h++; }
-    }
-    return bloques;
-  }
+  document.getElementById('form-nueva-reserva').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fecha = document.getElementById('fecha-reserva').value;
+    const hora = document.getElementById('hora-reserva').value;
+    const comensales = document.getElementById('comensales-reserva').value;
+    const comentarios = document.getElementById('comentarios-reserva').value;
 
-  function seleccionarHora(hora, btn) {
-    document.querySelectorAll('.hora-btn').forEach(b => b.classList.remove('seleccionada'));
-    btn.classList.add('seleccionada');
-    const inicio = hora;
-    const [h, m] = hora.split(':').map(Number);
-    let fh = h, fm = m + 30;
-    if (fm >= 60) { fm = 0; fh++; }
-    const fin = (fh < 10 ? '0' : '') + fh + ':' + (fm < 10 ? '0' : '') + fm;
-    document.getElementById('inp-hora-inicio').value = inicio;
-    document.getElementById('inp-hora-fin').value = fin;
-    document.getElementById('info-hora').textContent = inicio + ' - ' + fin;
-    horaSeleccionada = { inicio, fin };
-    validarReserva();
-  }
-
-  function validarReserva() {
-    const btn = document.getElementById('btn-crear-reserva');
-    btn.disabled = !(fechaSeleccionada && horaSeleccionada && mesaSeleccionadaId);
-  }
-
-  document.getElementById('sel-mesa').addEventListener('change', (e) => {
-    mesaSeleccionadaId = e.target.value ? parseInt(e.target.value, 10) : null;
-    validarReserva();
-  });
-
-  document.getElementById('btn-crear-reserva').addEventListener('click', async () => {
-    if (!mesaSeleccionadaId || !fechaSeleccionada || !horaSeleccionada) {
-      alerta('alerta-nueva-reserva', 'Seleccione fecha, hora y mesa.', 'error');
+    if (!fecha || !hora || !comensales) {
+      alerta('alerta-nueva-reserva', 'Por favor completa fecha, hora y número de comensales.', 'error');
       return;
     }
-    try {
-      await api._request('/reservas', {
-        method: 'POST',
-        body: JSON.stringify({
-          id_mesa: mesaSeleccionadaId,
-          fecha_reserva: fechaSeleccionada,
-          hora_inicio: horaSeleccionada.inicio,
-          hora_fin: horaSeleccionada.fin
-        })
-      });
-      alerta('alerta-nueva-reserva', 'Reserva creada correctamente.', 'exito');
-      setTimeout(() => mostrar('reservas'), 800);
-    } catch (e) { alerta('alerta-nueva-reserva', e.message || 'Error al crear reserva.', 'error'); }
-  });
 
-  async function cargarMisReservas() {
+    // Obtener una mesa disponible (la primera disponible)
     try {
-      const r = await api._request('/reservas/mis-reservas', { method: 'GET' });
-      const datos = r.datos || [];
-      const wrap = document.getElementById('tabla-reservas');
-      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No tiene reservas aún.</p>'; return; }
-      let html = '<table><thead><tr><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Estado</th><th></th></tr></thead><tbody>';
-      datos.forEach(res => {
-        const fin = res.hora_fin ? res.hora_fin.substring(0,5) : '';
-        html += `<tr><td>${res.fecha_reserva}</td><td>${res.hora_inicio.substring(0,5)} - ${fin}</td><td>Mesa ${res.id_mesa}</td><td><span class="estado estado--${res.estado}">${res.estado}</span></td><td>${res.estado === 'pendiente' ? `<button class="btn-sm btn-accion danger" onclick="cancelarReserva(${res.id_reserva})">Cancelar</button>` : '-'}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    } catch (e) {
-      document.getElementById('tabla-reservas').innerHTML = '<p class="vacio">No se pudieron cargar las reservas.</p>';
-      console.error(e);
-    }
-  }
+      // Obtener mesas disponibles
+      const r = await api.mesas();
+      const mesas = r.datos || [];
+      const mesaDisponible = mesas.find(m => m.activo);
+      
+      if (!mesaDisponible) {
+        alerta('alerta-nueva-reserva', 'No hay mesas disponibles.', 'error');
+        return;
+      }
 
-  window.cancelarReserva = async function (id) {
-    if (!confirm('¿Cancelar esta reserva?')) return;
-    try {
-      await api._request(`/reservas/${id}/cancelar`, { method: 'POST' });
-      alerta('alerta-reservas', 'Reserva cancelada.', 'exito');
+      await api.crearReserva({
+        id_mesa: mesaDisponible.id_mesa,
+        fecha_reserva: fecha,
+        hora_inicio: hora,
+        hora_fin: hora === '22:00' ? '23:00' : (parseInt(hora.split(':')[0]) + 1) + ':00',
+        observaciones: comentarios
+      });
+      
+      alerta('alerta-nueva-reserva', 'Reserva creada exitosamente.', 'exito');
+      document.getElementById('form-nueva-reserva').reset();
+      document.getElementById('fecha-seleccionada').textContent = '';
+      fechaSeleccionada = null;
+      document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('seleccionado'));
       cargarMisReservas();
-    } catch (e) { alerta('alerta-reservas', e.message || 'Error al cancelar.', 'error'); }
-  };
-
-  // ── Pedidos ──
-  function cambiarTipoPedido(tipo) {
-    tipoPedido = tipo;
-    const grupoMesa = document.getElementById('grupo-mesa-pedido');
-    const grupoDireccion = document.getElementById('grupo-direccion');
-    const señaInfo = document.getElementById('seña-info');
-    const btnPedido = document.getElementById('btn-crear-pedido');
-
-    if (tipo === 'con_reserva') {
-      grupoMesa.style.display = 'block';
-      grupoDireccion.style.display = 'none';
-      btnPedido.textContent = 'Enviar pedido (con reserva)';
-    } else if (tipo === 'para_llevar') {
-      grupoMesa.style.display = 'none';
-      grupoDireccion.style.display = 'none';
-      btnPedido.textContent = 'Enviar pedido (para llevar)';
-    } else if (tipo === 'domicilio') {
-      grupoMesa.style.display = 'none';
-      grupoDireccion.style.display = 'block';
-      btnPedido.textContent = 'Enviar pedido (domicilio)';
+      mostrar('mis-reservas');
+    } catch (err) {
+      alerta('alerta-nueva-reserva', err.message || 'Error al crear reserva.', 'error');
     }
-
-    renderMenuSemanal();
-    actualizarTotal();
-  }
-
-  document.getElementById('btn-crear-pedido').addEventListener('click', async () => {
-    if (carrito.length === 0) {
-      alerta('alerta-pedido', 'Agregue al menos un producto.', 'error');
-      return;
-    }
-
-    const total = carrito.reduce((sum, c) => sum + c.cantidad * c.precio_unitario, 0);
-    const seña = total * 0.5;
-
-    let id_mesa = null;
-    let direccion = null;
-    let id_zona_delivery = null;
-    let costo_envio = 0;
-    let id_repartidor = null;
-
-    if (tipoPedido === 'con_reserva') {
-      id_mesa = parseInt(document.getElementById('sel-mesa-pedido').value, 10);
-      if (!id_mesa) { alerta('alerta-pedido', 'Seleccione una mesa.', 'error'); return; }
-    } else if (tipoPedido === 'domicilio') {
-      direccion = document.getElementById('inp-direccion').value.trim();
-      const zonaId = parseInt(document.getElementById('sel-zona-delivery').value, 10);
-      const zona = zonasDelivery.find(z => z.id_zona === zonaId);
-      id_zona_delivery = zonaId > 0 ? zonaId : null;
-      costo_envio = zona ? parseFloat(zona.costo_envio) : 0;
-      id_repartidor = parseInt(document.getElementById('sel-repartidor').value, 10) || null;
-      if (!direccion) { alerta('alerta-pedido', 'Ingrese la dirección de entrega.', 'error'); return; }
-    }
-
-    try {
-      const respuesta = await api._request('/pedidos', {
-        method: 'POST',
-        body: JSON.stringify({
-          id_mesa: id_mesa,
-          detalles: carrito.map(c => ({
-            id_producto: c.id_producto,
-            cantidad: c.cantidad,
-            precio_unitario: c.precio_unitario
-          })),
-          tipo_pedido: tipoPedido,
-          seña: seña,
-          direccion_domicilio: direccion,
-          id_zona_delivery: id_zona_delivery,
-          costo_envio: costo_envio,
-          id_repartidor: id_repartidor,
-          estado_seña: 'pendiente'
-        })
-      });
-      alerta('alerta-pedido', 'Pedido enviado correctamente. Seña del 50% pendiente de pago.', 'exito');
-      carrito = [];
-      document.querySelectorAll('#grid-menu-semanal input[data-id]').forEach(inp => inp.value = 1);
-      actualizarTotal();
-      setTimeout(() => mostrar('mis-pedidos'), 800);
-    } catch (e) { alerta('alerta-pedido', e.message || 'Error al enviar pedido.', 'error'); }
   });
 
-  async function cargarMisPedidos() {
-    try {
-      const r = await api._request('/pedidos/mis-pedidos', { method: 'GET' });
-      const datos = r.datos || [];
-      const wrap = document.getElementById('tabla-pedidos');
-      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No tiene pedidos aún.</p>'; return; }
-      let html = '<table><thead><tr><th>Fecha</th><th>Mesa</th><th>Tipo</th><th>Total</th><th>Seña</th><th>Estado</th></tr></thead><tbody>';
-      datos.forEach(p => {
-        const señaEstado = p.estado_seña || 'pendiente';
-        html += `<tr>
-          <td>${p.fecha_pedido ? p.fecha_pedido.substring(0,16) : '-'}</td>
-          <td>Mesa ${p.id_mesa || '-'}</td>
-          <td>${p.tipo_pedido || 'con_reserva'}</td>
-          <td>${formatearMoneda(p.total || 0)}</td>
-          <td><span class="estado estado--${señaEstado === 'pagada' ? 'pagada' : 'pendiente-seña'}">${señaEstado}</span> ${p.seña ? formatearMoneda(p.seña) : ''}</td>
-          <td><span class="estado estado--${p.estado}">${p.estado}</span></td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    } catch (e) {
-      document.getElementById('tabla-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los pedidos.</p>';
-      console.error(e);
-    }
-  }
-
-  async function cargarZonasRepartidores() {
-    try {
-      const rz = await api._request('/admin/zonas-delivery', { method: 'GET' });
-      zonasDelivery = rz.datos || [];
-      const selZona = document.getElementById('sel-zona-delivery');
-      selZona.innerHTML = '<option value="">Seleccionar zona</option>';
-      zonasDelivery.forEach(z => {
-        const o = document.createElement('option'); o.value = z.id_zona; o.textContent = z.nombre + ' ($' + (z.costo_envio || 0).toFixed(2) + ')';
-        selZona.appendChild(o);
-      });
-    } catch (e) { console.error('zonas', e); }
-    try {
-      const rr = await api._request('/admin/repartidores', { method: 'GET' });
-      repartidores = rr.datos || [];
-      const selRep = document.getElementById('sel-repartidor');
-      selRep.innerHTML = '<option value="">Sin asignar</option>';
-      repartidores.forEach(r => {
-        const o = document.createElement('option'); o.value = r.id_repartidor; o.textContent = r.nombre;
-        selRep.appendChild(o);
-      });
-    } catch (e) { console.error('repartidores', e); }
-  }
-
-  // ── Calificaciones de platos (RF-91) ──
-  let puntuacionSeleccionada = 0;
-
-  window.seleccionarEstrella = function(btn, val) {
-    puntuacionSeleccionada = val;
-    document.getElementById('inp-cal-puntuacion').value = val;
-    document.querySelectorAll('.estrella').forEach((b, i) => {
-      b.style.color = (i < val) ? '#8a6200' : '#bdbdbd';
-    });
-  };
-
-  async function cargarCalificaciones() {
-    try {
-      const sel = document.getElementById('sel-cal-plato');
-      const rp = await api.productos();
-      productos = rp.datos || [];
-      sel.innerHTML = '<option value="">Seleccionar plato</option>';
-      productos.forEach(p => {
-        const o = document.createElement('option'); o.value = p.id_producto; o.textContent = p.nombre + ' (' + p.categoria + ')';
-        sel.appendChild(o);
-      });
-
-      const r = await api._request('/calificaciones?id_producto=' + (sel.value || 0), { method: 'GET' });
-      const datos = r.datos || [];
-      const wrap = document.getElementById('tabla-calificaciones');
-      if (!datos.length) { wrap.innerHTML = '<p class="vacio">Sin calificaciones para este plato.</p>'; return; }
-      let html = '<table><thead><tr><th>Usuario</th><th>Puntuación</th><th>Comentario</th><th>Fecha</th></tr></thead><tbody>';
-      datos.forEach(c => {
-        html += `<tr>
-          <td>${escapeHtml(c.nombre_usuario)}</td>
-          <td>${'★'.repeat(c.puntuacion)}${'☆'.repeat(5 - c.puntuacion)} (${c.puntuacion})</td>
-          <td>${escapeHtml(c.comentario || '-')}</td>
-          <td>${c.fecha_calificacion}</td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    } catch (e) {
-      console.error(e);
-      document.getElementById('tabla-calificaciones').innerHTML = '<p class="vacio">No se pudieron cargar las calificaciones.</p>';
-    }
-  }
-
-  document.getElementById('sel-cal-plato').addEventListener('change', () => {
-    puntuacionSeleccionada = 0;
-    document.getElementById('inp-cal-puntuacion').value = 0;
-    document.querySelectorAll('.estrella').forEach(b => b.style.color = '#bdbdbd');
-    cargarCalificaciones();
-  });
-
-  document.getElementById('btn-guardar-calificacion').addEventListener('click', async () => {
-    const id_producto = parseInt(document.getElementById('sel-cal-plato').value, 10);
-    const puntuacion = parseInt(document.getElementById('inp-cal-puntuacion').value, 10);
-    const comentario = document.getElementById('inp-cal-comentario').value.trim();
-    if (!id_producto) { alerta('alerta-calificaciones', 'Seleccione un plato.', 'error'); return; }
-    if (puntuacion < 1 || puntuacion > 5) { alerta('alerta-calificaciones', 'Seleccione una puntuación de 1 a 5 estrellas.', 'error'); return; }
-    try {
-      await api._request('/calificaciones', {
-        method: 'POST',
-        body: JSON.stringify({ id_producto, puntuacion, comentario })
-      });
-      alerta('alerta-calificaciones', 'Calificación guardada.', 'exito');
-      document.getElementById('inp-cal-comentario').value = '';
-      puntuacionSeleccionada = 0;
-      document.getElementById('inp-cal-puntuacion').value = 0;
-      document.querySelectorAll('.estrella').forEach(b => b.style.color = '#bdbdbd');
-      cargarCalificaciones();
-    } catch (e) { alerta('alerta-calificaciones', e.message || 'Error.', 'error'); }
-  });
-
-  // ── Preferencias y alergias (RF-92) ──
-  async function cargarPreferencias() {
-    try {
-      const r = await api._request('/preferencias', { method: 'GET' });
-      const datos = r.datos || [];
-      const wrap = document.getElementById('tabla-preferencias');
-      if (!datos.length) { wrap.innerHTML = '<p class="vacio">Sin preferencias registradas.</p>'; return; }
-      let html = '<table><thead><tr><th>Tipo</th><th>Descripción</th><th>Acción</th></tr></thead><tbody>';
-      datos.forEach(p => {
-        html += `<tr>
-          <td>${p.tipo === 'alergia' ? '🚨 Alergia' : (p.tipo === 'preferencia' ? '⭐ Preferencia' : '⚠️ Restricción')}</td>
-          <td>${escapeHtml(p.descripcion)}</td>
-          <td><button class="btn-sm btn-accion danger" onclick="eliminarPreferencia(${p.id_preferencia})">Eliminar</button></td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    } catch (e) {
-      console.error(e);
-      document.getElementById('tabla-preferencias').innerHTML = '<p class="vacio">No se pudieron cargar las preferencias.</p>';
-    }
-  }
-
-  window.eliminarPreferencia = async function (id) {
-    if (!confirm('¿Eliminar esta preferencia?')) return;
-    try {
-      await api._request('/preferencias/' + id, { method: 'DELETE' });
-      alerta('alerta-preferencias', 'Preferencia eliminada.', 'exito');
-      cargarPreferencias();
-    } catch (e) { alerta('alerta-preferencias', e.message || 'Error.', 'error'); }
-  };
-
-  document.getElementById('btn-guardar-preferencia').addEventListener('click', async () => {
-    const tipo = document.getElementById('inp-pref-tipo').value;
-    const descripcion = document.getElementById('inp-pref-descripcion').value.trim();
-    if (!descripcion) { alerta('alerta-preferencias', 'Ingrese una descripción.', 'error'); return; }
-    try {
-      await api._request('/preferencias', {
-        method: 'POST',
-        body: JSON.stringify({ tipo, descripcion })
-      });
-      alerta('alerta-preferencias', 'Preferencia guardada.', 'exito');
-      document.getElementById('inp-pref-descripcion').value = '';
-      cargarPreferencias();
-    } catch (e) { alerta('alerta-preferencias', e.message || 'Error.', 'error'); }
-  });
-
-  // ── Puntos de fidelidad (RF-90) ──
-  async function cargarPuntos() {
-    try {
-      const r = await api._request('/puntos-fidelidad/mis-puntos', { method: 'GET' });
-      const d = r.datos || {};
-      document.getElementById('puntos-disponibles').textContent = d.puntos_disponibles || 0;
-      document.getElementById('puntos-acumulados').textContent = d.puntos_acumulados || 0;
-      document.getElementById('puntos-canjeados').textContent = d.puntos_canjeados || 0;
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  document.getElementById('sel-zona-delivery').addEventListener('change', () => actualizarTotal());
-  document.getElementById('sel-repartidor').addEventListener('change', () => actualizarTotal());
-
-  // Actualizar mostrar() para incluir las nuevas vistas
-  const _mostrarCli = mostrar;
-  mostrar = function(vista) {
-    _mostrarCli(vista);
-    if (vista === 'calificaciones') cargarCalificaciones();
-    if (vista === 'preferencias') cargarPreferencias();
-    if (vista === 'puntos') cargarPuntos();
-  };
-
-  mostrar('reservas');
+  mostrar('mis-reservas');
 </script>
+
 </body>
 </html>
