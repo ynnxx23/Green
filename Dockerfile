@@ -1,7 +1,7 @@
 FROM php:8.2-apache
 
 # Instalar extensiones PHP necesarias y cliente de MySQL para aplicar migraciones
-RUN apt-get update && apt-get install -y mariadb-client && docker-php-ext-install pdo pdo_mysql mbstring
+RUN apt-get update && apt-get install -y mariadb-client libonig-dev && docker-php-ext-install pdo pdo_mysql mbstring
 
 # Habilitar mod_rewrite para URLs limpias
 RUN a2enmod rewrite
