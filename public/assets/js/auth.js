@@ -39,7 +39,18 @@ function initLogin(form) {
       const respuesta = await api.login(datos);
       if (respuesta.exito) {
         mostrarToast('Inicio de sesión exitoso.', 'exito');
-        setTimeout(() => { window.location.href = 'panel.html'; }, 800);
+        // Verificar sesión y rol para redirigir directamente al panel correcto
+        const sesion = await api.sesion();
+        if (sesion.exito) {
+          const rol = sesion.datos.id_rol;
+          // 1 = cliente, 2 = mesero, 3 = cocinero, 4 = administrador
+          if (rol === 1) window.location.href = 'panel-cliente.html';
+          else if (rol === 2 || rol === 3) window.location.href = 'panel-encargado.html';
+          else if (rol === 4) window.location.href = 'panel-encargado.html';
+          else window.location.href = 'panel-cliente.html';
+        } else {
+          window.location.href = 'panel-cliente.html';
+        }
       } else {
         throw new Error(respuesta.mensaje || 'Credenciales inválidas.');
       }
