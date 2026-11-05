@@ -140,7 +140,7 @@
 
   async function cargarPlatosDestacados() {
     try {
-      const respuesta = await api._request('/api/productos-mas-vendidos', { method: 'GET' });
+      const respuesta = await api._request('/productos-mas-vendidos', { method: 'GET' });
       if (!respuesta.exito) throw new Error(respuesta.mensaje);
       const productos = respuesta.datos || [];
 

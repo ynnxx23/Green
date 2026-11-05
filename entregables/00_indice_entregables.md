@@ -12,9 +12,10 @@ Este directorio contiene todos los entregables del Proyecto Integrador Cuatrimes
 | 06  | `06_sistema_funcional_pruebas.md` | Sistema funcional: pruebas realizadas, errores corregidos, historial de movimientos, reportes y cómo ejecutar el sistema.                                                                                |
 | 07  | `07_plan_mantenimiento.md`        | Plan de mantenimiento: tipos de mantenimiento (correctivo, adaptativo, preventivo, evolutivo), tareas periódicas, roles responsables y procedimiento de incidencias.                                     |
 | 08  | `08_plan_capacitacion.md`         | Plan de capacitación: público objetivo, contenidos por rol, modalidad, duración, materiales, cronograma y evaluación.                                                                                    |
-| 09  | `09_diagrama_caso_uso.md`         | Diagrama de casos de uso (Mermaid): 19 casos de uso distribuidos entre Cliente, Encargado y Administrador.                                                                                               |
+| 09  | `09_diagrama_caso_uso.md`         | Diagrama de casos de uso (Mermaid): 19 casos de uso core distribuidos entre Cliente, Encargado y Administrador, más casos de uso extendidos CU20–CU33.                                                      |
 | 10  | `10_diagrama_der.md`              | Diagrama Entidad-Relación (DER, Mermaid): modelo de datos con entidades, atributos y relaciones.                                                                                                         |
 | 11  | `11_diagrama_gantt.md`            | Diagrama de Gantt (Mermaid): cronograma estimado del proyecto por etapas.                                                                                                                                |
+| 12  | `12_diagrama_clases.md`           | Diagrama de clases (Mermaid): clases core y extendidas con atributos, métodos y relaciones, trazables al DER y a los casos de uso extendidos.                                                            |
 
 ## Formato
 Los diagramas (casos de uso, DER y Gantt) se entregan en archivos `.md` con sintaxis Mermaid. Para visualizarlos, abrir cada archivo en un visor que soporte Mermaid o pegar el bloque de código en [mermaid.live](https://mermaid.live).
