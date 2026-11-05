@@ -36,6 +36,9 @@ HTTP_PORT="${PORT:-80}"
 echo "Configurando Apache para escuchar en el puerto ${HTTP_PORT}..."
 sed -i "s/Listen 80/Listen ${HTTP_PORT}/g" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${HTTP_PORT}>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
+# Cambiar DocumentRoot a /var/www/html/public/ (donde está index.php)
+sed -i "s#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
+sed -i "s#/var/www/html#/var/www/html/public#g" /etc/apache2/apache2.conf 2>/dev/null || true
 
 echo "Iniciando Apache en el puerto ${HTTP_PORT}..."
 # Forzar solo MPM prefork (PHP no es thread-safe) y deshabilitar otros MPMs
