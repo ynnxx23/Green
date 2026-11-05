@@ -116,6 +116,8 @@ Todos los archivos PHP verificados con `php -l` sin errores (quando PHP esté di
 ## Qué Falta / Pendiente
 - **Datos de prueba:** `migrations/007_datos_prueba.sql` listo para aplicar (orden 001→007).
 - **PedidoController corregido:** acepta `id_mesa=NULL` (para_llevar/domicilio), guarda `tipo_pedido/seña/estado_seña/direccion_domicilio/id_usuario`, comillas simples en `IN (...)`.
+- **ReservaController corregido:** comillas simples en `IN ('pendiente', 'confirmada')` (línea 111).
+- **api.js corregido:** `cancelarReserva` ahora envía `POST /reservas/{id}/cancelar` en lugar de `DELETE /reservas/{id}` (coincide con el backend).
 - **Diagramas y Gantt:** Hechos en `/entregables/` (`.md` Mermaid): caso de uso, DER, Gantt.
 - **Documento APA7:** Hecho — `/entregables/01_documento_apa7.md` (`.md`).
 - **Pruebas en navegador:** Pendiente validación visual en localhost (PHP no disponible en este entorno; verificar en XAMPP/Docker).

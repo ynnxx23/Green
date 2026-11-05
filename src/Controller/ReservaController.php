@@ -108,7 +108,7 @@ class ReservaController
             FROM reservas
             WHERE id_mesa = ?
               AND fecha_reserva = ?
-              AND estado IN (\"pendiente\", \"confirmada\")
+              AND estado IN ('pendiente', 'confirmada')
               AND hora_inicio < ?
               AND hora_fin > ?
         ');

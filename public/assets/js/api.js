@@ -76,7 +76,7 @@ class ApiClient {
     return this.get(`/reservas${qs ? '?' + qs : ''}`);
   }
   crearReserva(datos) { return this.post('/reservas', datos); }
-  cancelarReserva(id) { return this.delete(`/reservas/${id}`); }
+  cancelarReserva(id) { return this.post(`/reservas/${id}/cancelar`, {}); }
   pedidos(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return this.get(`/pedidos${qs ? '?' + qs : ''}`);
