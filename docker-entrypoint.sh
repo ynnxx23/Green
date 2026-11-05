@@ -31,7 +31,13 @@ else
   echo "Advertencia: no se encontró el directorio de migraciones."
 fi
 
-echo "Iniciando Apache..."
+# Configurar Apache para escuchar en el puerto que Railway asigne (variable PORT)
+HTTP_PORT="${PORT:-80}"
+echo "Configurando Apache para escuchar en el puerto ${HTTP_PORT}..."
+sed -i "s/Listen 80/Listen ${HTTP_PORT}/g" /etc/apache2/ports.conf
+sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${HTTP_PORT}>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
+
+echo "Iniciando Apache en el puerto ${HTTP_PORT}..."
 # Forzar solo MPM prefork (PHP no es thread-safe) y deshabilitar otros MPMs
 a2dismod mpm_event mpm_worker 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
