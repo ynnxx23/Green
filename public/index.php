@@ -822,6 +822,19 @@ try {
             break;
 
         // -------------------------------------------------------------------------
+        // Subir imagen al servidor (RF-XX)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/subir-imagen'):
+            if ($metodo === 'POST') {
+                $authMiddleware->requiereMeseroOAdministrador();
+                $respuesta = manejarSubidaImagen($cuerpo, $authMiddleware);
+                $codigo_http = $respuesta['codigo'] ?? 200;
+                break;
+            }
+            return errorJson('Método no permitido.', 405);
+            break;
+
+        // -------------------------------------------------------------------------
         // Productos más vendidos (público - para carta destacada)
         // -------------------------------------------------------------------------
         case str_starts_with($uri, '/api/productos-mas-vendidos'):
@@ -1946,6 +1959,44 @@ if (false) {} // placeholder para mantener estructura
 // -------------------------------------------------------------------------
 // RF-105: Roles y permisos avanzados
 // -------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------
+// Subir imagen al servidor (RF-XX)
+//
+// -------------------------------------------------------------------------
+function manejarSubidaImagen(array $cuerpo, AuthMiddleware $authMiddleware): array
+{
+    $authMiddleware->requiereMeseroOAdministrador();
+
+    if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] !== UPLOAD_ERR_OK) {
+        return errorJson('No se recibió ningún archivo de imagen.', 400);
+    }
+
+    $archivo = $_FILES['imagen'];
+    $nombreArchivo = basename($archivo['name']);
+    $nombreArchivo = preg_replace('/[^a-zA-Z0-9._-]/', '_', $nombreArchivo);
+    $nombreUnico = uniqid('img_', true) . '_' . $nombreArchivo;
+
+    $directorioDestino = __DIR__ . '/uploads/';
+    if (!is_dir($directorioDestino)) {
+        @mkdir($directorioDestino, 0755, true);
+    }
+
+    $rutaDestino = $directorioDestino . $nombreUnico;
+
+    if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
+        return errorJson('No se pudo guardar el archivo en el servidor.', 500);
+    }
+
+    $urlImagen = Config::obtener('APP_URL') . '/uploads/' . $nombreUnico;
+
+    return [
+        'exito' => true,
+        'url' => $urlImagen,
+        'mensaje' => 'Imagen subida correctamente.',
+        'codigo' => 200,
+    ];
+}
 
 function errorJson(string $mensaje, int $codigo): array
 {
