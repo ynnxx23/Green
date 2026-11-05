@@ -3,8 +3,10 @@ FROM php:8.2-apache
 # Instalar extensiones PHP necesarias y cliente de MySQL para aplicar migraciones
 RUN apt-get update && apt-get install -y mariadb-client libonig-dev && docker-php-ext-install pdo pdo_mysql mbstring
 
-# Habilitar mod_rewrite para URLs limpias
-RUN a2enmod rewrite
+# Habilitar solo MPM prefork (PHP no es thread-safe) y mod_rewrite
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork \
+    && a2enmod rewrite
 
 # Establecer directorio de trabajo
 WORKDIR /var/www/html
