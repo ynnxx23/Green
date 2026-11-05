@@ -29,43 +29,75 @@ INSERT IGNORE INTO `mesas` (`id_mesa`, `id_area`, `numero_mesa`, `capacidad`, `a
 
 -- -----------------------------------------------------
 -- Productos con imágenes correctas
--- Las imágenes están en /public/assets/img/platos/
+-- Las imágenes están en /assets/img/platos/
 -- -----------------------------------------------------
 INSERT IGNORE INTO `productos` (`id_producto`, `nombre`, `categoria`, `precio`, `imagen_url`, `activo`, `fecha_creacion`) VALUES
 -- Entradas
 (1, 'Bruschetta de tomate y albahaca', 'Entradas', 4.50, '/assets/img/platos/pan.jpeg', 1, CURRENT_TIMESTAMP),
 (2, 'Carpaccio de res', 'Entradas', 8.00, '/assets/img/platos/hamburguesa.jpeg', 1, CURRENT_TIMESTAMP),
-(3, 'Croquetas de jamón', 'Entradas', 6.50, '/public/assets/img/platos/sanguche_medialunas.jpeg', 1, CURRENT_TIMESTAMP),
+(3, 'Croquetas de jamón', 'Entradas', 6.50, '/assets/img/platos/sanguche_medialunas.jpeg', 1, CURRENT_TIMESTAMP),
 (4, 'Calamares a la romana', 'Entradas', 9.50, '/assets/img/platos/hamburguesa.jpeg', 1, CURRENT_TIMESTAMP),
 (5, 'Nachos con queso y guacamole', 'Entradas', 7.00, '/assets/img/platos/sanguche_medialunas.jpeg', 1, CURRENT_TIMESTAMP),
-(6, 'Alitas al estilo bufalo', 'Entradas', 8.50, '/public/assets/img/platos/hamburguesa.jpeg', 1, CURRENT_TIMESTAMP),
+(6, 'Alitas al estilo bufalo', 'Entradas', 8.50, '/assets/img/platos/hamburguesa.jpeg', 1, CURRENT_TIMESTAMP),
 -- Principales
 (7, 'Lomo saltado', 'Principales', 14.00, '/assets/img/platos/lomito_papas.jpeg', 1, CURRENT_TIMESTAMP),
 (8, 'Arroz con mariscos', 'Principales', 16.00, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
 (9, 'Lasaña vegetal', 'Principales', 12.00, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
 (10, 'Milanesa napolitana', 'Principales', 11.00, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
 (11, 'Salmón a la plancha con verduras', 'Principales', 18.00, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
-(12, 'Pasta a la bolognesa', 'Principales', 10.50, '/public/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
-(13, 'Risotto de setas', 'Principales', 13.00, '/public/assets/img/platos/pan.jpeg', 1, CURRENT_TIMESTAMP),
+(12, 'Pasta a la bolognesa', 'Principales', 10.50, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
+(13, 'Risotto de setas', 'Principales', 13.00, '/assets/img/platos/pan.jpeg', 1, CURRENT_TIMESTAMP),
 (14, 'Chuletas de cerdo con puré', 'Principales', 15.00, '/assets/img/platos/hamburguesa.jpeg', 1, CURRENT_TIMESTAMP),
-(15, 'Pollo al curry con arroz basmati', 'Principales', 13.50, '/public/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
+(15, 'Pollo al curry con arroz basmati', 'Principales', 13.50, '/assets/img/platos/milanesanapolitanaypure.jpeg', 1, CURRENT_TIMESTAMP),
 -- Postres
 (16, 'Tiramisú', 'Postres', 5.00, '/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
-(17, 'Flan de café', 'Postres', 4.00, '/public/assets/img/platos/cafe.jpeg', 1, CURRENT_TIMESTAMP),
+(17, 'Flan de café', 'Postres', 4.00, '/assets/img/platos/cafe.jpeg', 1, CURRENT_TIMESTAMP),
 (18, 'Cheesecake de frutos rojos', 'Postres', 6.00, '/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
-(19, 'Helado artesanal', 'Postres', 4.50, '/public/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
-(20, 'Brownie de chocolate', 'Postres', 5.50, '/public/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
-(21, 'Mousse de chocolate', 'Postres', 5.00, '/public/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
+(19, 'Helado artesanal', 'Postres', 4.50, '/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
+(20, 'Brownie de chocolate', 'Postres', 5.50, '/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
+(21, 'Mousse de chocolate', 'Postres', 5.00, '/assets/img/platos/postre_frutilla.jpeg', 1, CURRENT_TIMESTAMP),
 -- Bebidas / Coctelería
-(22, 'Mojito clásico', 'Bebidas', 7.00, '/public/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
+(22, 'Mojito clásico', 'Bebidas', 7.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
 (23, 'Piña colada', 'Bebidas', 8.00, '/assets/img/platos/jugos.jpeg', 1, CURRENT_TIMESTAMP),
-(24, 'Jugo natural de naranja', 'Bebidas', 3.00, '/public/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
+(24, 'Jugo natural de naranja', 'Bebidas', 3.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
 (25, 'Agua mineral', 'Bebidas', 2.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
-(26, 'Vino tinto (copa)', 'Bebidas', 6.00, '/public/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
+(26, 'Vino tinto (copa)', 'Bebidas', 6.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
 (27, 'Cerveza artesanal', 'Bebidas', 5.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
 (28, 'Batido de fresa', 'Bebidas', 5.50, '/assets/img/platos/jugos.jpeg', 1, CURRENT_TIMESTAMP),
-(29, 'Té helado de durazno', 'Bebidas', 4.00, '/public/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
+(29, 'Té helado de durazno', 'Bebidas', 4.00, '/assets/img/platos/jugo_naranja.jpeg', 1, CURRENT_TIMESTAMP),
 (30, 'Café expreso', 'Bebidas', 3.50, '/assets/img/platos/cafe.jpeg', 1, CURRENT_TIMESTAMP);
+
+-- Actualizar imagen_url para productos existentes (UPDATE idempotente)
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/pan.jpeg' WHERE `id_producto` = 1;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/hamburguesa.jpeg' WHERE `id_producto` = 2;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/sanguche_medialunas.jpeg' WHERE `id_producto` = 3;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/hamburguesa.jpeg' WHERE `id_producto` = 4;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/sanguche_medialunas.jpeg' WHERE `id_producto` = 5;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/hamburguesa.jpeg' WHERE `id_producto` = 6;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/lomito_papas.jpeg' WHERE `id_producto` = 7;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 8;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 9;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 10;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 11;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 12;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/pan.jpeg' WHERE `id_producto` = 13;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/hamburguesa.jpeg' WHERE `id_producto` = 14;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/milanesanapolitanaypure.jpeg' WHERE `id_producto` = 15;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/postre_frutilla.jpeg' WHERE `id_producto` = 16;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/cafe.jpeg' WHERE `id_producto` = 17;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/postre_frutilla.jpeg' WHERE `id_producto` = 18;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/postre_frutilla.jpeg' WHERE `id_producto` = 19;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/postre_frutilla.jpeg' WHERE `id_producto` = 20;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/postre_frutilla.jpeg' WHERE `id_producto` = 21;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 22;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugos.jpeg' WHERE `id_producto` = 23;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 24;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 25;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 26;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 27;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugos.jpeg' WHERE `id_producto` = 28;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/jugo_naranja.jpeg' WHERE `id_producto` = 29;
+UPDATE `productos` SET `imagen_url` = '/assets/img/platos/cafe.jpeg' WHERE `id_producto` = 30;
 
 -- -----------------------------------------------------
 -- Stock y límite de venta

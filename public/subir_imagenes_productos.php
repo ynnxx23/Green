@@ -86,7 +86,7 @@ foreach ($imagenes as $archivo) {
     }
 
     // Actualizar el producto con la URL de la imagen
-    $urlImagen = '/public/assets/img/platos/' . $archivo;
+    $urlImagen = '/assets/img/platos/' . $archivo;
     $stmt = $pdo->prepare('UPDATE productos SET imagen_url = ? WHERE id_producto = ?');
     $stmt->execute([$urlImagen, $producto['id_producto']]);
 
