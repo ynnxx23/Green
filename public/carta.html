@@ -89,17 +89,18 @@
 
   async function cargarProductos() {
     try {
-      const respuesta = await api.productos();
-      if (respuesta.exito) {
-        productos = respuesta.datos || [];
+      const url = window.location.origin + '/api/productos';
+      const respuesta = await fetch(url, { credentials: 'include' });
+      const datos = await respuesta.json();
+      if (datos.exito) {
+        productos = datos.datos || [];
         render('todos');
       } else {
-        console.error('Error cargando productos:', respuesta.mensaje);
-        grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">No se pudo cargar la carta.</p>';
+        grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">Error: ' + (datos.mensaje || 'desconocido') + '</p>';
       }
     } catch (err) {
-      console.error('Error productos:', err);
-      grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">Error al cargar la carta.</p>';
+      grid.innerHTML = '<p style="text-align:center; color: var(--color-text-muted);">Error de red: ' + err.message + '</p>';
+      console.error(err);
     }
   }
 
