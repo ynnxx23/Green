@@ -1,7 +1,10 @@
 RewriteEngine On
 
-# Si el archivo o directorio existe físicamente, servirlo directamente
-RewriteCond %{REQUEST_FILENAME} -f [OR]
+# Si el archivo existe físicamente, servirlo directamente (no pasar al front controller)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Si el directorio existe, servirlo directamente
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
