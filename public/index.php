@@ -166,6 +166,15 @@ try {
     $pdo = Conexion::obtener();
     $pdo->query('SELECT 1');
 
+    // Auto-aplicar migraciones si las tablas no existen (para Railway)
+    $tablas = $pdo->query("SHOW TABLES LIKE 'usuarios'")->fetch();
+    if (!$tablas) {
+        echo json_encode(['exito' => false, 'mensaje' => 'Aplicando migraciones, espere...', 'codigo' => 202], JSON_UNESCAPED_UNICODE);
+        aplicarMigraciones($pdo);
+        echo json_encode(['exito' => true, 'mensaje' => 'Migraciones aplicadas. Recargue la página.', 'codigo' => 200], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     switch (true) {
         case $uri === '/':
             $htmlFile = __DIR__ . '/index.html';
@@ -2537,6 +2546,37 @@ function manejarPermisos(string $ruta, string $metodo, array $query, array $cuer
     }
 
     return errorJson('Endpoint de permisos no encontrado.', 404);
+}
+
+function aplicarMigraciones(PDO $pdo): void
+{
+    $migrationsDir = __DIR__ . '/../migrations';
+    if (!is_dir($migrationsDir)) {
+        return;
+    }
+    $archivos = scandir($migrationsDir);
+    sort($archivos);
+    foreach ($archivos as $archivo) {
+        if (str_ends_with($archivo, '.sql')) {
+            $ruta = $migrationsDir . '/' . $archivo;
+            $contenido = file_get_contents($ruta);
+            if ($contenido === false) {
+                continue;
+            }
+            // Dividir por punto y coma, ignorar comentarios y vacíos
+            $statements = array_filter(array_map('trim', explode(';', $contenido)), function ($line) {
+                $line = trim($line);
+                return $line !== '' && !str_starts_with($line, '--') && !str_starts_with($line, '#');
+            });
+            foreach ($statements as $stmt) {
+                try {
+                    $pdo->exec($stmt);
+                } catch (\PDOException $e) {
+                    // Ignorar errores de duplicado (tabla/columna ya existe)
+                }
+            }
+        }
+    }
 }
 
 function errorJson(string $mensaje, int $codigo): array
