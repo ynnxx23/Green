@@ -1,27 +1,35 @@
 #!/bin/bash
+set -e
 
 echo "=== Entrypoint: iniciando sistema de restaurante ==="
 
-# Configurar puerto para Railway (variable PORT asignada automáticamente)
+# Puerto para Railway
 HTTP_PORT="${PORT:-8080}"
 if ! [[ "$HTTP_PORT" =~ ^[0-9]+$ ]] || [ "$HTTP_PORT" -lt 1 ] || [ "$HTTP_PORT" -gt 65535 ]; then
     HTTP_PORT=8080
 fi
 
-echo "Configurando Apache para escuchar en el puerto ${HTTP_PORT}..."
+# Crear configuración de Apache con el puerto correcto
+echo "Listen ${HTTP_PORT}" > /etc/apache2/ports.conf
+cat > /etc/apache2/sites-available/000-default.conf << EOF
+<VirtualHost *:${HTTP_PORT}>
+    DocumentRoot /var/www/html/public
+    <Directory /var/www/html/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog \${APACHE_LOG_DIR}/error.log
+    CustomLog \${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
 
-# Configurar Apache para escuchar en el puerto correcto
-sed -i "s/^Listen .*/Listen ${HTTP_PORT}/" /etc/apache2/ports.conf 2>/dev/null || true
-sed -i "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${HTTP_PORT}>/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
-# Cambiar DocumentRoot a /var/www/html/public/
-sed -i "s#DocumentRoot .*#DocumentRoot /var/www/html/public#g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
-sed -i "s#/var/www/html#/var/www/html/public#g" /etc/apache2/apache2.conf 2>/dev/null || true
-
-# Forzar solo MPM prefork (PHP no es thread-safe)
+# Habilitar mod_rewrite y prefork MPM
+a2enmod rewrite 2>/dev/null || true
 a2dismod mpm_event mpm_worker 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
-# Intentar aplicar migraciones si MySQL está disponible (no bloquear)
+# Intentar migraciones si MySQL está disponible (no bloquear)
 if [ -n "${DB_HOST}" ] && [ -n "${DB_USER}" ]; then
     echo "Verificando base de datos en ${DB_HOST}:${DB_PORT:-3306}..."
     if mysqladmin ping -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl --silent 2>/dev/null; then
@@ -30,17 +38,14 @@ if [ -n "${DB_HOST}" ] && [ -n "${DB_USER}" ]; then
         if [ -d "$MIGRATIONS_DIR" ]; then
             for migration in "$MIGRATIONS_DIR"/0*.sql; do
                 if [ -f "$migration" ]; then
-                    echo "Aplicando: $(basename "$migration")"
                     mysql -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl "${DB_NAME}" < "$migration" 2>/dev/null || true
                 fi
             done
             echo "Migraciones procesadas."
         fi
     else
-        echo "Base de datos no disponible, las migraciones se omitirán."
+        echo "Base de datos no disponible, continuando sin migraciones."
     fi
-else
-    echo "Advertencia: variables de base de datos no definidas."
 fi
 
 echo "Iniciando Apache en el puerto ${HTTP_PORT}..."
