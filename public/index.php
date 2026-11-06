@@ -175,6 +175,41 @@ try {
         exit;
     }
 
+    // Servir archivos estáticos directamente (JS, CSS, imágenes, fuentes)
+    // Esto evita problemas de MIME type en Railway donde .htaccess no siempre aplica
+    $extensionesEstaticas = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'ico', 'svg', 'woff', 'woff2', 'ttf', 'eot', 'webp'];
+    $extension = strtolower(pathinfo($uri, PATHINFO_EXTENSION));
+    if ($extension !== '' && in_array($extension, $extensionesEstaticas, true)) {
+        $archivoFisico = __DIR__ . $uri;
+        if (is_file($archivoFisico)) {
+            $mimeTypes = [
+                'js' => 'application/javascript',
+                'css' => 'text/css',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'ico' => 'image/x-icon',
+                'svg' => 'image/svg+xml',
+                'woff' => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf' => 'font/ttf',
+                'eot' => 'font/eot',
+                'webp' => 'image/webp',
+            ];
+            $mime = $mimeTypes[$extension] ?? 'application/octet-stream';
+            http_response_code(200);
+            header('Content-Type: ' . $mime);
+            header('Cache-Control: public, max-age=31536000');
+            echo file_get_contents($archivoFisico);
+            exit;
+        }
+        // Si el archivo no existe, devolver 404
+        http_response_code(404);
+        echo json_encode(['exito' => false, 'mensaje' => 'Archivo no encontrado: ' . $uri, 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     switch (true) {
         case $uri === '/':
             $htmlFile = __DIR__ . '/index.html';
