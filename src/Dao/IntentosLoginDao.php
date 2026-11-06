@@ -51,4 +51,11 @@ class IntentosLoginDao
 
         return $fila === false ? null : $fila['fecha_intento'];
     }
+
+    public function limpiarIntentos(string $email): void
+    {
+        $sql = 'DELETE FROM intentos_login WHERE email = :email AND exitoso = 0';
+        $stmt = Conexion::obtener()->prepare($sql);
+        $stmt->execute([':email' => $email]);
+    }
 }

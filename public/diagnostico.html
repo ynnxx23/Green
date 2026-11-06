@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico del Sistema — Green</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; background: #f5f5f5; color: #1a1a1a; }
+  .max { max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+  h1 { font-size: 1.5rem; margin-top: 0; }
+  .test { border: 1px solid #ddd; padding: 1rem; margin: 1rem 0; border-radius: 6px; }
+  .ok { color: #0a6; font-weight: 600; }
+  .err { color: #c00; font-weight: 600; }
+  .mono { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.85rem; background: #f3f3f3; padding: 0.5rem; border-radius: 4px; display: block; margin: 0.5rem 0; word-break: break-all; }
+  button { background: #0a6; color: #fff; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 6px; cursor: pointer; }
+  .info { background: #eef; padding: 1rem; border-radius: 6px; margin: 1rem 0; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="max">
+  <h1>🔧 Diagnóstico del Sistema</h1>
+  <p>Abre la consola del navegador (F12) para ver errores detallados.</p>
+
+  <div class="info">
+    <strong>URL actual:</strong> <span class="mono" id="url-actual"></span><br>
+    <strong>API_BASE detectada:</strong> <span class="mono" id="api-base"></span>
+  </div>
+
+  <div class="test">
+    <h3>1. Conexión a la API — Productos</h3>
+    <button onclick="testProductos()">▶ Probar /api/productos</button>
+    <div id="resultado-productos" class="mono"></div>
+  </div>
+
+  <div class="test">
+    <h3>2. Conexión a la API — Login (admin)</h3>
+    <button onclick="testLogin()">▶ Probar /api/auth/login</button>
+    <div id="resultado-login" class="mono"></div>
+  </div>
+
+  <div class="test">
+    <h3>3. Estado de Sesión</h3>
+    <button onclick="testSesion()">▶ Probar /api/auth/sesion</button>
+    <div id="resultado-sesion" class="mono"></div>
+  </div>
+
+  <div class="info">
+    <strong>Si todo marca ✅ OK:</strong> la carta y el login funcionarán. Recarga la página con <kbd>Ctrl + F5</kbd> para limpiar caché.<br>
+    <strong>Si algo marca ❌ ERROR:</strong> copia el texto y compártelo.
+  </div>
+</div>
+
+<script type="module">
+  // Detectar API_BASE igual que api.js
+  const rutaActual = window.location.pathname;
+  const partesRuta = rutaActual.split('/');
+  let rutaBaseApi = '/api';
+  const idxPublic = partesRuta.indexOf('public');
+  if (idxPublic !== -1 && idxPublic >= 1) {
+    const rutaProyecto = partesRuta.slice(0, idxPublic).join('/');
+    rutaBaseApi = rutaProyecto + '/public/api';
+  }
+  const API_BASE = window.location.origin + rutaBaseApi;
+
+  document.getElementById('url-actual').textContent = window.location.href;
+  document.getElementById('api-base').textContent = API_BASE;
+
+  async function fetchJSON(endpoint, options = {}) {
+    const url = `${API_BASE}${endpoint}`;
+    const res = await fetch(url, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data, url };
+  }
+
+  function mostrar(id, texto, esOk) {
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className = 'mono ' + (esOk ? 'ok' : 'err');
+  }
+
+  async function testProductos() {
+    try {
+      const r = await fetchJSON('/productos');
+      if (r.ok && r.data.exito) {
+        mostrar('resultado-productos', '✅ OK — ' + r.data.datos.length + ' productos cargados\nURL: ' + r.url, true);
+      } else {
+        mostrar('resultado-productos', '❌ ERROR ' + r.status + '\nURL: ' + r.url + '\nRespuesta: ' + JSON.stringify(r.data), false);
+      }
+    } catch (e) {
+      mostrar('resultado-productos', '❌ ERROR de red: ' + e.message + '\nURL: ' + API_BASE + '/productos', false);
+    }
+  }
+
+  async function testLogin() {
+    try {
+      const r = await fetchJSON('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'admin@restaurante.local', contrasena: 'admin123' })
+      });
+      if (r.ok && r.data.exito) {
+        mostrar('resultado-login', '✅ OK — Login exitoso (usuario ' + r.data.datos.id_usuario + ')\nURL: ' + r.url, true);
+      } else {
+        mostrar('resultado-login', '❌ ERROR ' + r.status + '\nURL: ' + r.url + '\nRespuesta: ' + JSON.stringify(r.data), false);
+      }
+    } catch (e) {
+      mostrar('resultado-login', '❌ ERROR de red: ' + e.message + '\nURL: ' + API_BASE + '/auth/login', false);
+    }
+  }
+
+  async function testSesion() {
+    try {
+      const r = await fetchJSON('/auth/sesion');
+      if (r.ok && r.data.exito) {
+        mostrar('resultado-sesion', '✅ OK — Sesión activa (rol ' + r.data.datos.id_rol + ')\nURL: ' + r.url, true);
+      } else {
+        mostrar('resultado-sesion', 'ℹ️ ' + r.status + ' — ' + (r.data.mensaje || 'Sin sesión') + '\nURL: ' + r.url, r.ok);
+      }
+    } catch (e) {
+      mostrar('resultado-sesion', '❌ ERROR de red: ' + e.message + '\nURL: ' + API_BASE + '/auth/sesion', false);
+    }
+  }
+</script>
+</body>
+</html>

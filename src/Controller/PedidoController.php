@@ -67,7 +67,7 @@ class PedidoController
             return $this->cambiarEstado((int) $coincidencias[1]);
         }
 
-        if (preg_match('/^(\d+)\/seña$/', $ruta_interna, $coincidencias)) {
+        if (preg_match('/^(\d+)\/senia$/', $ruta_interna, $coincidencias)) {
             if ($metodo !== 'POST') {
                 return $this->error('Método no permitido.', 405);
             }
@@ -78,7 +78,7 @@ class PedidoController
     }
 
     // ========================================================================
-    // REGISTRAR PEDIDO (con seña 50% automática y delivery)
+    // REGISTRAR PEDIDO (con senia 50% automática y delivery)
     // ========================================================================
     private function registrarPedido(): array
     {
@@ -89,8 +89,8 @@ class PedidoController
         $id_mesa = isset($entrada['id_mesa']) && $entrada['id_mesa'] !== '' ? (int) $entrada['id_mesa'] : null;
         $detalles = $entrada['detalles'] ?? [];
         $tipo_pedido = $entrada['tipo_pedido'] ?? 'con_reserva';
-        $seña_manual = isset($entrada['seña']) ? (float) $entrada['seña'] : -1.0; // -1 = no enviado, calcular automático
-        $estado_seña = $entrada['estado_seña'] ?? 'pendiente';
+        $senia_manual = isset($entrada['senia']) ? (float) $entrada['senia'] : -1.0; // -1 = no enviado, calcular automático
+        $estado_senia = $entrada['estado_senia'] ?? 'pendiente';
         $direccion_domicilio = $entrada['direccion_domicilio'] ?? null;
         $id_zona_delivery = isset($entrada['id_zona_delivery']) && $entrada['id_zona_delivery'] !== '' ? (int) $entrada['id_zona_delivery'] : null;
         $costo_envio_manual = isset($entrada['costo_envio']) ? (float) $entrada['costo_envio'] : -1.0;
@@ -212,13 +212,13 @@ class PedidoController
             ];
         }
 
-        // Calcular seña automáticamente: 50% del total si no se envió manualmente
-        if ($seña_manual < 0) {
-            $seña = round($total_pedido * 0.50, 2);
+        // Calcular senia automáticamente: 50% del total si no se envió manualmente
+        if ($senia_manual < 0) {
+            $senia = round($total_pedido * 0.50, 2);
         } else {
-            $seña = $seña_manual;
-            if ($seña < 0 || $seña > $total_pedido) {
-                return $this->error('El monto de la seña debe estar entre 0 y el total del pedido.', 400);
+            $senia = $senia_manual;
+            if ($senia < 0 || $senia > $total_pedido) {
+                return $this->error('El monto de la senia debe estar entre 0 y el total del pedido.', 400);
             }
         }
 
@@ -237,40 +237,45 @@ class PedidoController
 
         $total_con_envio = $total_pedido + $costo_envio;
 
-        // Si es domicilio y no hay seña manual, la seña es 50% del total (sin envío)
-        // El saldo pendiente es total - seña
-        $saldo_pendiente = round($total_con_envio - $seña, 2);
+        // Si es domicilio y no hay senia manual, la senia es 50% del total (sin envío)
+        // El saldo pendiente es total - senia
+        $saldo_pendiente = round($total_con_envio - $senia, 2);
 
         try {
             $pdo->beginTransaction();
 
             // Generar número de pedido
-            $numeroPedido = 'PED-' . date('Ymd') . '-' . str_pad((int) ($pdo->query('SELECT COUNT(*) FROM pedidos WHERE DATE(fecha_pedido) = CURRENT_DATE')->fetchColumn() + 1), 4, '0', STR_PAD_LEFT);
+            $numeroPedido = 'PED-' . date('Ymd') . '-' . str_pad((string) ((int) ($pdo->query('SELECT COUNT(*) FROM pedidos WHERE DATE(fecha_pedido) = CURRENT_DATE')->fetchColumn() + 1)), 4, '0', STR_PAD_LEFT);
 
             // Registrar pedido
             $stmt = $pdo->prepare('
                 INSERT INTO pedidos (
                     id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total,
-                    tipo_pedido, seña, estado_seña, saldo_pendiente, direccion_domicilio,
+                    tipo_pedido, senia, estado_senia, saldo_pendiente, direccion_domicilio,
                     id_zona_delivery, costo_envio, id_repartidor, numero_pedido,
                     observaciones, fecha_pedido_hora, fecha_creacion
-                ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, "pendiente", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ) VALUES (
+                    :id_mesa, :id_mesero, :id_usuario, CURRENT_TIMESTAMP, "pendiente", :total,
+                    :tipo_pedido, :senia, :estado_senia, :saldo_pendiente, :direccion_domicilio,
+                    :id_zona_delivery, :costo_envio, :id_repartidor, :numero_pedido,
+                    :observaciones, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
             ');
             $stmt->execute([
-                $id_mesa,
-                $id_mesero,
-                $id_usuario,
-                $total_con_envio,
-                $tipo_pedido,
-                $seña,
-                $estado_seña,
-                $saldo_pendiente,
-                $direccion_domicilio,
-                $id_zona_delivery,
-                $costo_envio,
-                $id_repartidor,
-                $numeroPedido,
-                $observaciones,
+                ':id_mesa' => $id_mesa,
+                ':id_mesero' => $id_mesero,
+                ':id_usuario' => $id_usuario,
+                ':total' => $total_con_envio,
+                ':tipo_pedido' => $tipo_pedido,
+                ':senia' => $senia,
+                ':estado_senia' => $estado_senia,
+                ':saldo_pendiente' => $saldo_pendiente,
+                ':direccion_domicilio' => $direccion_domicilio,
+                ':id_zona_delivery' => $id_zona_delivery,
+                ':costo_envio' => $costo_envio,
+                ':id_repartidor' => $id_repartidor,
+                ':numero_pedido' => $numeroPedido,
+                ':observaciones' => $observaciones,
             ]);
             $id_pedido = (int) $pdo->lastInsertId();
 
@@ -298,7 +303,7 @@ class PedidoController
                 'id_mesa' => $id_mesa,
                 'total' => $total_con_envio,
                 'tipo_pedido' => $tipo_pedido,
-                'seña' => $seña,
+                'senia' => $senia,
                 'saldo_pendiente' => $saldo_pendiente,
             ], $id_mesero);
 
@@ -323,8 +328,8 @@ class PedidoController
                     'total' => $total_con_envio,
                     'subtotal_productos' => $total_pedido,
                     'costo_envio' => $costo_envio,
-                    'seña' => $seña,
-                    'estado_seña' => $estado_seña,
+                    'senia' => $senia,
+                    'estado_senia' => $estado_senia,
                     'saldo_pendiente' => $saldo_pendiente,
                     'tipo_pedido' => $tipo_pedido,
                 ],
@@ -335,7 +340,10 @@ class PedidoController
             return $this->error($e->getMessage(), 400);
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            return $this->error('Error al registrar el pedido. Intente nuevamente.', 500);
+            return $this->error('Error al registrar el pedido: ' . $e->getMessage(), 500);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            return $this->error('Error inesperado: ' . $e->getMessage(), 500);
         }
     }
 
@@ -351,8 +359,9 @@ class PedidoController
         $pdo = \Restaurante\Database\Conexion::obtener();
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
-                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   p.id_mesero,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -378,8 +387,9 @@ class PedidoController
         $pdo = \Restaurante\Database\Conexion::obtener();
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
-                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   p.id_mesero,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -434,8 +444,9 @@ class PedidoController
         $pdo = \Restaurante\Database\Conexion::obtener();
         $stmt = $pdo->query('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
-                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   p.id_mesero,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario, u.email AS email_usuario
             FROM pedidos p
@@ -467,8 +478,9 @@ class PedidoController
         $pdo = \Restaurante\Database\Conexion::obtener();
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
-                   p.tipo_pedido, p.seña, p.estado_seña, p.saldo_pendiente,
+                   p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
+                   p.id_mesero,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario
             FROM pedidos p
@@ -631,12 +643,12 @@ class PedidoController
         $monto = isset($entrada['monto']) ? (float) $entrada['monto'] : null;
 
         if (!in_array($estado, ['pendiente', 'pagada', 'devuelta'], true)) {
-            return $this->error('Estado de seña inválido. Use: pendiente, pagada o devuelta.', 400);
+            return $this->error('Estado de senia inválido. Use: pendiente, pagada o devuelta.', 400);
         }
 
         $pdo = \Restaurante\Database\Conexion::obtener();
 
-        $stmt = $pdo->prepare('SELECT id_pedido, seña, estado_seña, total, saldo_pendiente FROM pedidos WHERE id_pedido = ?');
+        $stmt = $pdo->prepare('SELECT id_pedido, senia, estado_senia, total, saldo_pendiente FROM pedidos WHERE id_pedido = ?');
         $stmt->execute([$id_pedido]);
         $pedido = $stmt->fetch();
 
@@ -644,13 +656,13 @@ class PedidoController
             return $this->error('Pedido no encontrado.', 404);
         }
 
-        $señaActual = (float) $pedido['seña'];
+        $seniaActual = (float) $pedido['senia'];
         $saldoActual = (float) $pedido['saldo_pendiente'];
 
         if ($estado === 'pagada') {
-            $nuevoSaldo = max(0, round($saldoActual - $señaActual, 2));
+            $nuevoSaldo = max(0, round($saldoActual - $seniaActual, 2));
         } elseif ($estado === 'devuelta') {
-            $nuevoSaldo = round($saldoActual + $señaActual, 2);
+            $nuevoSaldo = round($saldoActual + $seniaActual, 2);
         } else {
             $nuevoSaldo = $saldoActual;
         }
@@ -662,7 +674,7 @@ class PedidoController
         try {
             $stmt = $pdo->prepare('
                 UPDATE pedidos
-                SET estado_seña = ?, saldo_pendiente = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+                SET estado_senia = ?, saldo_pendiente = ?, fecha_actualizacion = CURRENT_TIMESTAMP
                 WHERE id_pedido = ?
             ');
             $stmt->execute([$estado, $nuevoSaldo, $id_pedido]);
@@ -670,22 +682,22 @@ class PedidoController
             // Historial
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'ACTUALIZAR_SEÑA', [
                 'id_pedido' => $id_pedido,
-                'estado_seña_anterior' => $pedido['estado_seña'],
-                'nuevo_estado_seña' => $estado,
+                'estado_senia_anterior' => $pedido['estado_senia'],
+                'nuevo_estado_senia' => $estado,
                 'saldo_pendiente_anterior' => $saldoActual,
                 'nuevo_saldo_pendiente' => $nuevoSaldo,
             ], \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado());
 
             return [
                 'exito' => true,
-                'mensaje' => 'Estado de seña actualizado.',
+                'mensaje' => 'Estado de senia actualizado.',
                 'datos' => [
-                    'estado_seña' => $estado,
+                    'estado_senia' => $estado,
                     'saldo_pendiente' => $nuevoSaldo,
                 ],
             ];
         } catch (\PDOException $e) {
-            return $this->error('Error al actualizar la seña.', 500);
+            return $this->error('Error al actualizar la senia.', 500);
         }
     }
 
@@ -715,7 +727,29 @@ class PedidoController
 
     private function leerCuerpoJson(): array
     {
-        $cuerpo = file_get_contents('php://input');
+        $cuerpo = @file_get_contents('php://input');
+        if ($cuerpo === false || empty($cuerpo)) {
+            $handle = @fopen('php://input', 'r');
+            if ($handle) {
+                $cuerpo = '';
+                while (!feof($handle)) {
+                    $fragmento = fread($handle, 8192);
+                    if ($fragmento === false) {
+                        break;
+                    }
+                    $cuerpo .= $fragmento;
+                }
+                fclose($handle);
+            }
+        }
+        if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+            $cuerpo = $_SERVER['RAW_INPUT'];
+        }
+        // Eliminar BOM UTF-8 si está presente
+        if (substr($cuerpo, 0, 3) === "\xEF\xBB\xBF") {
+            $cuerpo = substr($cuerpo, 3);
+        }
+
         $datos = json_decode($cuerpo, true);
 
         return is_array($datos) ? $datos : [];
@@ -749,7 +783,7 @@ class PedidoController
             'numero_pedido' => $pedido['numero_pedido'] ?? null,
             'id_mesa' => $pedido['id_mesa'] !== null ? (int) $pedido['id_mesa'] : null,
             'numero_mesa' => $pedido['numero_mesa'] ?? null,
-            'id_mesero' => $pedido['id_mesero'] !== null ? (int) $pedido['id_mesero'] : null,
+            'id_mesero' => isset($pedido['id_mesero']) ? (int) $pedido['id_mesero'] : null,
             'nombre_usuario' => $pedido['nombre_usuario'] ?? null,
             'email_usuario' => $pedido['email_usuario'] ?? null,
             'id_zona_delivery' => $pedido['id_zona_delivery'] !== null ? (int) $pedido['id_zona_delivery'] : null,
@@ -758,8 +792,8 @@ class PedidoController
             'fecha_pedido' => $pedido['fecha_pedido'] ?? null,
             'estado' => $pedido['estado'],
             'total' => (float) $pedido['total'],
-            'seña' => (float) ($pedido['seña'] ?? 0),
-            'estado_seña' => $pedido['estado_seña'] ?? 'pendiente',
+            'senia' => (float) ($pedido['senia'] ?? 0),
+            'estado_senia' => $pedido['estado_senia'] ?? 'pendiente',
             'saldo_pendiente' => (float) ($pedido['saldo_pendiente'] ?? 0),
             'tipo_pedido' => $pedido['tipo_pedido'],
             'fecha_actualizacion' => $pedido['fecha_actualizacion'] ?? null,

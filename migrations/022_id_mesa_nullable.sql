@@ -1,0 +1,1 @@
+ALTER TABLE `pedidos` MODIFY COLUMN `id_mesa` INT UNSIGNED NULL AFTER `id_pedido`;

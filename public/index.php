@@ -133,7 +133,27 @@ $bloqueAdminController = new BloqueAdminController($servicioDeBloques, $authMidd
 
 function leerCuerpoJson(): array
 {
-    $cuerpo = file_get_contents('php://input');
+    $cuerpo = @file_get_contents('php://input');
+    if ($cuerpo === false || empty($cuerpo)) {
+        // Fallback para servidor incorporado de PHP con router
+        $handle = @fopen('php://input', 'r');
+        if ($handle) {
+            $cuerpo = '';
+            while (!feof($handle)) {
+                $fragmento = fread($handle, 8192);
+                if ($fragmento === false) {
+                    break;
+                }
+                $cuerpo .= $fragmento;
+            }
+            fclose($handle);
+        }
+    }
+    // Fallback a variable guardada por el router
+    if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+        $cuerpo = $_SERVER['RAW_INPUT'];
+    }
+
     $datos = json_decode($cuerpo, true);
 
     return is_array($datos) ? $datos : [];
@@ -901,7 +921,7 @@ try {
     }
 
 } catch (\RuntimeException $e) {
-    $codigo_http = $e->getCode() ?: 500;
+    $codigo_http = (int) ($e->getCode() ?: 500);
     if ($codigo_http < 400 || $codigo_http >= 600) {
         $codigo_http = 500;
     }
@@ -916,10 +936,11 @@ try {
 } catch (\Throwable $e) {
     Logger::error($e->getMessage(), ['tipo' => get_class($e), 'trace' => $e->getTraceAsString()]);
     http_response_code(500);
+    $mensajeError = Config::obtener('APP_ENV') === 'development' ? $e->getMessage() : 'Error interno del servidor.';
     $respuesta = [
         'exito' => false,
         'datos' => null,
-        'mensaje' => 'Error interno del servidor.',
+        'mensaje' => $mensajeError,
         'codigo' => 500,
     ];
 }

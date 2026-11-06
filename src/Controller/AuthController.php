@@ -156,6 +156,8 @@ class AuthController
             ];
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 401);
+        } catch (\Throwable $e) {
+            return $this->error('Error interno al iniciar sesión: ' . $e->getMessage(), 500);
         }
     }
 
@@ -315,7 +317,29 @@ class AuthController
 
     private function leerCuerpoJson(): array
     {
-        $cuerpo = file_get_contents('php://input');
+        $cuerpo = @file_get_contents('php://input');
+        if ($cuerpo === false || empty($cuerpo)) {
+            $handle = @fopen('php://input', 'r');
+            if ($handle) {
+                $cuerpo = '';
+                while (!feof($handle)) {
+                    $fragmento = fread($handle, 8192);
+                    if ($fragmento === false) {
+                        break;
+                    }
+                    $cuerpo .= $fragmento;
+                }
+                fclose($handle);
+            }
+        }
+        if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+            $cuerpo = $_SERVER['RAW_INPUT'];
+        }
+        // Eliminar BOM UTF-8 si está presente
+        if (substr($cuerpo, 0, 3) === "\xEF\xBB\xBF") {
+            $cuerpo = substr($cuerpo, 3);
+        }
+
         $datos = json_decode($cuerpo, true);
 
         return is_array($datos) ? $datos : [];
