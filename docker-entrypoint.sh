@@ -20,6 +20,26 @@ cat > /etc/apache2/sites-available/000-default.conf << EOF
         AllowOverride All
         Require all granted
     </Directory>
+
+    # Servir archivos estáticos directamente (evitar que el front controller los intercepte)
+    <LocationMatch \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp)$>
+        Require all granted
+    </LocationMatch>
+
+    # Configurar MIME types para archivos estáticos
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/gif .gif
+    AddType image/svg+xml .svg
+    AddType image/x-icon .ico
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType font/ttf .ttf
+    AddType font/eot .eot
+    AddType image/webp .webp
+
     ErrorLog \${APACHE_LOG_DIR}/error.log
     CustomLog \${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
