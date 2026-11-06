@@ -944,6 +944,7 @@ try {
     ];
 } catch (\Throwable $e) {
     Logger::error($e->getMessage(), ['tipo' => get_class($e), 'trace' => $e->getTraceAsString()]);
+    error_log('FATAL_ERROR: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     http_response_code(500);
     $mensajeError = Config::obtener('APP_ENV') === 'development' ? $e->getMessage() : 'Error interno del servidor.';
     $respuesta = [
