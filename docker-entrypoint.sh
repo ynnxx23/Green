@@ -3,9 +3,10 @@
 echo "=== Entrypoint: iniciando sistema de restaurante ==="
 
 # Configurar puerto para Railway (variable PORT asignada automáticamente)
-HTTP_PORT="${PORT:-80}"
-if [ -z "$HTTP_PORT" ] || [ "$HTTP_PORT" = "0" ]; then
-    HTTP_PORT=80
+HTTP_PORT="${PORT:-8080}"
+# Validar que sea un número
+if ! [[ "$HTTP_PORT" =~ ^[0-9]+$ ]] || [ "$HTTP_PORT" -lt 1 ] || [ "$HTTP_PORT" -gt 65535 ]; then
+    HTTP_PORT=8080
 fi
 
 echo "Configurando Apache para escuchar en el puerto ${HTTP_PORT}..."
@@ -21,19 +22,19 @@ sed -i "s#/var/www/html#/var/www/html/public#g" /etc/apache2/apache2.conf 2>/dev
 a2dismod mpm_event mpm_worker 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
-# Esperar a que MySQL/MariaDB esté disponible (si las variables de BD están definidas)
+# Esperar a MySQL solo si las variables están definidas (máximo 5 intentos, no bloquear)
 if [ -n "${DB_HOST}" ] && [ -n "${DB_USER}" ]; then
-    echo "Esperando a la base de datos en ${DB_HOST}:${DB_PORT}..."
-    for i in $(seq 1 30); do
+    echo "Esperando a la base de datos en ${DB_HOST}:${DB_PORT:-3306} (máx. 5 intentos)..."
+    for i in $(seq 1 5); do
         if mysqladmin ping -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl --silent 2>/dev/null; then
             echo "Base de datos lista."
             break
         fi
-        echo "Intento $i/30: base de datos no disponible todavía..."
+        echo "Intento $i/5: base de datos no disponible todavía..."
         sleep 2
     done
 
-    # Aplicar migraciones en orden si existen
+    # Aplicar migraciones si la BD está disponible
     MIGRATIONS_DIR="/var/www/html/migrations"
     if [ -d "$MIGRATIONS_DIR" ]; then
         echo "Aplicando migraciones de base de datos..."
@@ -46,8 +47,6 @@ if [ -n "${DB_HOST}" ] && [ -n "${DB_USER}" ]; then
             fi
         done
         echo "Migraciones procesadas."
-    else
-        echo "Advertencia: no se encontró el directorio de migraciones."
     fi
 else
     echo "Advertencia: variables de base de datos no definidas, saltando migraciones."
