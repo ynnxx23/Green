@@ -4,7 +4,6 @@ echo "=== Entrypoint: iniciando sistema de restaurante ==="
 
 # Configurar puerto para Railway (variable PORT asignada automáticamente)
 HTTP_PORT="${PORT:-8080}"
-# Validar que sea un número
 if ! [[ "$HTTP_PORT" =~ ^[0-9]+$ ]] || [ "$HTTP_PORT" -lt 1 ] || [ "$HTTP_PORT" -gt 65535 ]; then
     HTTP_PORT=8080
 fi
@@ -22,34 +21,26 @@ sed -i "s#/var/www/html#/var/www/html/public#g" /etc/apache2/apache2.conf 2>/dev
 a2dismod mpm_event mpm_worker 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
-# Esperar a MySQL solo si las variables están definidas (máximo 5 intentos, no bloquear)
+# Intentar aplicar migraciones si MySQL está disponible (no bloquear)
 if [ -n "${DB_HOST}" ] && [ -n "${DB_USER}" ]; then
-    echo "Esperando a la base de datos en ${DB_HOST}:${DB_PORT:-3306} (máx. 5 intentos)..."
-    for i in $(seq 1 5); do
-        if mysqladmin ping -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl --silent 2>/dev/null; then
-            echo "Base de datos lista."
-            break
+    echo "Verificando base de datos en ${DB_HOST}:${DB_PORT:-3306}..."
+    if mysqladmin ping -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl --silent 2>/dev/null; then
+        echo "Base de datos lista. Aplicando migraciones..."
+        MIGRATIONS_DIR="/var/www/html/migrations"
+        if [ -d "$MIGRATIONS_DIR" ]; then
+            for migration in "$MIGRATIONS_DIR"/0*.sql; do
+                if [ -f "$migration" ]; then
+                    echo "Aplicando: $(basename "$migration")"
+                    mysql -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl "${DB_NAME}" < "$migration" 2>/dev/null || true
+                fi
+            done
+            echo "Migraciones procesadas."
         fi
-        echo "Intento $i/5: base de datos no disponible todavía..."
-        sleep 2
-    done
-
-    # Aplicar migraciones si la BD está disponible
-    MIGRATIONS_DIR="/var/www/html/migrations"
-    if [ -d "$MIGRATIONS_DIR" ]; then
-        echo "Aplicando migraciones de base de datos..."
-        for migration in "$MIGRATIONS_DIR"/0*.sql; do
-            if [ -f "$migration" ]; then
-                echo "Aplicando: $(basename "$migration")"
-                mysql -h "${DB_HOST}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" --skip-ssl "${DB_NAME}" < "$migration" 2>/dev/null || {
-                    echo "Advertencia: error aplicando $(basename "$migration"), continuando..."
-                }
-            fi
-        done
-        echo "Migraciones procesadas."
+    else
+        echo "Base de datos no disponible, las migraciones se omitirán."
     fi
 else
-    echo "Advertencia: variables de base de datos no definidas, saltando migraciones."
+    echo "Advertencia: variables de base de datos no definidas."
 fi
 
 echo "Iniciando Apache en el puerto ${HTTP_PORT}..."
