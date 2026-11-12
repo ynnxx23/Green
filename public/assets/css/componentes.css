@@ -897,14 +897,15 @@ footer .footer-info p {
   margin: 0.25rem 0;
 }
 
-/* Reserva rápida en footer */
+/* Reserva rápida en footer - sobre fondo verde oscuro */
 .reserva-footer {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: rgba(46, 95, 78, 0.15);
-  border: 1px solid rgba(46, 95, 78, 0.25);
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
   border-radius: var(--radius-lg);
   text-align: center;
+  box-shadow: var(--shadow-md);
 }
 
 .reserva-footer h2 {
@@ -916,14 +917,23 @@ footer .footer-info p {
 }
 
 .reserva-footer p {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   margin-bottom: 1rem;
   font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .reserva-footer .btn-accent {
   padding: 0.75rem 1.5rem;
   font-size: 0.9rem;
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.reserva-footer .btn-accent:hover {
+  background: #d4a017;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* Selects y date inputs mejorados */
