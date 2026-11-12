@@ -826,6 +826,34 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
 }
 
+/* Botón Pedir en carta */
+.btn-pedido-carta {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.btn-pedido-carta:hover:not(:disabled) {
+  background: var(--color-secondary);
+}
+
+.btn-pedido-carta:disabled {
+  background: #bdbdbd;
+  color: #fff;
+  cursor: default;
+}
+
 /* Selects y date inputs mejorados */
 select, input[type="date"], input[type="time"] {
   background: #FAFAF0;

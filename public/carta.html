@@ -124,6 +124,8 @@
       const card = document.createElement('div');
       card.className = 'menu-card';
       const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+      const carrito = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
+      const enCarrito = (carrito[p.id_producto] || 0) > 0;
       card.innerHTML = `
         <img src="${escapeHtml(imagen)}" alt="${escapeHtml(p.nombre)}" class="plato-imagen">
         <div class="plato-contenido">
@@ -131,10 +133,21 @@
           <p>${escapeHtml(p.categoria || '')}</p>
           <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
         </div>
+        <button class="btn btn-pedido-carta" onclick="agregarAPedido(${p.id_producto}, '${escapeHtml(p.nombre || '')}', ${p.precio || 0})" ${enCarrito ? 'disabled' : ''}>
+          ${enCarrito ? '✓ En pedido' : 'Pedir'}
+        </button>
       `;
       grid.appendChild(card);
     });
   }
+
+  window.agregarAPedido = function(id, nombre, precio) {
+    const carrito = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
+    carrito[id] = (carrito[id] || 0) + 1;
+    localStorage.setItem('pedido_carrito', JSON.stringify(carrito));
+    mostrarToast('Agregado al pedido: ' + nombre, 'exito');
+    render('todos');
+  };
 
   filtros.forEach(btn => {
     btn.addEventListener('click', () => {

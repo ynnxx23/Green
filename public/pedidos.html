@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedir a Domicilio — Green en la Casa Blanca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/icons/icons.css">
+<style>
+  .pedido-container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+  .pedido-card { background: var(--color-surface); border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
+  .pedido-item { display: flex; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(27,67,50,0.08); }
+  .pedido-item img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md); }
+  .pedido-item-info { flex: 1; }
+  .pedido-item-info h4 { margin: 0 0 0.25rem 0; color: var(--color-primary); font-size: 1rem; }
+  .pedido-item-info p { margin: 0; color: var(--color-text-muted); font-size: 0.85rem; }
+  .pedido-item-precio { font-weight: 700; color: var(--color-primary); font-size: 1rem; }
+  .cantidad-control { display: flex; align-items: center; gap: 0.5rem; }
+  .cantidad-control button { background: var(--color-primary); color: #fff; border: none; width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; }
+  .cantidad-control span { min-width: 24px; text-align: center; font-weight: 700; }
+  .pedido-resumen { background: #f8f9fa; border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 2rem; }
+  .pedido-resumen h3 { margin-top: 0; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }
+  .resumen-fila { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e0e0e0; }
+  .resumen-total { font-weight: 700; font-size: 1.25rem; color: var(--color-primary); margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--color-accent); }
+  .tipo-pedido { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .tipo-btn { flex: 1; padding: 1rem; border: 2px solid rgba(27,67,50,0.15); border-radius: var(--radius-md); background: #fff; cursor: pointer; text-align: center; font-weight: 700; color: var(--color-text); transition: var(--transition); }
+  .tipo-btn:hover { border-color: var(--color-primary); }
+  .tipo-btn.activo { border-color: var(--color-primary); background: rgba(46,95,78,0.1); color: var(--color-primary); }
+  .ubicacion-group { margin-bottom: 1.5rem; }
+  .ubicacion-group label { display: block; font-family: var(--font-heading); font-size: 0.85rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .ubicacion-group textarea { width: 100%; padding: 1rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-md); font-family: inherit; font-size: 0.95rem; resize: vertical; }
+  .ubicacion-group textarea:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(184,134,11,0.1); }
+  .btn-pedido { width: 100%; padding: 1rem; background: var(--color-accent); color: var(--color-primary); border: none; border-radius: var(--radius-lg); font-family: var(--font-heading); font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: var(--transition); }
+  .btn-pedido:hover { background: #d4a017; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .btn-pedido:disabled { opacity: 0.6; cursor: not-allowed; }
+  .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
+  .alerta { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9rem; }
+  .alerta--exito { background: rgba(45,106,79,0.1); color: #2d6a4f; border: 1px solid #2d6a4f; }
+  .alerta--error { background: rgba(168,54,54,0.1); color: #a83636; border: 1px solid #a83636; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-wrap">
+    <a href="index.html" class="logo nav-brand">
+      <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
+      <span class="logo-text">GREEN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="carta.html">Carta</a></li>
+      <li><a href="reservas.html">Reservas</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-acciones">
+      <div id="nav-sesion"></div>
+    </div>
+  </div>
+</nav>
+
+<div class="pedido-container">
+  <h1 style="font-family: var(--font-heading); color: var(--color-primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">Pedir a Domicilio</h1>
+  <p style="color: var(--color-text-muted); margin-bottom: 2rem;">Selecciona los platos que deseas pedir. Puedes pedir para llevar o a domicilio.</p>
+
+  <div id="alerta-pedido" class="alerta" style="display:none;"></div>
+
+  <div class="tipo-pedido">
+    <div class="tipo-btn activo" id="tipo-para_llevar">Para Llevar</div>
+    <div class="tipo-btn" id="tipo-domicilio">Domicilio</div>
+  </div>
+
+  <div class="ubicacion-group" id="grupo-direccion" style="display:none;">
+    <label>Dirección de entrega</label>
+    <textarea id="ubicacion" rows="3" placeholder="Ej. Calle 123 #45-67, Barrio Centro, Apartamento 301"></textarea>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.5rem;">Solo necesitamos tu ubicación para llevar el pedido.</p>
+  </div>
+
+  <div class="pedido-card">
+    <h3 style="margin-top:0; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px;">Seleccionar Platos</h3>
+    <div id="grid-pedidos" class="menu-grid"></div>
+  </div>
+
+  <div class="pedido-resumen">
+    <h3>Resumen del Pedido</h3>
+    <div class="resumen-fila">
+      <span>Subtotal:</span>
+      <span id="resumen-subtotal">$0.00</span>
+    </div>
+    <div class="resumen-fila">
+      <span>Total:</span>
+      <span id="resumen-total">$0.00</span>
+    </div>
+    <div class="resumen-total" id="resumen-items">0 platos seleccionados</div>
+  </div>
+
+  <button type="button" class="btn-pedido" id="btn-confirmar-pedido">Confirmar Pedido</button>
+</div>
+
+<script type="module" src="assets/js/api.js?v=2"></script>
+<script type="module" src="assets/js/main.js"></script>
+<script type="module">
+  import { api } from './assets/js/api.js';
+  import { formatearMoneda } from './assets/js/main.js';
+
+  let productos = [];
+  let pedido = {}; // id_producto => { producto, cantidad }
+  let tipoPedido = 'para_llevar';
+
+  // Cargar carrito desde localStorage (agregado desde la carta)
+  const carritoLS = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
+  for (const [id, cant] of Object.entries(carritoLS)) {
+    pedido[parseInt(id)] = cant;
+  }
+  localStorage.removeItem('pedido_carrito');
+
+  const grid = document.getElementById('grid-pedidos');
+  const btnTipoLlevar = document.getElementById('tipo-para_llevar');
+  const btnTipoDomicilio = document.getElementById('tipo-domicilio');
+  const grupoDireccion = document.getElementById('grupo-direccion');
+  const txtUbicacion = document.getElementById('ubicacion');
+  const btnConfirmar = document.getElementById('btn-confirmar-pedido');
+  const resumenSubtotal = document.getElementById('resumen-subtotal');
+  const resumenTotal = document.getElementById('resumen-total');
+  const resumenItems = document.getElementById('resumen-items');
+  const alertaPedido = document.getElementById('alerta-pedido');
+
+  function mostrarAlerta(texto, tipo) {
+    alertaPedido.textContent = texto;
+    alertaPedido.className = 'alerta alerta--' + tipo;
+    alertaPedido.style.display = 'block';
+    setTimeout(() => { alertaPedido.style.display = 'none'; }, 5000);
+  }
+
+  async function cargarProductos() {
+    try {
+      const r = await api.productos();
+      productos = r.datos.filter(p => p.activo && (p.stock_actual === undefined || p.stock_actual > 0));
+      renderProductos();
+      actualizarResumen();
+    } catch (e) {
+      grid.innerHTML = '<p class="vacio">No se pudieron cargar los platos.</p>';
+      console.error(e);
+    }
+  }
+
+  function renderProductos() {
+    grid.innerHTML = '';
+    if (productos.length === 0) {
+      grid.innerHTML = '<p class="vacio">No hay platos disponibles.</p>';
+      return;
+    }
+    productos.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'pedido-item';
+      const cantidad = pedido[p.id_producto] || 0;
+      const subtotal = cantidad * p.precio;
+      item.innerHTML = `
+        <img src="${p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'}" alt="${p.nombre}" class="plato-imagen">
+        <div class="pedido-item-info">
+          <h4>${p.nombre}</h4>
+          <p>${p.categoria || ''}</p>
+        </div>
+        <div class="pedido-item-precio">${formatearMoneda(p.precio)}</div>
+        <div class="cantidad-control">
+          <button onclick="cambiarCantidad(${p.id_producto}, -1)" ${cantidad <= 0 ? 'disabled' : ''}>-</button>
+          <span>${cantidad}</span>
+          <button onclick="cambiarCantidad(${p.id_producto}, 1)" ${p.stock_actual !== undefined && cantidad >= p.stock_actual ? 'disabled' : ''}>+</button>
+        </div>
+        ${cantidad > 0 ? `<div style="font-weight:700; color:var(--color-primary);">${formatearMoneda(subtotal)}</div>` : ''}
+      `;
+      grid.appendChild(item);
+    });
+  }
+
+  window.cambiarCantidad = function(id, delta) {
+    const nueva = (pedido[id] || 0) + delta;
+    if (nueva < 0) return;
+    const producto = productos.find(p => p.id_producto === id);
+    if (nueva > 0 && producto.stock_actual !== undefined && nueva > producto.stock_actual) return;
+    if (nueva === 0) delete pedido[id];
+    else pedido[id] = nueva;
+    renderProductos();
+    actualizarResumen();
+  };
+
+  function actualizarResumen() {
+    let subtotal = 0;
+    let totalItems = 0;
+    for (const [id, cant] of Object.entries(pedido)) {
+      const p = productos.find(x => x.id_producto === parseInt(id));
+      if (p) {
+        subtotal += cant * p.precio;
+        totalItems += cant;
+      }
+    }
+    resumenSubtotal.textContent = formatearMoneda(subtotal);
+    resumenTotal.textContent = formatearMoneda(subtotal);
+    resumenItems.textContent = totalItems > 0 ? totalItems + ' plato' + (totalItems > 1 ? 's' : '') + ' seleccionado' + (totalItems > 1 ? 's' : '') : '0 platos seleccionados';
+    btnConfirmar.disabled = totalItems === 0 || (tipoPedido === 'domicilio' && !txtUbicacion.value.trim());
+  }
+
+  btnTipoLlevar.addEventListener('click', () => {
+    tipoPedido = 'para_llevar';
+    btnTipoLlevar.classList.add('activo');
+    btnTipoDomicilio.classList.remove('activo');
+    grupoDireccion.style.display = 'none';
+    actualizarResumen();
+  });
+
+  btnTipoDomicilio.addEventListener('click', () => {
+    tipoPedido = 'domicilio';
+    btnTipoDomicilio.classList.add('activo');
+    btnTipoLlevar.classList.remove('activo');
+    grupoDireccion.style.display = 'block';
+    actualizarResumen();
+  });
+
+  txtUbicacion.addEventListener('input', actualizarResumen);
+
+  btnConfirmar.addEventListener('click', async () => {
+    const detalles = [];
+    for (const [id, cant] of Object.entries(pedido)) {
+      detalles.push({ id_producto: parseInt(id), cantidad: cant });
+    }
+    const datos = {
+      detalles: detalles,
+      tipo_pedido: tipoPedido,
+      direccion_domicilio: tipoPedido === 'domicilio' ? txtUbicacion.value.trim() : null,
+      estado_senia: 'pendiente'
+    };
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Procesando...';
+    try {
+      const r = await api.crearPedido(datos);
+      if (r.exito) {
+        mostrarAlerta('Pedido confirmado correctamente. Número: #' + r.datos.id_pedido, 'exito');
+        pedido = {};
+        renderProductos();
+        actualizarResumen();
+        setTimeout(() => { window.location.href = 'panel-cliente.html'; }, 2000);
+      } else {
+        mostrarAlerta(r.mensaje || 'Error al crear el pedido.', 'error');
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar Pedido';
+      }
+    } catch (e) {
+      mostrarAlerta(e.message || 'Error de red.', 'error');
+      btnConfirmar.disabled = false;
+      btnConfirmar.textContent = 'Confirmar Pedido';
+    }
+  });
+
+  cargarProductos();
+</script>
+
+</body>
+</html>
