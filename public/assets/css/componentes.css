@@ -428,21 +428,12 @@ nav {
    Fondo verde bosque, formulario centrado (requisito usuario)
    ============================================================================= */
 .reservas {
-  background: var(--color-primary);
+  background: #2E5F4E;
   color: #FFFFFF;
   border-top: 2px solid var(--color-accent);
   border-bottom: 2px solid var(--color-accent);
   position: relative;
   overflow: hidden;
-}
-
-.reservas::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(46, 95, 78, 0.2), rgba(184, 134, 11, 0.15));
-  pointer-events: none;
-  z-index: 0;
 }
 
 .reservas-inner {
@@ -824,6 +815,40 @@ input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+}
+
+/* Selects y date inputs mejorados */
+select, input[type="date"], input[type="time"] {
+  background: #FAFAF0;
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  border-radius: var(--radius-md);
+  padding: 0.9rem;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+select:hover, input[type="date"]:hover, input[type="time"]:hover {
+  border-color: var(--color-secondary);
+}
+
+select option {
+  background: #fff;
+  color: var(--color-text);
+  padding: 0.5rem;
+}
+
+/* Estilo para fechas pasadas en date input - desactivadas visualmente */
+input[type="date"]::-webkit-datetime-edit {
+  color: var(--color-text);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+  cursor: pointer;
 }
 
 /* Botón Pedir en carta */
