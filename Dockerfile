@@ -57,6 +57,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Exponer puerto Apache
 EXPOSE 80
 
+# Forzar rebuild para aplicar correcciones de transacciones y MIME types
+RUN echo "Rebuild v2 - RateLimiter fix + static files first" > /tmp/rebuild-marker
+
 # Usar script de entrada que aplica migraciones antes de iniciar Apache
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

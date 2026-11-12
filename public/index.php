@@ -57,7 +57,10 @@ spl_autoload_register(function (string $clase): void {
 });
 
 $envFile = __DIR__ . '/../.env';
-if (is_file($envFile)) {
+$esProduccion = (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'production')
+    || (getenv('APP_ENV') && getenv('APP_ENV') === 'production')
+    || (isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'production');
+if (is_file($envFile) && !$esProduccion) {
     $lineas = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lineas as $linea) {
         $linea = trim($linea);
@@ -68,7 +71,9 @@ if (is_file($envFile)) {
             [$clave, $valor] = explode('=', $linea, 2);
             $clave = trim($clave);
             $valor = trim($valor, "\"'");
-            if (!isset($_ENV[$clave])) {
+            // Solo establecer desde .env si no existe ni en $_ENV ni en el entorno del contenedor (getenv).
+            // Esto evita que valores locales (ej. DB_HOST=127.0.0.1) sobrescriban las variables de Railway.
+            if (!isset($_ENV[$clave]) && !getenv($clave)) {
                 $_ENV[$clave] = $valor;
                 putenv(sprintf('%s=%s', $clave, $valor));
             }
@@ -163,20 +168,8 @@ $respuesta = null;
 $codigo_http = 200;
 
 try {
-    $pdo = Conexion::obtener();
-    $pdo->query('SELECT 1');
-
-    // Auto-aplicar migraciones si las tablas no existen (para Railway)
-    $tablas = $pdo->query("SHOW TABLES LIKE 'usuarios'")->fetch();
-    if (!$tablas) {
-        echo json_encode(['exito' => false, 'mensaje' => 'Aplicando migraciones, espere...', 'codigo' => 202], JSON_UNESCAPED_UNICODE);
-        aplicarMigraciones($pdo);
-        echo json_encode(['exito' => true, 'mensaje' => 'Migraciones aplicadas. Recargue la página.', 'codigo' => 200], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    // Servir archivos estáticos directamente (JS, CSS, imágenes, fuentes)
-    // Esto evita problemas de MIME type en Railway donde .htaccess no siempre aplica
+    // ── Servir archivos estáticos PRIMERO (antes de tocar la DB) ──
+    // Evita que .js/.css se sirvan como text/html cuando la BD no está disponible
     $extensionesEstaticas = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'ico', 'svg', 'woff', 'woff2', 'ttf', 'eot', 'webp'];
     $extension = strtolower(pathinfo($uri, PATHINFO_EXTENSION));
     if ($extension !== '' && in_array($extension, $extensionesEstaticas, true)) {
@@ -204,9 +197,20 @@ try {
             echo file_get_contents($archivoFisico);
             exit;
         }
-        // Si el archivo no existe, devolver 404
         http_response_code(404);
         echo json_encode(['exito' => false, 'mensaje' => 'Archivo no encontrado: ' . $uri, 'codigo' => 404], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $pdo = Conexion::obtener();
+    $pdo->query('SELECT 1');
+
+    // Auto-aplicar migraciones si las tablas no existen (para Railway)
+    $tablas = $pdo->query("SHOW TABLES LIKE 'usuarios'")->fetch();
+    if (!$tablas) {
+        echo json_encode(['exito' => false, 'mensaje' => 'Aplicando migraciones, espere...', 'codigo' => 202], JSON_UNESCAPED_UNICODE);
+        aplicarMigraciones($pdo);
+        echo json_encode(['exito' => true, 'mensaje' => 'Migraciones aplicadas. Recargue la página.', 'codigo' => 200], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

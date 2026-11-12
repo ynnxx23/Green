@@ -89,9 +89,7 @@
 
   async function cargarProductos() {
     try {
-      const url = window.location.origin + '/api/productos';
-      const respuesta = await fetch(url, { credentials: 'include' });
-      const datos = await respuesta.json();
+      const datos = await api.productos();
       if (datos.exito) {
         productos = datos.datos || [];
         render('todos');

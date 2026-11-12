@@ -78,10 +78,12 @@ class RateLimiterMiddleware
 
             $pdo->commit();
         } catch (\RuntimeException $e) {
-            $pdo->rollBack();
+            // Solo hacer rollBack si todavía hay una transacción activa.
+            // El RuntimeException de "tokens agotados" ya hizo rollBack arriba.
+            try { $pdo->rollBack(); } catch (\Throwable $e2) { /* transacción ya finalizada */ }
             throw $e;
         } catch (\Throwable $e) {
-            $pdo->rollBack();
+            try { $pdo->rollBack(); } catch (\Throwable $e2) { /* transacción ya finalizada */ }
             throw new \RuntimeException('Error interno del limitador de solicitudes.', 500);
         }
     }

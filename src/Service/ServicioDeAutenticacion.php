@@ -113,12 +113,17 @@ class ServicioDeAutenticacion
     public static function iniciarSesion(array $usuario): void
     {
         // Configurar cookies de sesión seguras
+        // Detectar HTTPS considerando proxies/load balancers (X-Forwarded-Proto)
+        // que es el caso típico en Railway y otros proveedores de cloud.
+        $esHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
         $params = session_get_cookie_params();
         session_set_cookie_params([
             'lifetime' => self::SESION_DURACION_SEGUNDOS,
             'path' => $params['path'],
             'domain' => $params['domain'],
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'secure' => $esHttps,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
