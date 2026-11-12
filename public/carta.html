@@ -45,12 +45,9 @@
     </div>
 
     <div class="carta-seccion">
-      <div class="menu-grid" id="grid-productos">
-        <!-- Productos se cargan dinámicamente desde la API -->
-      </div>
+      <div class="menu-grid" id="grid-productos"></div>
     </div>
 
-    <!-- Estado vacío -->
     <div id="estado-vacio" style="display:none; text-align:center; padding: 3rem; color: var(--color-text-muted);">
       <p>No se encontraron platos en esta categoría.</p>
     </div>
@@ -76,10 +73,10 @@
   </div>
 </footer>
 
-<script type="module" src="/assets/js/api.js?v=2"></script>
+<script type="module" src="assets/js/api.js?v=2"></script>
 <script type="module">
-  import { api } from '/assets/js/api.js';
-  import { formatearMoneda, mostrarToast } from '/assets/js/main.js';
+  import { api } from './assets/js/api.js';
+  import { formatearMoneda, mostrarToast } from './assets/js/main.js';
 
   const grid = document.getElementById('grid-productos');
   const estadoVacio = document.getElementById('estado-vacio');
@@ -103,14 +100,18 @@
   }
 
   function escapeHtml(texto) {
-    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
+    const d = document.createElement('div');
+    d.textContent = texto;
+    return d.innerHTML;
   }
 
   function render(categoria) {
     grid.innerHTML = '';
     let filtrados = categoria === 'todos'
       ? productos
-      : productos.filter(p => (p.categoria || '').toLowerCase() === categoria.toLowerCase());
+      : productos.filter(function(p) {
+        return (p.categoria || '').toLowerCase() === categoria.toLowerCase();
+      });
 
     if (filtrados.length === 0) {
       grid.style.display = 'none';
@@ -120,23 +121,21 @@
     grid.style.display = 'grid';
     estadoVacio.style.display = 'none';
 
-    filtrados.forEach(p => {
+    filtrados.forEach(function(p) {
       const card = document.createElement('div');
       card.className = 'menu-card';
       const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
       const carrito = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
       const enCarrito = (carrito[p.id_producto] || 0) > 0;
-      card.innerHTML = `
-        <img src="${escapeHtml(imagen)}" alt="${escapeHtml(p.nombre)}" class="plato-imagen">
-        <div class="plato-contenido">
-          <h3>${escapeHtml(p.nombre || 'Producto')}</h3>
-          <p>${escapeHtml(p.categoria || '')}</p>
-          <span class="menu-precio">${formatearMoneda(p.precio || 0)}</span>
-        </div>
-        <button class="btn btn-pedido-carta" onclick="agregarAPedido(${p.id_producto}, '${escapeHtml(p.nombre || '')}', ${p.precio || 0})" ${enCarrito ? 'disabled' : ''}>
-          ${enCarrito ? '✓ En pedido' : 'Pedir'}
-        </button>
-      `;
+      card.innerHTML = '<img src="' + escapeHtml(imagen) + '" alt="' + escapeHtml(p.nombre) + '" class="plato-imagen">' +
+        '<div class="plato-contenido">' +
+        '<h3>' + escapeHtml(p.nombre || 'Producto') + '</h3>' +
+        '<p>' + escapeHtml(p.categoria || '') + '</p>' +
+        '<span class="menu-precio">' + formatearMoneda(p.precio || 0) + '</span>' +
+        '</div>' +
+        '<button class="btn btn-pedido-carta" onclick="agregarAPedido(' + p.id_producto + ', \'' + escapeHtml(p.nombre || '') + '\', ' + (p.precio || 0) + ')' + (enCarrito ? ' disabled' : '') + '>' +
+        (enCarrito ? '✓ En pedido' : 'Pedir') +
+        '</button>';
       grid.appendChild(card);
     });
   }
@@ -149,9 +148,9 @@
     render('todos');
   };
 
-  filtros.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filtros.forEach(b => b.classList.remove('activo'));
+  filtros.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      filtros.forEach(function(b) { b.classList.remove('activo'); });
       btn.classList.add('activo');
       render(btn.dataset.categoria);
     });
