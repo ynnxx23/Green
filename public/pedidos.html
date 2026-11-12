@@ -105,7 +105,7 @@
 <script type="module" src="assets/js/main.js"></script>
 <script type="module">
   import { api } from './assets/js/api.js';
-  import { formatearMoneda } from './assets/js/main.js';
+  import { formatearMoneda, mostrarToast } from './assets/js/main.js';
 
   let productos = [];
   let pedido = {}; // id_producto => { producto, cantidad }
@@ -128,13 +128,6 @@
   const resumenTotal = document.getElementById('resumen-total');
   const resumenItems = document.getElementById('resumen-items');
   const alertaPedido = document.getElementById('alerta-pedido');
-
-  function mostrarAlerta(texto, tipo) {
-    alertaPedido.textContent = texto;
-    alertaPedido.className = 'alerta alerta--' + tipo;
-    alertaPedido.style.display = 'block';
-    setTimeout(() => { alertaPedido.style.display = 'none'; }, 5000);
-  }
 
   async function cargarProductos() {
     try {
@@ -238,18 +231,18 @@
     try {
       const r = await api.crearPedido(datos);
       if (r.exito) {
-        mostrarAlerta('Pedido confirmado correctamente. Número: #' + r.datos.id_pedido, 'exito');
+        mostrarToast('Pedido confirmado correctamente. Número: #' + r.datos.id_pedido, 'exito');
         pedido = {};
         renderProductos();
         actualizarResumen();
         setTimeout(() => { window.location.href = 'panel-cliente.html'; }, 2000);
       } else {
-        mostrarAlerta(r.mensaje || 'Error al crear el pedido.', 'error');
+        mostrarToast(r.mensaje || 'Error al crear el pedido.', 'error');
         btnConfirmar.disabled = false;
         btnConfirmar.textContent = 'Confirmar Pedido';
       }
     } catch (e) {
-      mostrarAlerta(e.message || 'Error de red.', 'error');
+      mostrarToast(e.message || 'Error de red.', 'error');
       btnConfirmar.disabled = false;
       btnConfirmar.textContent = 'Confirmar Pedido';
     }

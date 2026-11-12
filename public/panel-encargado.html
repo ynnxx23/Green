@@ -36,21 +36,12 @@
   .estado--en_preparacion { background: rgba(46,95,78,0.12); color: #1e4a33; }
   .estado--listo { background: rgba(45,106,79,0.15); color: #2d6a4f; }
   .estado--entregado { background: rgba(45,106,79,0.15); color: #2d6a4f; }
-  .estado--cancelado { background: rgba(168,54,54,0.12); color: #a83636; }
-  .estado--pagada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
-  .estado--pendiente-seña { background: rgba(184,134,11,0.12); color: #8a6200; }
   .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
   .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
   .alerta { padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9rem; }
   .alerta--exito { background: rgba(45,106,79,0.1); color: #2d6a4f; border: 1px solid #2d6a4f; }
   .alerta--error { background: rgba(168,54,54,0.1); color: #a83636; border: 1px solid #a83636; }
-  .btn-accion { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .btn-accion:hover { background: var(--color-secondary); }
-  .btn-accion.sec { background: transparent; border: 1px solid var(--color-primary); color: var(--color-primary); }
-  .btn-accion.sec:hover { background: var(--color-primary); color: #fff; }
-  .btn-accion.danger { background: transparent; border: 1px solid #a83636; color: #a83636; }
-  .btn-accion.danger:hover { background: #a83636; color: #fff; }
   select.estado-select { padding: 0.35rem; border-radius: var(--radius-sm); border: 1px solid rgba(27,67,50,0.15); font-size: 0.85rem; background: #fff; }
   .dias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
   .dia-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 0.75rem; background: #fff; display: flex; flex-direction: column; gap: 0.4rem; }
@@ -62,9 +53,6 @@
   .stock-card h4 { margin: 0; font-size: 1rem; color: var(--color-primary); }
   .stock-card .row { display: flex; gap: 0.5rem; align-items: center; }
   .stock-card input { flex: 1; padding: 0.35rem; border: 1px solid rgba(27,67,50,0.15); border-radius: var(--radius-sm); font-size: 0.85rem; }
-  .stock-card .limite { color: #8a6200; font-weight: 700; }
-  .stock-card .stock { color: #1e4a33; font-weight: 700; }
-  .btn-guardar-stock { margin-top: 0.5rem; align-self: flex-start; }
   .menu-semanal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
   .menu-semana-card { border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-md); padding: 1rem; background: #fff; }
   .menu-semana-card h4 { margin: 0 0 0.5rem 0; color: var(--color-primary); }
@@ -79,7 +67,7 @@
   .cal-dia.no-disponible { background: #f5f5f5; color: #bdbdbd; border-color: #e0e0e0; cursor: not-allowed; }
   .cal-dia.seleccionado { background: var(--color-accent); color: #fff; border-color: #8a6200; }
   .cal-dia.tiene-reserva { background: #fff8e1; color: #8a6200; border-color: #fbc02d; }
-  .cal-dia.hoy { font-weight: 700; }
+  .cal-dia.hoy { font-weight: 700; box-shadow: 0 0 0 3px rgba(46, 95, 78, 0.3); }
   .cal-semana { display: contents; }
   .cal-mes { font-family: var(--font-heading); font-size: 1.5rem; color: var(--color-primary); margin-bottom: 1rem; }
   .cal-nav { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
@@ -92,9 +80,9 @@
 </style>
 </head>
 <body>
+
 <nav>
   <div class="nav-wrap">
-
     <a href="index.html" class="logo nav-brand">
       <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
       <span class="logo-text">GREEN</span>
@@ -114,7 +102,7 @@
 <div class="panel-grid">
   <aside class="panel-sidebar">
     <div class="panel-brand">Encargado</div>
-    <a href="#" class="activo">Pedidos</a>
+    <a href="#" class="activo" onclick="mostrar('pedidos')">Pedidos</a>
     <a href="#" onclick="mostrar('reservas')">Reservas</a>
     <a href="#" onclick="mostrar('stock')">Stock y límites por plato</a>
     <a href="#" onclick="mostrar('menu-semanal')">Menú semanal</a>
@@ -128,9 +116,6 @@
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
-    <h2>Pedidos</h2>
-    <div class="divisor"></div>
-
     <section id="vista-pedidos" class="panel-card">
       <h3>Pedidos</h3>
       <div id="alerta-pedidos" class="alerta" style="display:none;"></div>
@@ -289,26 +274,6 @@
           <label>Monto mínimo de pedido ($)</label>
           <input type="number" id="inp-cupon-minimo" min="0" step="0.01" value="0.00">
         </div>
-        <div>
-          <label>Descuento máximo aplicable ($)</label>
-          <input type="number" id="inp-cupon-maximo" min="0" step="0.01" placeholder="Opcional">
-        </div>
-        <div>
-          <label>Fecha de inicio</label>
-          <input type="date" id="inp-cupon-inicio" required>
-        </div>
-        <div>
-          <label>Fecha de fin</label>
-          <input type="date" id="inp-cupon-fin">
-        </div>
-        <div>
-          <label>Usos máximos</label>
-          <input type="number" id="inp-cupon-usos-max" min="1" placeholder="Ilimitado">
-        </div>
-        <div>
-          <label>Usos por cliente</label>
-          <input type="number" id="inp-cupon-usos-cliente" min="1" value="1">
-        </div>
         <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
           <button type="button" class="btn btn-primary btn-accion" id="btn-guardar-cupon">Guardar cupón</button>
           <button type="button" class="btn btn-accion sec" onclick="cargarCupones()">Refrescar</button>
@@ -342,7 +307,6 @@
       <div class="tabla-wrap" id="tabla-limite-pedidos"></div>
     </section>
 
-    <!-- Gestión de productos -->
     <section id="vista-productos" class="panel-card" style="display:none;">
       <h3>Gestión de productos</h3>
       <p>Administra el catálogo de productos del restaurante.</p>
@@ -392,6 +356,7 @@
 <script type="module" src="assets/js/main.js"></script>
 <script type="module">
   import { api } from './assets/js/api.js';
+  import { formatearMoneda, formatearFecha, formatearHora, mostrarToast, mostrarAlerta, setBtnLoading, confirmar } from './assets/js/main.js';
 
   const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
@@ -413,17 +378,29 @@
     if (vista === 'menu-semanal') { cargarProductos(); cargarSemanasMenuAdmin(); }
     if (vista === 'disponibilidad') { cargarDatosBase(); renderCalendarioDisp(); }
     if (vista === 'bloques') { cargarDatosBase(); cargarBloques(); }
+    if (vista === 'zonas-delivery') cargarZonasDelivery();
+    if (vista === 'repartidores') cargarRepartidores();
+    if (vista === 'cupones') cargarCupones();
+    if (vista === 'limite-pedidos') cargarLimitePedidos();
+    if (vista === 'productos') cargarProductosAdmin();
   }
 
-  function cerrarSesion() {
-    api.logout().finally(() => { window.location.href = 'index.html'; });
+  async function cerrarSesion() {
+    try {
+      await api.logout();
+      mostrarToast('Sesión cerrada.', 'exito');
+      setTimeout(() => { window.location.href = 'index.html'; }, 600);
+    } catch (e) { window.location.href = 'index.html'; }
   }
 
   function alerta(id, texto, tipo) {
     const el = document.getElementById(id);
-    el.textContent = texto;
-    el.className = 'alerta alerta--' + tipo;
-    el.style.display = 'block';
+    if (el) {
+      el.textContent = texto;
+      el.className = 'alerta alerta--' + tipo;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
   }
 
   async function cargarDatosBase() {
@@ -436,11 +413,13 @@
       mesas = rm.datos || [];
     } catch (e) { console.error('mesas', e); }
     const selMesa = document.getElementById('sel-mesa-bloque');
-    selMesa.innerHTML = '<option value="">Seleccionar mesa</option>';
-    mesas.forEach(m => {
-      const o = document.createElement('option'); o.value = m.id_mesa; o.textContent = 'Mesa ' + (m.numero_mesa || m.id_mesa);
-      selMesa.appendChild(o);
-    });
+    if (selMesa) {
+      selMesa.innerHTML = '<option value="">Seleccionar mesa</option>';
+      mesas.forEach(m => {
+        const o = document.createElement('option'); o.value = m.id_mesa; o.textContent = 'Mesa ' + (m.numero_mesa || m.id_mesa);
+        selMesa.appendChild(o);
+      });
+    }
   }
 
   // ── Pedidos ──
@@ -489,9 +468,9 @@
       if (selSeña.value !== 'pendiente') {
         await api.actualizarSeñaPedido(id, selSeña.value);
       }
-      alerta('alerta-pedidos', 'Pedido #${id} actualizado.'.replace('${id}', id), 'exito');
+      mostrarToast('Pedido #'+id+' actualizado.', 'exito');
       cargarPedidos();
-    } catch (e) { alerta('alerta-pedidos', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-pedidos', e.message || 'Error.', 'error'); }
   };
 
   // ── Reservas admin ──
@@ -531,9 +510,9 @@
     const sel = document.querySelector(`select[data-id="${id}"]`);
     try {
       await api._request(`/reservas/${id}/estado`, { method: 'POST', body: JSON.stringify({ estado: sel.value }) });
-      alerta('alerta-reservas', 'Estado de reserva actualizado.', 'exito');
+      mostrarToast('Estado de reserva actualizado.', 'exito');
       cargarReservasAdmin();
-    } catch (e) { alerta('alerta-reservas', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-reservas', e.message || 'Error.', 'error'); }
   };
 
   // ── Stock ──
@@ -564,7 +543,7 @@
       const card = document.createElement('div');
       card.className = 'stock-card';
       card.innerHTML = `
-        <h4>${escapeHtml(p.nombre)}</h4>
+        <h4>${p.nombre}</h4>
         <div class="row"><span class="stock">Stock actual:</span><input type="number" min="0" value="${s.stock_actual}" data-id="${p.id_producto}" data-campo="stock_actual"></div>
         <div class="row"><span class="limite">Límite venta:</span><input type="number" min="0" value="${s.limite_venta}" data-id="${p.id_producto}" data-campo="limite_venta" title="0 = sin límite"></div>
       `;
@@ -585,10 +564,10 @@
       for (const c of cambios) {
         await api.guardarStock(c);
       }
-      alerta('alerta-stock', 'Stock y límites guardados.', 'exito');
+      mostrarToast('Stock y límites guardados.', 'exito');
       cargarStock();
-    } catch (e) { alerta('alerta-stock', e.message || 'Error al guardar stock.', 'error'); }
-  };
+    } catch (e) { mostrarAlerta('alerta-stock', e.message || 'Error al guardar stock.', 'error'); }
+  });
 
   // ── Menú semanal admin ──
   async function cargarSemanasMenuAdmin() {
@@ -626,9 +605,8 @@
   document.getElementById('btn-guardar-menu').addEventListener('click', async () => {
     const semana_inicio = document.getElementById('inp-menu-semana-inicio').value;
     const semana_fin = document.getElementById('inp-menu-semana-fin').value;
-    if (!semana_inicio || !semana_fin) { alerta('alerta-menu', 'Ingrese ambas fechas.', 'error'); return; }
+    if (!semana_inicio || !semana_fin) { mostrarAlerta('alerta-menu', 'Ingrese ambas fechas.', 'error'); return; }
 
-    // Construir items desde productos disponibles
     const items = productos.map(p => ({
       id_producto: p.id_producto,
       disponible: true,
@@ -637,9 +615,9 @@
 
     try {
       await api.guardarMenuSemanal({ semana_inicio, semana_fin, items });
-      alerta('alerta-menu', 'Menú semanal guardado.', 'exito');
+      mostrarToast('Menú semanal guardado.', 'exito');
       cargarSemanasMenuAdmin();
-    } catch (e) { alerta('alerta-menu', e.message || 'Error al guardar menú.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-menu', e.message || 'Error al guardar menú.', 'error'); }
   });
 
   // ── Disponibilidad multifecha ──
@@ -724,20 +702,20 @@
   });
 
   document.getElementById('btn-guardar-disp').addEventListener('click', async () => {
-    if (fechasSeleccionadas.size === 0) { alerta('alerta-disp', 'Seleccione al menos una fecha.', 'error'); return; }
+    if (fechasSeleccionadas.size === 0) { mostrarAlerta('alerta-disp', 'Seleccione al menos una fecha.', 'error'); return; }
     const hora_inicio = document.getElementById('disp-hora-inicio').value;
     const hora_fin = document.getElementById('disp-hora-fin').value;
     const mesas_disp = parseInt(document.getElementById('disp-mesas').value, 10) || 1;
-    if (!hora_inicio || !hora_fin) { alerta('alerta-disp', 'Ingrese hora inicio y fin.', 'error'); return; }
+    if (!hora_inicio || !hora_fin) { mostrarAlerta('alerta-disp', 'Ingrese hora inicio y fin.', 'error'); return; }
     try {
       for (const fecha of fechasSeleccionadas) {
         await api.guardarDisponibilidad({ fecha, hora_inicio, hora_fin, mesas_disponibles: mesas_disp });
       }
-      alerta('alerta-disp', 'Disponibilidad guardada para ' + fechasSeleccionadas.size + ' fecha(s).', 'exito');
+      mostrarToast('Disponibilidad guardada para ' + fechasSeleccionadas.size + ' fecha(s).', 'exito');
       fechasSeleccionadas.clear();
       renderCalendarioDisp();
-    } catch (e) { alerta('alerta-disp', e.message || 'Error al guardar disponibilidad.', 'error'); }
-  };
+    } catch (e) { mostrarAlerta('alerta-disp', e.message || 'Error al guardar disponibilidad.', 'error'); }
+  });
 
   async function cargarBloques() {
     const id_mesa = parseInt(document.getElementById('sel-mesa-bloque').value, 10);
@@ -766,21 +744,18 @@
   }
 
   window.eliminarBloque = async function (id) {
-    if (!confirm('¿Eliminar bloque?')) return;
+    if (!confirmar('¿Eliminar bloque?')) return;
     try {
       await api._request(`/admin/bloques/${id}`, { method: 'DELETE' });
-      alerta('alerta-bloques', 'Bloque eliminado.', 'exito');
+      mostrarToast('Bloque eliminado.', 'exito');
       const id_mesa = parseInt(document.getElementById('sel-mesa-bloque').value, 10);
       if (id_mesa) cargarBloques();
-    } catch (e) { alerta('alerta-bloques', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-bloques', e.message || 'Error.', 'error'); }
   };
 
   document.getElementById('sel-mesa-bloque').addEventListener('change', () => cargarBloques());
 
-  // Cargar vista inicial
-  mostrar('pedidos');
-
-  // ── Zonas de delivery (RF-81) ──
+  // ── Zonas de delivery ──
   async function cargarZonasDelivery() {
     try {
       const r = await api._request('/admin/zonas-delivery', { method: 'GET' });
@@ -790,10 +765,10 @@
       let html = '<table><thead><tr><th>Zona</th><th>Costo envío ($)</th><th>Tiempo (min)</th><th>Cobertura</th><th>Activa</th><th>Acción</th></tr></thead><tbody>';
       datos.forEach(z => {
         html += `<tr>
-          <td>${escapeHtml(z.nombre)}</td>
+          <td>${z.nombre}</td>
           <td>$${(z.costo_envio || 0).toFixed(2)}</td>
           <td>${z.tiempo_estimado_minutos}</td>
-          <td>${escapeHtml(z.cobertura || '-')}</td>
+          <td>${z.cobertura || '-'}</td>
           <td><span class="estado estado--${z.activa ? 'confirmada' : 'cancelada'}">${z.activa ? 'Activa' : 'Inactiva'}</span></td>
           <td>
             <button class="btn-sm btn-accion danger" onclick="toggleZona(${z.id_zona}, ${!z.activa})">${z.activa ? 'Desactivar' : 'Activar'}</button>
@@ -814,9 +789,9 @@
         method: 'PUT',
         body: JSON.stringify({ activa: activa ? 1 : 0 })
       });
-      alerta('alerta-zonas', 'Zona actualizada.', 'exito');
+      mostrarToast('Zona actualizada.', 'exito');
       cargarZonasDelivery();
-    } catch (e) { alerta('alerta-zonas', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-zonas', e.message || 'Error.', 'error'); }
   };
 
   document.getElementById('btn-guardar-zona').addEventListener('click', async () => {
@@ -824,22 +799,22 @@
     const costo = parseFloat(document.getElementById('inp-zona-costo').value) || 0;
     const tiempo = parseInt(document.getElementById('inp-zona-tiempo').value) || 45;
     const cobertura = document.getElementById('inp-zona-cobertura').value.trim();
-    if (!nombre) { alerta('alerta-zonas', 'Ingrese nombre de la zona.', 'error'); return; }
+    if (!nombre) { mostrarAlerta('alerta-zonas', 'Ingrese nombre de la zona.', 'error'); return; }
     try {
       await api._request('/admin/zonas-delivery', {
         method: 'POST',
         body: JSON.stringify({ nombre, costo_envio: costo, tiempo_estimado_minutos: tiempo, cobertura })
       });
-      alerta('alerta-zonas', 'Zona creada.', 'exito');
+      mostrarToast('Zona creada.', 'exito');
       document.getElementById('inp-zona-nombre').value = '';
       document.getElementById('inp-zona-costo').value = '0.00';
       document.getElementById('inp-zona-tiempo').value = '45';
       document.getElementById('inp-zona-cobertura').value = '';
       cargarZonasDelivery();
-    } catch (e) { alerta('alerta-zonas', e.message || 'Error.', 'error'); }
-  };
+    } catch (e) { mostrarAlerta('alerta-zonas', e.message || 'Error.', 'error'); }
+  });
 
-  // ── Repartidores (RF-83) ──
+  // ── Repartidores ──
   async function cargarRepartidores() {
     try {
       const r = await api._request('/admin/repartidores', { method: 'GET' });
@@ -849,7 +824,7 @@
       let html = '<table><thead><tr><th>Repartidor</th><th>Teléfono</th><th>Usuario</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
       datos.forEach(rp => {
         html += `<tr>
-          <td>${escapeHtml(rp.nombre)}</td>
+          <td>${rp.nombre}</td>
           <td>${rp.telefono || '-'}</td>
           <td>${rp.nombre_usuario || '-'}</td>
           <td><span class="estado estado--${rp.activo ? 'confirmada' : 'cancelada'}">${rp.activo ? 'Activo' : 'Inactivo'}</span></td>
@@ -872,44 +847,41 @@
         method: 'PUT',
         body: JSON.stringify({ activo: activo ? 1 : 0 })
       });
-      alerta('alerta-repartidores', 'Repartidor actualizado.', 'exito');
+      mostrarToast('Repartidor actualizado.', 'exito');
       cargarRepartidores();
-    } catch (e) { alerta('alerta-repartidores', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-repartidores', e.message || 'Error.', 'error'); }
   };
 
   document.getElementById('btn-guardar-repartidor').addEventListener('click', async () => {
     const nombre = document.getElementById('inp-rep-nombre').value.trim();
     const telefono = document.getElementById('inp-rep-telefono').value.trim();
-    if (!nombre) { alerta('alerta-repartidores', 'Ingrese nombre del repartidor.', 'error'); return; }
+    if (!nombre) { mostrarAlerta('alerta-repartidores', 'Ingrese nombre del repartidor.', 'error'); return; }
     try {
       await api._request('/admin/repartidores', {
         method: 'POST',
         body: JSON.stringify({ nombre, telefono })
       });
-      alerta('alerta-repartidores', 'Repartidor creado.', 'exito');
+      mostrarToast('Repartidor creado.', 'exito');
       document.getElementById('inp-rep-nombre').value = '';
       document.getElementById('inp-rep-telefono').value = '';
       cargarRepartidores();
-    } catch (e) { alerta('alerta-repartidores', e.message || 'Error.', 'error'); }
-  };
+    } catch (e) { mostrarAlerta('alerta-repartidores', e.message || 'Error.', 'error'); }
+  });
 
-  // ── Cupones (RF-88) ──
+  // ── Cupones ──
   async function cargarCupones() {
     try {
       const r = await api._request('/cupones', { method: 'GET' });
       const datos = r.datos || [];
       const wrap = document.getElementById('tabla-cupones');
       if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay cupones.</p>'; return; }
-      let html = '<table><thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Mínimo ($)</th><th>Máximo ($)</th><th>Desde</th><th>Hasta</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Mínimo ($)</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
       datos.forEach(c => {
         html += `<tr>
-          <td><strong>${escapeHtml(c.codigo)}</strong></td>
+          <td><strong>${c.codigo}</strong></td>
           <td>${c.tipo_descuento === 'porcentaje' ? '%' : '$'}</td>
           <td>${(c.valor_descuento || 0).toFixed(2)}</td>
           <td>${(c.monto_minimo || 0).toFixed(2)}</td>
-          <td>${c.descuento_maximo !== null ? (c.descuento_maximo).toFixed(2) : '-'}</td>
-          <td>${c.fecha_inicio}</td>
-          <td>${c.fecha_fin || '-'}</td>
           <td><span class="estado estado--${c.activa ? 'confirmada' : 'cancelada'}">${c.activa ? 'Activo' : 'Inactivo'}</span></td>
           <td>
             <button class="btn-sm btn-accion danger" onclick="toggleCupon(${c.id_cupon}, ${!c.activa})">${c.activa ? 'Desactivar' : 'Activar'}</button>
@@ -930,9 +902,9 @@
         method: 'PUT',
         body: JSON.stringify({ activo: activa ? 1 : 0 })
       });
-      alerta('alerta-cupones', 'Cupón actualizado.', 'exito');
+      mostrarToast('Cupón actualizado.', 'exito');
       cargarCupones();
-    } catch (e) { alerta('alerta-cupones', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-cupones', e.message || 'Error.', 'error'); }
   };
 
   document.getElementById('btn-guardar-cupon').addEventListener('click', async () => {
@@ -940,36 +912,27 @@
     const tipo = document.getElementById('inp-cupon-tipo').value;
     const valor = parseFloat(document.getElementById('inp-cupon-valor').value) || 0;
     const minimo = parseFloat(document.getElementById('inp-cupon-minimo').value) || 0;
-    const maximo = document.getElementById('inp-cupon-maximo').value ? parseFloat(document.getElementById('inp-cupon-maximo').value) : null;
     const inicio = document.getElementById('inp-cupon-inicio').value;
-    const fin = document.getElementById('inp-cupon-fin').value || null;
-    const usosMax = document.getElementById('inp-cupon-usos-max').value ? parseInt(document.getElementById('inp-cupon-usos-max').value) : null;
-    const usosCliente = parseInt(document.getElementById('inp-cupon-usos-cliente').value) || 1;
-
-    if (!codigo) { alerta('alerta-cupones', 'Ingrese código del cupón.', 'error'); return; }
-    if (!inicio) { alerta('alerta-cupones', 'Ingrese fecha de inicio.', 'error'); return; }
+    if (!codigo) { mostrarAlerta('alerta-cupones', 'Ingrese código del cupón.', 'error'); return; }
+    if (!inicio) { mostrarAlerta('alerta-cupones', 'Ingrese fecha de inicio.', 'error'); return; }
 
     try {
       await api._request('/cupones', {
         method: 'POST',
         body: JSON.stringify({
           codigo, tipo_descuento: tipo, valor_descuento: valor, monto_minimo: minimo,
-          descuento_maximo: maximo, fecha_inicio: inicio, fecha_fin: fin,
-          uso_maximo: usosMax, uso_por_cliente: usosCliente
+          fecha_inicio: inicio
         })
       });
-      alerta('alerta-cupones', 'Cupón creado.', 'exito');
+      mostrarToast('Cupón creado.', 'exito');
       document.getElementById('inp-cupon-codigo').value = '';
       document.getElementById('inp-cupon-valor').value = '0.00';
       document.getElementById('inp-cupon-minimo').value = '0.00';
-      document.getElementById('inp-cupon-maximo').value = '';
-      document.getElementById('inp-cupon-usos-max').value = '';
-      document.getElementById('inp-cupon-usos-cliente').value = '1';
       cargarCupones();
-    } catch (e) { alerta('alerta-cupones', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-cupones', e.message || 'Error.', 'error'); }
   });
 
-  // ── Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71) ──
+  // ── Límite de pedidos sin reserva ──
   async function cargarLimitePedidos() {
     const fecha = document.getElementById('inp-limite-fecha').value || new Date().toISOString().slice(0,10);
     try {
@@ -977,183 +940,98 @@
       const d = r.datos || {};
       document.getElementById('inp-limite-retiro').value = d.limite_retiro || 0;
       document.getElementById('inp-limite-domicilio').value = d.limite_domicilio || 0;
-      const wrap = document.getElementById('tabla-limite-pedidos');
-      wrap.innerHTML = `
-        <table>
-          <thead><tr><th>Tipo</th><th>Límite</th><th>Usados hoy</th><th>Disponibles</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Retiro en restaurante</td>
-              <td>${d.limite_retiro || 0}</td>
-              <td>${d.contador_retiro || 0}</td>
-              <td>${d.disponible_retiro || 0}</td>
-              <td><span class="estado estado--${d.bloqueado_retiro ? 'cancelada' : 'confirmada'}">${d.bloqueado_retiro ? 'Bloqueado' : 'Disponible'}</span></td>
-            </tr>
-            <tr>
-              <td>Delivery a domicilio</td>
-              <td>${d.limite_domicilio || 0}</td>
-              <td>${d.contador_domicilio || 0}</td>
-              <td>${d.disponible_domicilio || 0}</td>
-              <td><span class="estado estado--${d.bloqueado_domicilio ? 'cancelada' : 'confirmada'}">${d.bloqueado_domicilio ? 'Bloqueado' : 'Disponible'}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      `;
     } catch (e) {
       console.error(e);
-      document.getElementById('tabla-limite-pedidos').innerHTML = '<p class="vacio">No se pudieron cargar los límites.</p>';
     }
   }
 
   document.getElementById('btn-guardar-limite').addEventListener('click', async () => {
     const retiro = parseInt(document.getElementById('inp-limite-retiro').value) || 0;
     const domicilio = parseInt(document.getElementById('inp-limite-domicilio').value) || 0;
+    const fecha = document.getElementById('inp-limite-fecha').value || new Date().toISOString().slice(0,10);
     try {
       await api._request('/admin/pedidos-sin-reserva', {
         method: 'POST',
-        body: JSON.stringify({ tipo: 'retiro', limite: retiro })
+        body: JSON.stringify({ fecha, limite_retiro: retiro, limite_domicilio: domicilio })
       });
-      await api._request('/admin/pedidos-sin-reserva', {
-        method: 'POST',
-        body: JSON.stringify({ tipo: 'domicilio', limite: domicilio })
-      });
-      alerta('alerta-limite', 'Límites guardados.', 'exito');
+      mostrarToast('Límites actualizados.', 'exito');
       cargarLimitePedidos();
-    } catch (e) { alerta('alerta-limite', e.message || 'Error.', 'error'); }
+    } catch (e) { mostrarAlerta('alerta-limite', e.message || 'Error.', 'error'); }
   });
 
-  // ── Gestión de productos ──
+  // ── Productos admin ──
   async function cargarProductosAdmin() {
     try {
       const r = await api.productos();
-      const datos = r.datos || [];
+      productos = r.datos || [];
       const wrap = document.getElementById('tabla-productos');
-      if (!datos.length) { wrap.innerHTML = '<p class="vacio">No hay productos.</p>'; return; }
-      let html = '<table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Imagen</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
-      datos.forEach(p => {
-        const img = p.imagen_url ? `<img src="${p.imagen_url}" class="plato-imagen-mini" alt="${p.nombre}">` : '<span class="sin-imagen">Sin imagen</span>';
+      if (!productos.length) { wrap.innerHTML = '<p class="vacio">No hay productos.</p>'; return; }
+      let html = '<table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Activo</th><th>Acción</th></tr></thead><tbody>';
+      productos.forEach(p => {
         html += `<tr>
-          <td>${escapeHtml(p.nombre)}</td>
-          <td>${p.categoria}</td>
+          <td>${p.nombre}</td>
+          <td>${p.categoria || '-'}</td>
           <td>$${(p.precio || 0).toFixed(2)}</td>
-          <td>${img}</td>
-          <td><span class="estado estado--${p.activo ? 'confirmada' : 'cancelada'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
-          <td>
-            <button class="btn-sm btn-accion" onclick="editarProducto(${p.id_producto})">Editar</button>
-            <button class="btn-sm btn-accion danger" onclick="toggleProducto(${p.id_producto}, ${!p.activo})">${p.activo ? 'Desactivar' : 'Activar'}</button>
-          </td>
+          <td>${p.activo ? 'Sí' : 'No'}</td>
+          <td><button class="btn-sm btn-accion" onclick="activarProducto(${p.id_producto}, ${!p.activo})">${p.activo ? 'Desactivar' : 'Activar'}</button></td>
         </tr>`;
       });
       html += '</tbody></table>';
       wrap.innerHTML = html;
+
+      const sel = document.getElementById('inp-producto-nombre');
+      sel.innerHTML = '<option value="">Seleccionar producto existente</option>';
+      productos.forEach(p => {
+        const o = document.createElement('option'); o.value = p.id_producto; o.textContent = p.nombre;
+        sel.appendChild(o);
+      });
     } catch (e) {
       document.getElementById('tabla-productos').innerHTML = '<p class="vacio">No se pudieron cargar los productos.</p>';
       console.error(e);
     }
   }
 
-  async function cargarProductosParaMenu() {
-    try {
-      const r = await api.productos();
-      const datos = r.datos || [];
-      const sel = document.getElementById('inp-producto-nombre');
-      sel.innerHTML = '<option value="">Seleccionar producto existente</option>';
-      datos.forEach(p => {
-        const o = document.createElement('option');
-        o.value = p.id_producto;
-        o.textContent = p.nombre + ' ($' + p.precio.toFixed(2) + ')';
-        sel.appendChild(o);
-      });
-    } catch (e) { console.error('productos para menu', e); }
-  }
-
-  window.editarProducto = async function (id) {
-    const producto = productos.find(p => p.id_producto === id);
-    if (!producto) return;
-    document.getElementById('inp-producto-nombre').value = producto.id_producto;
-    document.getElementById('inp-producto-nombre-display').textContent = producto.nombre;
-    document.getElementById('inp-producto-precio').value = producto.precio;
-    document.getElementById('inp-producto-categoria').value = producto.categoria || '';
-    document.getElementById('inp-producto-imagen-url').value = producto.imagen_url || '';
-    document.getElementById('vista-producto-form').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  window.toggleProducto = async function (id, activar) {
-    try {
-      await api._request(`/productos/${id}`, {
-        method: activar ? 'PUT' : 'DELETE',
-        body: JSON.stringify({ activo: activar ? 1 : 0 })
-      });
-      alerta('alerta-productos', 'Producto ' + (activar ? 'activado' : 'desactivado') + '.', 'exito');
-      cargarProductosAdmin();
-    } catch (e) { alerta('alerta-productos', e.message || 'Error.', 'error'); }
+  window.cargarProductoSeleccionado = function() {
+    const sel = document.getElementById('inp-producto-nombre');
+    const id = parseInt(sel.value, 10);
+    if (!id) return;
+    const p = productos.find(x => x.id_producto === id);
+    if (p) {
+      document.getElementById('inp-producto-nombre-display').value = p.nombre;
+      document.getElementById('inp-producto-precio').value = p.precio;
+      document.getElementById('inp-producto-categoria').value = p.categoria || '';
+      document.getElementById('inp-producto-imagen-url').value = p.imagen_url || '';
+    }
   };
 
   document.getElementById('btn-guardar-producto').addEventListener('click', async () => {
-    const id = document.getElementById('inp-producto-nombre').value;
-    const nombre = document.getElementById('inp-producto-nombre-display').textContent;
+    const id = parseInt(document.getElementById('inp-producto-nombre').value, 10);
+    const nombre = document.getElementById('inp-producto-nombre-display').value.trim();
     const precio = parseFloat(document.getElementById('inp-producto-precio').value) || 0;
-    const categoria = document.getElementById('inp-producto-categoria').value;
-    const imagen_url = document.getElementById('inp-producto-imagen-url').value.trim() || null;
-
-    if (!nombre) { alerta('alerta-productos', 'Ingrese nombre del producto.', 'error'); return; }
-
+    const categoria = document.getElementById('inp-producto-categoria').value.trim();
+    const imagen_url = document.getElementById('inp-producto-imagen-url').value.trim();
+    if (!nombre) { mostrarAlerta('alerta-productos', 'Ingrese nombre del producto.', 'error'); return; }
     try {
-      const datos = { nombre, precio, categoria, imagen_url };
-      const metodo = id ? 'PUT' : 'POST';
-      const url = id ? `/productos/${id}` : '/productos';
-      await api._request(url, { method: metodo, body: JSON.stringify(datos) });
-      alerta('alerta-productos', id ? 'Producto actualizado.' : 'Producto creado.', 'exito');
-      document.getElementById('vista-producto-form').style.display = 'none';
-      document.getElementById('inp-producto-nombre').value = '';
-      document.getElementById('inp-producto-nombre-display').textContent = '';
-      document.getElementById('inp-producto-precio').value = '';
-      document.getElementById('inp-producto-categoria').value = '';
-      document.getElementById('inp-producto-imagen-url').value = '';
+      await api._request('/productos/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({ nombre, precio, categoria, imagen_url })
+      });
+      mostrarToast('Producto actualizado.', 'exito');
       cargarProductosAdmin();
-    } catch (e) { alerta('alerta-productos', e.message || 'Error.', 'error'); }
-  });
-
-  document.getElementById('btn-cancelar-producto').addEventListener('click', () => {
-    document.getElementById('vista-producto-form').style.display = 'none';
-    document.getElementById('inp-producto-nombre').value = '';
-    document.getElementById('inp-producto-nombre-display').textContent = '';
-    document.getElementById('inp-producto-precio').value = '';
-    document.getElementById('inp-producto-categoria').value = '';
-    document.getElementById('inp-producto-imagen-url').value = '';
-  });
-
-  window.cargarProductoSeleccionado = function() {
-    const id = document.getElementById('inp-producto-nombre').value;
-    if (!id) return;
-    const producto = productos.find(p => p.id_producto == id);
-    if (!producto) return;
-    document.getElementById('inp-producto-nombre-display').textContent = producto.nombre;
-    document.getElementById('inp-producto-precio').value = producto.precio;
-    document.getElementById('inp-producto-categoria').value = producto.categoria || '';
-    document.getElementById('inp-producto-imagen-url').value = producto.imagen_url || '';
-    document.getElementById('vista-producto-form').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) { mostrarAlerta('alerta-productos', e.message || 'Error.', 'error'); }
   };
 
-  // Actualizar mostrar() para incluir las nuevas vistas
-  const _mostrar = mostrar;
-  mostrar = function(vista) {
-    _mostrar(vista);
-    if (vista === 'zonas-delivery') cargarZonasDelivery();
-    if (vista === 'repartidores') cargarRepartidores();
-    if (vista === 'cupones') cargarCupones();
-    if (vista === 'limite-pedidos') cargarLimitePedidos();
-    if (vista === 'productos') cargarProductosAdmin();
+  window.activarProducto = async function (id, activar) {
+    try {
+      await api._request('/productos/' + id + '/activar', { method: 'PUT' });
+      mostrarToast('Producto ' + (activar ? 'activado' : 'desactivado') + '.', 'exito');
+      cargarProductosAdmin();
+    } catch (e) { mostrarAlerta('alerta-productos', e.message || 'Error.', 'error'); }
   };
 
-  function escapeHtml(texto) {
-    const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;
-  }
-
+  // Cargar vista inicial
   mostrar('pedidos');
 </script>
+
 </body>
 </html>
-

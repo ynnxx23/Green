@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Cliente — Green en la Casa Blanca</title>
+<title>Mi Panel — Green en la Casa Blanca</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
@@ -34,6 +34,9 @@
   .estado--completada { background: rgba(45,106,79,0.15); color: #2d6a4f; }
   .estado--cancelada { background: rgba(168,54,54,0.12); color: #a83636; }
   .estado--vencida { background: rgba(168,54,54,0.12); color: #a83636; }
+  .estado--en_preparacion { background: rgba(46,95,78,0.12); color: #1e4a33; }
+  .estado--listo { background: rgba(45,106,79,0.15); color: #2d6a4f; }
+  .estado--entregado { background: rgba(45,106,79,0.15); color: #2d6a4f; }
   .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
   .vacio { text-align: center; color: var(--color-text-muted); padding: 3rem; }
@@ -71,7 +74,7 @@
   .cal-dia.no-disponible { background: #f5f5f5; color: #bdbdbd; border-color: #e0e0e0; cursor: not-allowed; }
   .cal-dia.seleccionado { background: var(--color-accent); color: #fff; border-color: #8a6200; }
   .cal-dia.tiene-reserva { background: #fff8e1; color: #8a6200; border-color: #fbc02d; }
-  .cal-dia.hoy { font-weight: 700; }
+  .cal-dia.hoy { font-weight: 700; box-shadow: 0 0 0 3px rgba(46, 95, 78, 0.3); }
   .cal-semana { display: contents; }
   .cal-mes { font-family: var(--font-heading); font-size: 1.5rem; color: var(--color-primary); margin-bottom: 1rem; }
   .cal-nav { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
@@ -90,11 +93,8 @@
     font-size: 0.95rem;
     width: 100%;
   }
-  .form-reserva input::placeholder {
-    color: var(--color-text-muted);
-  }
-  .form-reserva input:focus,
-  .form-reserva select:focus {
+  .form-reserva input::placeholder { color: var(--color-text-muted); }
+  .form-reserva input:focus, .form-reserva select:focus {
     outline: none;
     border-color: var(--color-accent);
     box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
@@ -106,7 +106,6 @@
 
 <nav>
   <div class="nav-wrap">
-
     <a href="index.html" class="logo nav-brand">
       <img src="assets/icons/logo.png" alt="Logo Green en la Casa Blanca" width="40" height="40">
       <span class="logo-text">GREEN</span>
@@ -126,9 +125,10 @@
 <div class="panel-grid">
   <aside class="panel-sidebar">
     <div class="panel-brand">Cliente</div>
-    <a href="#" class="activo">Mis reservas</a>
+    <a href="#" class="activo" onclick="mostrar('mis-reservas')">Mis reservas</a>
     <a href="#" onclick="mostrar('nueva-reserva')">Nueva reserva</a>
     <a href="#" onclick="mostrar('mis-pedidos')">Mis pedidos</a>
+    <a href="pedidos.html" style="margin-top:auto;">Pedir a domicilio</a>
     <a href="#" class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
   </aside>
   <main class="panel-main">
@@ -202,8 +202,8 @@
 <script type="module" src="assets/js/api.js?v=2"></script>
 <script type="module" src="assets/js/main.js"></script>
 <script type="module">
-  import { api } from './api.js';
-  import { formatearMoneda } from './main.js';
+  import { api } from './assets/js/api.js';
+  import { formatearMoneda, formatearFecha, formatearHora, mostrarToast, mostrarAlerta, setBtnLoading, confirmar } from './assets/js/main.js';
 
   const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -219,15 +219,23 @@
   }
 
   async function cerrarSesion() {
-    await api.logout();
-    window.location.href = 'index.html';
+    try {
+      await api.logout();
+      mostrarToast('Sesión cerrada.', 'exito');
+      setTimeout(() => { window.location.href = 'index.html'; }, 600);
+    } catch (e) {
+      window.location.href = 'index.html';
+    }
   }
 
   function alerta(id, texto, tipo) {
     const el = document.getElementById(id);
-    el.textContent = texto;
-    el.className = 'alerta alerta--' + tipo;
-    el.style.display = 'block';
+    if (el) {
+      el.textContent = texto;
+      el.className = 'alerta alerta--' + tipo;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
   }
 
   async function cargarMisReservas() {
@@ -239,8 +247,6 @@
       let html = '<table><thead><tr><th>Reserva</th><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
       datos.forEach(res => {
         const fin = res.hora_fin ? res.hora_fin.substring(0,5) : '';
-        const opts = ['pendiente','confirmada','cancelada','vencida','completada']
-          .map(e => `<option value="${e}" ${e === res.estado ? 'selected' : ''}>${e}</option>`).join('');
         html += `<tr>
           <td>#${res.id_reserva}</td>
           <td>${res.fecha_reserva}</td>
@@ -264,12 +270,18 @@
   }
 
   window.cancelarReserva = async function (id) {
-    if (!confirm('¿Cancelar reserva?')) return;
+    if (!confirmar('¿Está seguro de cancelar esta reserva?')) return;
+    const btn = event.currentTarget;
+    setBtnLoading(btn, true);
     try {
       await api.cancelarReserva(id);
-      alerta('alerta-mis-reservas', 'Reserva cancelada.', 'exito');
+      mostrarToast('Reserva cancelada.', 'exito');
       cargarMisReservas();
-    } catch (e) { alerta('alerta-mis-reservas', e.message || 'Error.', 'error'); }
+    } catch (e) {
+      mostrarAlerta('alerta-mis-reservas', e.message || 'Error al cancelar.', 'error');
+    } finally {
+      setBtnLoading(btn, false);
+    }
   };
 
   async function cargarMisPedidos() {
@@ -310,8 +322,10 @@
   async function cargarCalendarioReserva() {
     const grid = document.getElementById('grid-calendario-reserva');
     grid.innerHTML = '';
-    const anio = 2026;
-    const mes = 10; // Noviembre (0-indexed)
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    const anio = hoy.getFullYear();
+    const mes = hoy.getMonth();
     
     DIAS_SEM.forEach(d => {
       const n = document.createElement('div');
@@ -326,8 +340,6 @@
 
     for (let i = 0; i < offset; i++) { grid.appendChild(document.createElement('div')); }
 
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-
     for (let d = 1; d <= diasEnMes; d++) {
       const fecha = new Date(anio, mes, d);
       const fechaStr = fecha.toISOString().slice(0,10);
@@ -338,8 +350,13 @@
       const esDisponible = disponibilidadDisponible.has(fechaStr);
       const esHoy = fecha.getTime() === hoy.getTime();
       const esSeleccionada = fechaSeleccionada === fechaStr;
+      const esPasado = fecha.getTime() < hoy.getTime();
 
-      if (esDisponible) {
+      if (esPasado) {
+        dia.classList.add('no-disponible');
+        dia.style.cursor = 'not-allowed';
+        dia.style.opacity = '0.4';
+      } else if (esDisponible) {
         dia.classList.add('disponible');
         dia.onclick = () => seleccionarFecha(fechaStr, dia);
       } else {
@@ -359,7 +376,6 @@
     document.getElementById('fecha-reserva').value = fechaStr;
     document.getElementById('fecha-seleccionada').textContent = 'Fecha seleccionada: ' + fechaStr;
     
-    // Resetear selección previa
     document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('seleccionado'));
     elemento.classList.add('seleccionado');
   }
@@ -372,31 +388,35 @@
     const comentarios = document.getElementById('comentarios-reserva').value;
 
     if (!fecha || !hora || !comensales) {
-      alerta('alerta-nueva-reserva', 'Por favor completa fecha, hora y número de comensales.', 'error');
+      mostrarAlerta('alerta-nueva-reserva', 'Por favor completa fecha, hora y número de comensales.', 'error');
       return;
     }
 
-    // Obtener una mesa disponible (la primera disponible)
+    const btn = event.currentTarget.querySelector('button[type="submit"]');
+    setBtnLoading(btn, true);
+
     try {
-      // Obtener mesas disponibles
       const r = await api.mesas();
       const mesas = r.datos || [];
       const mesaDisponible = mesas.find(m => m.activo);
       
       if (!mesaDisponible) {
-        alerta('alerta-nueva-reserva', 'No hay mesas disponibles.', 'error');
+        mostrarAlerta('alerta-nueva-reserva', 'No hay mesas disponibles.', 'error');
+        setBtnLoading(btn, false);
         return;
       }
+
+      const horaFin = hora === '22:00' ? '23:00' : (parseInt(hora.split(':')[0]) + 1) + ':00';
 
       await api.crearReserva({
         id_mesa: mesaDisponible.id_mesa,
         fecha_reserva: fecha,
         hora_inicio: hora,
-        hora_fin: hora === '22:00' ? '23:00' : (parseInt(hora.split(':')[0]) + 1) + ':00',
+        hora_fin: horaFin,
         observaciones: comentarios
       });
       
-      alerta('alerta-nueva-reserva', 'Reserva creada exitosamente.', 'exito');
+      mostrarToast('Reserva creada exitosamente.', 'exito');
       document.getElementById('form-nueva-reserva').reset();
       document.getElementById('fecha-seleccionada').textContent = '';
       fechaSeleccionada = null;
@@ -404,7 +424,8 @@
       cargarMisReservas();
       mostrar('mis-reservas');
     } catch (err) {
-      alerta('alerta-nueva-reserva', err.message || 'Error al crear reserva.', 'error');
+      mostrarAlerta('alerta-nueva-reserva', err.message || 'Error al crear reserva.', 'error');
+      setBtnLoading(btn, false);
     }
   });
 

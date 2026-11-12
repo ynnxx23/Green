@@ -1,21 +1,22 @@
 /*
   main.js — Lógica general del frontend
-  Navegación, menú móvil, inicialización común
+  Navegación, menú móvil, inicialización común, utilidades HCI
 */
 
-import { api } from './api.js';
+import { api } from './assets/js/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
   initSesion();
 });
 
+/* ══════════════════════════════════════════════════════════════════════
+   NAVEGACIÓN
+   ═════════════════════════════════════════════════════════════════════ */
 function initNav() {
-  const btnNav = document.querySelector('.btn-nav');
+  const btnMenu = document.querySelector('[data-menu-toggle]');
   const navLinks = document.querySelector('.nav-links');
 
-  // Menú móvil (toggle si existe botón hamburguesa)
-  const btnMenu = document.querySelector('[data-menu-toggle]');
   if (btnMenu && navLinks) {
     btnMenu.addEventListener('click', () => {
       const abierto = navLinks.classList.toggle('abierto');
@@ -23,14 +24,14 @@ function initNav() {
     });
   }
 
-  // Cerrar sesión si existe el botón
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
         await api.logout();
-        window.location.href = 'index.html';
+        mostrarToast('Sesión cerrada.', 'exito');
+        setTimeout(() => { window.location.href = 'index.html'; }, 600);
       } catch (err) {
         console.error('Error cerrando sesión:', err);
         window.location.href = 'index.html';
@@ -39,6 +40,9 @@ function initNav() {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   SESIÓN
+   ═════════════════════════════════════════════════════════════════════ */
 async function initSesion() {
   const sesionContainer = document.getElementById('sesion-info');
   const btnLogin = document.getElementById('btn-login');
@@ -51,15 +55,14 @@ async function initSesion() {
   try {
     const data = await api.sesion();
     if (data.exito) {
-      // Usuario autenticado
       const rol = data.datos.id_rol;
       const esAdmin = rol === 4;
-      const esEncargado = rol === 2 || rol === 3 || rol === 4;
+      const esEncargado = rol === 2 || rol === 4;
       const nombre = data.datos.nombre;
 
       const chip = `
         <div class="usuario-chip">${nombre} <span style="opacity:0.8;">(${esAdmin ? 'admin' : esEncargado ? 'encargado' : 'cliente'})</span></div>
-        <button id="btn-logout-nav" class="btn-sesion ghost">Cerrar sesión</button>
+        <button id="btn-logout-nav" class="btn-sesion ghost" aria-label="Cerrar sesión">Cerrar sesión</button>
         ${esAdmin ? `<a href="panel-admin.html" class="btn-sesion">Panel Admin</a>` : `<a href="${esEncargado ? 'panel-encargado.html' : 'panel-cliente.html'}" class="btn-sesion">Mi panel</a>`}
       `;
 
@@ -73,12 +76,21 @@ async function initSesion() {
       if (btnLogout) btnLogout.style.display = 'inline-block';
       if (btnAdmin && esAdmin) btnAdmin.style.display = 'inline-block';
       if (navSesion) navSesion.innerHTML = chip;
+
+      const btnLogoutNav = document.getElementById('btn-logout-nav');
+      if (btnLogoutNav) {
+        btnLogoutNav.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            await api.logout();
+            mostrarToast('Sesión cerrada.', 'exito');
+            setTimeout(() => { window.location.href = 'index.html'; }, 600);
+          } catch (err2) { console.error('Error cerrando sesión:', err2); }
+        });
+      }
     } else {
-      // No autenticado
       if (navSesion) {
-        navSesion.innerHTML = `
-          <a href="login.html" class="btn-sesion">Iniciar sesión</a>
-        `;
+        navSesion.innerHTML = `<a href="login.html" class="btn-sesion">Iniciar sesión</a>`;
       }
       if (btnLogin) btnLogin.style.display = 'inline-block';
       if (btnLogout) btnLogout.style.display = 'none';
@@ -88,37 +100,26 @@ async function initSesion() {
     console.warn('Sesión no disponible:', err.message);
     const navSesionF = document.getElementById('nav-sesion');
     if (navSesionF) {
-      navSesionF.innerHTML = `
-        <a href="login.html" class="btn-sesion">Iniciar sesión</a>
-      `;
+      navSesionF.innerHTML = `<a href="login.html" class="btn-sesion">Iniciar sesión</a>`;
     }
     if (btnLogin) btnLogin.style.display = 'inline-block';
     if (btnLogout) btnLogout.style.display = 'none';
     if (btnAdmin) btnAdmin.style.display = 'none';
   }
-
-  const btnLogoutNav = document.getElementById('btn-logout-nav');
-  if (btnLogoutNav) {
-    btnLogoutNav.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try {
-        await api.logout();
-      } catch (err2) { console.error('Error cerrando sesión:', err2); }
-      window.location.href = 'index.html';
-    });
-  }
 }
 
-// Utilidad: formatear moneda
+/* ══════════════════════════════════════════════════════════════════════
+   UTILIDADES HCI
+   ═════════════════════════════════════════════════════════════════════ */
+
 export function formatearMoneda(valor) {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
-  }).format(valor);
+  }).format(valor || 0);
 }
 
-// Utilidad: mostrar toast/notificación temporal
 export function mostrarToast(mensaje, tipo = 'exito') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${tipo}`;
@@ -128,18 +129,17 @@ export function mostrarToast(mensaje, tipo = 'exito') {
     top: 1rem;
     right: 1rem;
     padding: 1rem 1.5rem;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     color: #fff;
-    font-family: ${getComputedStyle(document.documentElement).fontFamily};
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
     z-index: 9999;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: toastSlide 0.3s ease forwards;
+    max-width: 300px;
   `;
-  if (tipo === 'exito') {
-    toast.style.background = '#2D6A4F';
-  } else {
-    toast.style.background = '#A83636';
-  }
+  toast.style.background = tipo === 'exito' ? '#2D6A4F' : '#A83636';
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.animation = 'toastSlideOut 0.3s ease forwards';
@@ -147,7 +147,6 @@ export function mostrarToast(mensaje, tipo = 'exito') {
   }, 4000);
 }
 
-// Inyectar keyframes de toast si no existen
 if (!document.getElementById('toast-keyframes')) {
   const style = document.createElement('style');
   style.id = 'toast-keyframes';
@@ -162,4 +161,50 @@ if (!document.getElementById('toast-keyframes')) {
     }
   `;
   document.head.appendChild(style);
+}
+
+/* Mostrar alerta dentro de un contenedor específico */
+export function mostrarAlerta(id, texto, tipo = 'error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = texto;
+  el.className = `alerta alerta--${tipo}`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+/* Botón con estado de carga */
+export function setBtnLoading(btn, cargando) {
+  if (!btn) return;
+  if (cargando) {
+    btn.disabled = true;
+    btn.dataset.textoOriginal = btn.textContent;
+    btn.textContent = 'Procesando...';
+    btn.style.opacity = '0.7';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.textoOriginal || btn.textContent;
+    btn.style.opacity = '1';
+  }
+}
+
+/* Confirmación antes de acción destructiva */
+export function confirmar(mensaje = '¿Está seguro de realizar esta acción?') {
+  return confirm(mensaje);
+}
+
+/* Formatear fecha legible */
+export function formatearFecha(fecha) {
+  if (!fecha) return '-';
+  return new Date(fecha).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+/* Formatear hora */
+export function formatearHora(hora) {
+  if (!hora) return '-';
+  return String(hora).substring(0, 5);
 }
