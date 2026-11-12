@@ -3,7 +3,7 @@
   Navegación, menú móvil, inicialización común, utilidades HCI
 */
 
-import { api } from './assets/js/api.js';
+import { api } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
