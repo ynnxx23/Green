@@ -18,12 +18,30 @@ nav {
 .nav-wrap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0.7rem var(--space-md);
-  gap: 1rem;
+  gap: 2rem;
   flex-wrap: nowrap;
+  position: relative;
+}
+
+.nav-brand {
+  order: 1;
+  flex-shrink: 0;
+}
+
+.nav-links {
+  order: 2;
+  flex: 1;
+  justify-content: center;
+  max-width: 500px;
+}
+
+.nav-acciones {
+  order: 3;
+  flex-shrink: 0;
 }
 
 .nav-brand {
@@ -422,8 +440,7 @@ nav {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../img/reservas-fondo.jpg') center / cover no-repeat;
-  opacity: 0.15;
+  background: linear-gradient(135deg, rgba(46, 95, 78, 0.2), rgba(184, 134, 11, 0.15));
   pointer-events: none;
   z-index: 0;
 }
@@ -807,4 +824,38 @@ input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+}
+
+/* Selects y date inputs mejorados */
+select, input[type="date"], input[type="time"] {
+  background: #FAFAF0;
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  border-radius: var(--radius-md);
+  padding: 0.9rem;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+select:hover, input[type="date"]:hover, input[type="time"]:hover {
+  border-color: var(--color-secondary);
+}
+
+select option {
+  background: #fff;
+  color: var(--color-text);
+  padding: 0.5rem;
+}
+
+/* Estilo para fechas pasadas en date input - desactivadas visualmente */
+input[type="date"]::-webkit-datetime-edit {
+  color: var(--color-text);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+  cursor: pointer;
 }

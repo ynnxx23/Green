@@ -60,7 +60,7 @@ async function initSesion() {
       const chip = `
         <div class="usuario-chip">${nombre} <span style="opacity:0.8;">(${esAdmin ? 'admin' : esEncargado ? 'encargado' : 'cliente'})</span></div>
         <button id="btn-logout-nav" class="btn-sesion ghost">Cerrar sesión</button>
-        <a href="panel-cliente.html" class="btn-sesion">Mi panel</a>
+        ${esAdmin ? `<a href="panel-admin.html" class="btn-sesion">Panel Admin</a>` : `<a href="${esEncargado ? 'panel-encargado.html' : 'panel-cliente.html'}" class="btn-sesion">Mi panel</a>`}
       `;
 
       if (sesionContainer) {

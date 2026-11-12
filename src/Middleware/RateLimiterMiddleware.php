@@ -15,6 +15,10 @@ class RateLimiterMiddleware
     {
         $this->capacidad = Config::obtenerEntero('RATE_LIMIT_CAPACITY', 60);
         $this->reposicion_por_segundo = (float) Config::obtenerEntero('RATE_LIMIT_REFILL_RATE', 1);
+        // Evitar división por cero si la variable de entorno está mal configurada
+        if ($this->reposicion_por_segundo <= 0) {
+            $this->reposicion_por_segundo = 1.0;
+        }
     }
 
     public function consumir(string $cliente_id, string $endpoint): void
@@ -60,8 +64,9 @@ class RateLimiterMiddleware
             if ($tokens < 1.0) {
                 $pdo->rollBack();
 
-                $retry_after = (int) ceil((1.0 - $tokens) / $this->reposicion_por_segundo);
-                throw new \RuntimeException('Demasiadas solicitudes. Intente de nuevo más tarde.', 429, null, ['Retry-After' => $retry_after]);
+                $reposicion = $this->reposicion_por_segundo > 0 ? $this->reposicion_por_segundo : 1.0;
+                $retry_after = (int) ceil((1.0 - $tokens) / $reposicion);
+                throw new \RuntimeException('Demasiadas solicitudes. Intente de nuevo más tarde.', 429);
             }
 
             $tokens -= 1.0;
@@ -84,7 +89,8 @@ class RateLimiterMiddleware
             throw $e;
         } catch (\Throwable $e) {
             try { $pdo->rollBack(); } catch (\Throwable $e2) { /* transacción ya finalizada */ }
-            throw new \RuntimeException('Error interno del limitador de solicitudes.', 500);
+            // Lanzar el mensaje real del error (ej. "Connection refused") en lugar de ocultarlo
+            throw new \RuntimeException($e->getMessage() ?: 'Error interno del limitador de solicitudes.', 500, $e);
         }
     }
 

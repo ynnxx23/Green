@@ -118,7 +118,16 @@
 <script type="module" src="assets/js/api.js?v=2"></script>
 <script type="module" src="assets/js/main.js"></script>
 <script type="module">
-  import { api } from './api.js';
+  import { api } from './assets/js/api.js';
+
+  // Configurar input de fecha: no permitir fechas pasadas
+  const fechaInput = document.getElementById('fecha');
+  if (fechaInput) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    fechaInput.min = hoy.toISOString().split('T')[0];
+    fechaInput.value = hoy.toISOString().split('T')[0];
+  }
 
   // Verificar sesión al cargar: si hay sesión, ir al panel de cliente para reservar con calendario;
   // si no, ir al login.

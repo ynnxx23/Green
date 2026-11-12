@@ -391,7 +391,7 @@
 <script type="module" src="assets/js/api.js?v=2"></script>
 <script type="module" src="assets/js/main.js"></script>
 <script type="module">
-  import { api } from './api.js';
+  import { api } from './assets/js/api.js';
 
   const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const DIAS_SEM = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
@@ -776,6 +776,9 @@
   };
 
   document.getElementById('sel-mesa-bloque').addEventListener('change', () => cargarBloques());
+
+  // Cargar vista inicial
+  mostrar('pedidos');
 
   // ── Zonas de delivery (RF-81) ──
   async function cargarZonasDelivery() {

@@ -244,9 +244,9 @@ class ProductoDao
     private function mapearProducto(array $fila): Producto
     {
         $producto = new Producto(
-            $fila['nombre'],
+            $this->fixEncoding($fila['nombre']),
             (float) $fila['precio'],
-            $fila['categoria'],
+            $this->fixEncoding($fila['categoria']),
             $fila['imagen_url'] ?? null,
             $fila['imagen_public_id'] ?? null
         );
@@ -255,5 +255,14 @@ class ProductoDao
         $producto->fecha_creacion = $fila['fecha_creacion'] ?? null;
 
         return $producto;
+    }
+
+    private function fixEncoding(string $texto): string
+    {
+        // Corregir doble codificación UTF-8 (ej: "CafÃ© expreso" -> "Café expreso")
+        if (mb_detect_encoding($texto, ['UTF-8', 'ISO-8859-1'], true) === 'ISO-8859-1') {
+            return mb_convert_encoding($texto, 'UTF-8', 'ISO-8859-1');
+        }
+        return $texto;
     }
 }
