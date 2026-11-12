@@ -1,6 +1,6 @@
 RewriteEngine On
 
-# Si el archivo existe físicamente, servirlo directamente (no pasar al front controller)
+# Si el archivo existe físicamente, servirlo directamente (no pasar por el front controller)
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
@@ -10,3 +10,13 @@ RewriteRule ^ - [L]
 
 # Todo lo demás se envía al front controller index.php
 RewriteRule ^ index.php [QSA,L]
+
+# ---------------------------------------------------------------------------
+# Caché en desarrollo: los HTML se revalidan siempre para no servir markup viejo
+# tras editar. Los assets (.js/.css/imágenes) sí se cachean.
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>

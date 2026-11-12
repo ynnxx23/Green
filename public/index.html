@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/main.css">
 <link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/css/ecommerce.css">
 <link rel="stylesheet" href="assets/icons/icons.css">
 </head>
 <body>
@@ -28,6 +29,11 @@
       <li><a href="contacto.html">Contacto</a></li>
     </ul>
     <div class="nav-acciones">
+      <a href="pedidos.html" class="btn-carrito" id="btn-carrito" title="Ver mi pedido">
+        <span aria-hidden="true">🛒</span>
+        <span>Pedido</span>
+        <span class="carrito-badge" data-carrito-badge data-vacio="1"></span>
+      </a>
       <div id="nav-sesion"></div>
     </div>
   </div>
@@ -121,11 +127,12 @@
   </div>
 </footer>
 
-<script type="module" src="assets/js/api.js?v=2"></script>
-<script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/api.js?v=3"></script>
+<script type="module" src="assets/js/main.js?v=3"></script>
+<script type="module" src="assets/js/carrito.js?v=3"></script>
 <script type="module">
-  import { api } from './assets/js/api.js';
-  import { formatearMoneda } from './assets/js/main.js';
+  import { api } from './assets/js/api.js?v=3';
+  import { formatearMoneda, mostrarToast } from './assets/js/main.js?v=3';
 
   const gridIds = {
     entradas: 'grid-entradas',
@@ -133,6 +140,29 @@
     postres: 'grid-postres',
     bebidas: 'grid-bebidas',
   };
+
+  // Los productos mas vendidos no traen stock: se cruza con /api/productos
+  let stockPorProducto = {};
+
+  async function cargarStock() {
+    try {
+      const r = await api.productos();
+      (r.datos || []).forEach(function(p) {
+        stockPorProducto[p.id_producto] = p.stock_actual === undefined || p.stock_actual === null
+          ? null
+          : Number(p.stock_actual);
+      });
+    } catch (e) {
+      console.warn('No se pudo cargar el stock', e);
+    }
+  }
+
+  function nivelStock(stock) {
+    if (stock === null || stock === undefined) return { texto: 'Consultar', nivel: 'disponible' };
+    if (stock <= 0) return { texto: 'Agotado', nivel: 'agotado' };
+    if (stock <= 5) return { texto: '¡Últimas ' + stock + '!', nivel: 'bajo' };
+    return { texto: stock + ' disponibles', nivel: 'disponible' };
+  }
 
   async function cargarPlatosDestacados() {
     try {
@@ -162,15 +192,27 @@
           const card = document.createElement('div');
           card.className = 'menu-card';
           const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+          const stock = stockPorProducto[p.id_producto];
+          const infoStock = nivelStock(stock);
+          const agotado = stock !== null && stock !== undefined && stock <= 0;
+
           card.innerHTML = '<img src="' + escapeHtml(imagen) + '" alt="' + escapeHtml(p.nombre) + '" class="plato-imagen">' +
             '<div class="plato-contenido">' +
             '<h3>' + escapeHtml(p.nombre) + '</h3>' +
             '<p>' + escapeHtml(p.categoria || '') + '</p>' +
             '<span class="menu-precio">' + formatearMoneda(p.precio || 0) + '</span>' +
+            '</div>' +
+            '<div class="plato-pie">' +
+              '<span class="plato-stock" data-nivel="' + infoStock.nivel + '">' + infoStock.texto + '</span>' +
+              '<button type="button" class="btn btn-pedido-carta" data-id="' + Number(p.id_producto) + '"' +
+              ' data-precio="' + Number(p.precio || 0) + '"' +
+              ' data-stock="' + (stock === null || stock === undefined ? '' : stock) + '"' +
+              (agotado ? ' disabled' : '') + '>' + (agotado ? 'Agotado' : 'Pedir') +
+              '</button>' +
             '</div>';
           grid.appendChild(card);
         });
-      });
+      }
     } catch (err) {
       console.error('Error cargando platos destacados:', err);
     }
@@ -182,6 +224,33 @@
     return d.innerHTML;
   }
 
+  // Modal de cantidad en los botones "Pedir" de la carta destacada
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-pedido-carta');
+    if (!btn || btn.disabled) return;
+
+    const id = parseInt(btn.dataset.id, 10);
+    const stock = btn.dataset.stock === '' ? null : parseInt(btn.dataset.stock, 10);
+
+    window.Carrito.abrirModalCantidad(
+      { id_producto: id, nombre: btn.closest('.menu-card').querySelector('h3').textContent, precio: parseFloat(btn.dataset.precio) || 0, imagen_url: '', categoria: '', stock_actual: stock },
+      function(cantidad) {
+        try {
+          const card = btn.closest('.menu-card');
+          const img = card ? card.querySelector('img') : null;
+          window.Carrito.agregar(
+            { id_producto: id, nombre: card.querySelector('h3').textContent, precio: parseFloat(btn.dataset.precio) || 0, imagen_url: img ? img.getAttribute('src') : '', stock_actual: stock },
+            cantidad
+          );
+          mostrarToast(cantidad + ' × ' + card.querySelector('h3').textContent + ' agregado al pedido.', 'exito');
+        } catch (err) {
+          mostrarToast(err.message || 'No se pudo agregar al pedido.', 'error');
+        }
+      }
+    );
+  });
+
+  await cargarStock();
   cargarPlatosDestacados();
 </script>
 

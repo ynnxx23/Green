@@ -120,10 +120,10 @@
   </main>
 </div>
 
-<script type="module" src="assets/js/api.js?v=2"></script>
-<script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/api.js?v=3"></script>
+<script type="module" src="assets/js/main.js?v=3"></script>
 <script type="module">
-  import { api } from './api.js';
+  import { api } from './assets/js/api.js?v=3';
 
   let productos = [];
 
@@ -177,7 +177,7 @@
     }
 
     try {
-      await api._request('/api/productos', {
+      await api._request('/productos', {
         method: 'POST',
         body: JSON.stringify({ nombre, precio, categoria, imagen_url: imagenUrl })
       });
@@ -219,6 +219,14 @@
     el.style.display = 'block';
     setTimeout(() => { el.style.display = 'none'; }, 5000);
   }
+
+  // Exponer en window: los atributos onclick inline del HTML no ven el scope
+  // de un <script type="module"> (que es propio de cada modulo).
+  window.alerta = alerta;
+
+  window.cerrarSesion = function () {
+    api.logout().finally(() => { window.location.href = 'index.html'; });
+  };
 
   function escapeHtml(texto) {
     const d = document.createElement('div'); d.textContent = texto; return d.innerHTML;

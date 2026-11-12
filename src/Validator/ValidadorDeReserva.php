@@ -135,6 +135,21 @@ class ValidadorDeReserva
         $dia_semana = (int) date('w', strtotime($fecha_reserva));
 
         $pdo = Conexion::obtener();
+
+        // El cupo de disponibilidad es la fuente de verdad: si existe uno que
+        // cubra el rango pedido, la reserva es valida aunque el horario del
+        // area sea mas amplio o mas corto.
+        $stmtCupo = $pdo->prepare('
+            SELECT COUNT(*) AS total
+            FROM disponibilidad_mesa
+            WHERE fecha = ? AND activo = 1 AND mesas_disponibles > 0
+              AND hora_inicio <= ? AND hora_fin >= ?
+        ');
+        $stmtCupo->execute([$fecha_reserva, $hora_inicio, $hora_fin]);
+        if ((int) $stmtCupo->fetchColumn() > 0) {
+            return;
+        }
+
         $stmt = $pdo->prepare('
             SELECT hf.hora_apertura, hf.hora_cierre
             FROM horarios_funcionamiento hf

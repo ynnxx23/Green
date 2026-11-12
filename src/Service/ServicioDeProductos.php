@@ -49,9 +49,6 @@ class ServicioDeProductos
             return null;
         }
 
-        $calificacionPromedio = $this->productoDao->obtenerCalificacionPromedio($id_producto);
-        $totalCalificaciones = $this->productoDao->contarCalificaciones($id_producto);
-
         $stock = $this->productoDao->obtenerStock($id_producto);
 
         return [
@@ -63,8 +60,6 @@ class ServicioDeProductos
             'imagen_url' => $producto->imagen_url,
             'imagen_public_id' => $producto->imagen_public_id,
             'fecha_creacion' => $producto->fecha_creacion,
-            'calificacion_promedio' => $calificacionPromedio,
-            'total_calificaciones' => $totalCalificaciones,
             'stock_actual' => $stock ? (int) $stock['stock_actual'] : 0,
             'disponible' => $stock ? (bool) ($stock['stock_actual'] > 0) : false,
         ];

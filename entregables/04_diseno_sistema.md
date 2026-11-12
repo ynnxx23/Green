@@ -8,11 +8,17 @@ Documento de diseño técnico y funcional del sistema de gestión para el restau
 
 El sistema define exactamente tres roles de usuario, identificados por `id_rol`:
 
-| id_rol | Rol                       | Responsabilidades principales                                                                                                                                                                                                                                                                                    |
-| ------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1      | Cliente                   | Ver la carta de productos. Hacer una reserva para una fecha determinada. Hacer pedidos. Ver sus propias reservas y pedidos. Cancelar sus propias reservas.                                                                                                                                                       |
-| 2      | Encargado del restaurante | Gestionar el stock y el límite de venta por plato. Publicar el menú semanal con los platos disponibles cada semana. Abrir disponibilidad de mesas por múltiples fechas con rango de hora. Ver todos los pedidos, cambiar su estado y gestionar el estado de la seña (pendiente/pagada/devuelta). Bloquear mesas. |
-| 4      | Administrador             | Gestionar usuarios (crear, activar, desactivar, eliminar). Ver todas las reservas y cambiar su estado. Ver todos los pedidos y cambiar su estado. Acceso a reportes de ventas, productos más vendidos, reservas por día y ventas por día, y al historial completo de movimientos. Acceso total al sistema.       |
+| id_rol | Rol | Responsabilidades principales |
+| --- | --- | --- |
+| 1 | Cliente | Ver la carta de productos con stock disponible. Reservar mesa en una fecha con cupo abierto. Hacer pedidos para llevar o a domicilio con carrito de compra. Ver sus propias reservas y pedidos. Cancelar sus propias reservas. Calificar platos y usar puntos de fidelidad. |
+| 2 | Encargado del restaurante | Gestionar el stock y el límite de venta por plato. Agregar, editar y activar los platos de la carta. Generar cupos de reserva en lote (rango de fechas + días de la semana + franja horaria). Publicar el menú semanal. Ver todos los pedidos y cambiar su estado y el de la seña (pendiente/pagada/devuelta). Bloquear mesas. Configurar delivery (zonas, repartidores, cupones). |
+| 4 | Administrador | Todo lo del encargado (cupos de reservas, platos y stock) más: gestionar usuarios (crear, activar, desactivar, eliminar). Ver todas las reservas y cambiar su estado. Ver todos los pedidos y cambiar su estado. Acceso a reportes de ventas, productos más vendidos, reservas por día y ventas por día, y al historial completo de movimientos. Cierre de caja y respaldos. Acceso total al sistema. |
+
+> **Regla de acceso:** todos los usuarios deben **iniciar sesión antes de operar** sobre el
+> sistema. El modelo de casos de uso (`09_diagrama_caso_uso.md`) refleja esta condición con
+> relaciones `<<include>>` hacia el caso *Iniciar sesión* en todos los casos que implican
+> operación. La interfaz pública permite explorar la carta sin sesión, pero el modelo
+> documental exige la autenticación previa.
 
 ---
 
@@ -21,42 +27,48 @@ El sistema define exactamente tres roles de usuario, identificados por `id_rol`:
 A continuación se enumeran los casos de uso del sistema, con una descripción textual de cada uno.
 
 ### 2.1 Iniciar sesión
-El usuario proporciona su correo electrónico y contraseña en el formulario de acceso. El sistema valida las credenciales contra la base de datos (hash bcrypt), aplica rate limiting para evitar ataques de fuerza bruta y, si son correctas, crea una sesión autenticada con cookie HttpOnly.
+El usuario proporciona su correo electrónico y contraseña en el formulario de acceso. El sistema valida las credenciales contra la base de datos (hash bcrypt), aplica rate limiting para evitar ataques de fuerza bruta y, si son correctas, crea una sesión autenticada con cookie HttpOnly. Es **requisito previo de todos los demás casos de uso**.
 
 ### 2.2 Registrarse
 Un nuevo usuario se registra proporcionando nombre, correo electrónico, contraseña y rol (por defecto cliente). El sistema valida la unicidad del correo, almacena la contraseña con hash bcrypt y aplica rate limiting en el endpoint de registro.
 
 ### 2.3 Ver carta
-El cliente consulta el catálogo de productos disponibles (platos y bebidas) con su nombre, categoría, precio y estado de disponibilidad. Los productos inactivos no se muestran.
+El cliente consulta el catálogo de productos disponibles (platos y bebidas) con su nombre, categoría, precio, imagen y **stock disponible**. Los productos inactivos no se muestran. El catálogo ofrece filtro por categoría.
 
 ### 2.4 Hacer reserva
-Un usuario autenticado selecciona una fecha con disponibilidad abierta (día verde en el calendario), elige una mesa disponible dentro del rango horario indicado y confirma la reserva. El sistema valida que exista disponibilidad para la fecha, que no haya solapamiento de horarios en la mesa y que queden mesas disponibles, y crea el registro con estado `pendiente`.
+El cliente selecciona **una fecha con cupo abierto** (el selector solo habilita los días disponibles) y **una hora entre las franjas de ese día** (el selector de hora solo ofrece las horas con cupo). El sistema asigna automáticamente una mesa activa con capacidad suficiente y sin solapamiento, descuenta una mesa del cupo y crea el registro con estado **`confirmada`**: la reserva es directa, no una solicitud pendiente de aprobación. El cliente puede reservar **sin iniciar sesión**; en ese caso el sistema crea o reutiliza el usuario a partir del correo y el teléfono indicados.
 
 ### 2.5 Ver mis reservas
-El cliente autenticado consulta el listado de sus propias reservas, con fecha, hora, mesa, estado y detalles asociados.
+El cliente autenticado consulta el listado de sus propias reservas, con fecha, hora, mesa, comensales, estado y detalles asociados.
 
 ### 2.6 Cancelar reserva
 El cliente autenticado puede cancelar una reserva propia que se encuentre en estado `pendiente` o `confirmada`. El sistema actualiza el estado a `cancelada`.
 
-### 2.7 Hacer pedido
-Un usuario autenticado selecciona productos de la carta (o del menú semanal publicado), indica cantidades y el tipo de pedido (`con_reserva`, `para_llevar` o `domicilio`), y confirma el pedido. Para pedidos anticipados (con o sin reserva), se aplica una seña del 50% del total, cuyo estado (`pendiente`, `pagada`, `devuelta`) lo gestiona el encargado. El sistema verifica que cada producto tenga stock suficiente y que no se supere el límite de venta configurado. Al confirmar, se descuenta el stock automáticamente. Se crea el pedido con sus detalles y estado inicial `pendiente`. Para `domicilio` se requiere una dirección de entrega.
+### 2.7 Gestionar el carrito de compra
+El cliente agrega platos desde la carta. Cada pulsación de «Pedir» abre una **modal de cantidad** con el tope de stock disponible y el total calculado en vivo. El carrito se persiste en `localStorage` y se muestra en una **columna lateral** con scroll propio y filtro por categoría, de modo que agregar platos no desplaza la página completa.
 
-### 2.8 Ver mis pedidos
-El cliente autenticado consulta el listado de sus propios pedidos, con fecha, estado, total y detalle de productos.
+### 2.8 Hacer pedido
+El cliente confirma el carrito como pedido, eligiendo el tipo (`con_reserva`, `para_llevar` o `domicilio`) y, en el caso de domicilio, la dirección de entrega. Para pedidos anticipados (con o sin reserva) se aplica una seña del 50 % del total, cuyo estado (`pendiente`, `pagada`, `devuelta`) lo gestiona el encargado, y queda un saldo pendiente. El sistema verifica que cada producto tenga stock suficiente y que no se supere el límite de venta configurado; al confirmar, descuenta el stock. Para `domicilio` se requiere una dirección de entrega.
 
-### 2.9 Gestionar stock
-El encargado consulta y edita el stock actual y el límite de venta de cada producto. El límite de venta define la cantidad máxima de unidades que pueden pedirse en un periodo determinado, evitando tomar más pedidos de los gestionables.
+### 2.9 Ver mis pedidos
+El cliente autenticado consulta el listado de sus propios pedidos, con fecha, tipo, estado, total, seña, saldo y detalle de productos.
 
-### 2.10 Gestionar disponibilidad
-El encargado abre disponibilidad de mesas para múltiples fechas, definiendo para cada fecha el rango de hora (hora de inicio y hora de fin) y la cantidad de mesas disponibles. Estas fechas aparecen como "días verdes" en el calendario del cliente. Las fechas sin disponibilidad aparecen como "días grises" (no disponibles).
+### 2.10 Gestionar stock
+El encargado y el administrador consultan y editan el stock actual y el límite de venta de cada producto. El límite de venta define la cantidad máxima de unidades que pueden pedirse en un periodo determinado, evitando tomar más pedidos de los gestionables.
 
-### 2.11 Gestionar pedidos (cambiar estado)
+### 2.11 Gestionar los platos de la carta
+El encargado y el administrador agregan nuevos platos (nombre, categoría, precio e imagen), editan los existentes y los activan o desactivan sin eliminarlos del histórico de pedidos.
+
+### 2.12 Generar cupos de reserva
+El encargado y el administrador generan **cupos en lote**: indican un rango de fechas, los días de la semana, la franja horaria de apertura y cierre y el número de mesas por cupo. El sistema crea un cupo por cada combinación válida. Los días con cupo aparecen habilitados en el selector del cliente y los que no, deshabilitados.
+
+### 2.13 Gestionar pedidos (cambiar estado)
 El encargado y el administrador ven todos los pedidos del sistema y pueden cambiar el estado de cualquiera de ellos. Los estados posibles son: `pendiente`, `en_preparacion`, `listo`, `entregado`, `cancelado`.
 
-### 2.12 Gestionar usuarios
+### 2.14 Gestionar usuarios
 El administrador crea nuevos usuarios, consulta el listado completo, y puede activar, desactivar o eliminar cualquier usuario del sistema.
 
-### 2.13 Gestionar reservas (cambiar estado)
+### 2.15 Gestionar reservas (cambiar estado)
 El encargado y el administrador ven todas las reservas del sistema y pueden cambiar el estado de cualquiera de ellas. Los estados posibles son: `pendiente`, `confirmada`, `cancelada`, `vencida`, `completada`.
 
 ### 2.14 Bloquear mesa

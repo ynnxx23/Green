@@ -99,6 +99,21 @@ class ApiClient {
   }
   stock() { return this.get('/admin/stock'); }
   guardarStock(datos) { return this.post('/admin/stock', datos); }
+
+  // Disponibilidad (cupos de reservas)
+  disponibilidad(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.get(`/disponibilidad${qs ? '?' + qs : ''}`);
+  }
+  fechasDisponibles() { return this.get('/disponibilidad/fechas'); }
+  horariosDisponibles(fecha) {
+    return this.get(`/disponibilidad/horarios?fecha=${encodeURIComponent(fecha)}`);
+  }
+  generarDisponibilidad(datos) { return this.post('/admin/disponibilidad/generar', datos); }
+  eliminarDisponibilidadRango(fechaInicio, fechaFin) {
+    const qs = new URLSearchParams({ fecha_inicio: fechaInicio, fecha_fin: fechaFin }).toString();
+    return this.delete(`/admin/disponibilidad/rango?${qs}`);
+  }
   disponibilidad(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return this.get(`/disponibilidad${qs ? '?' + qs : ''}`);

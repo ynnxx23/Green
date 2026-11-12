@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/main.css">
 <link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/css/ecommerce.css">
 <link rel="stylesheet" href="assets/icons/icons.css">
 </head>
 <body>
@@ -23,9 +24,15 @@
       <li><a href="index.html">Inicio</a></li>
       <li><a href="nosotros.html">Nosotros</a></li>
       <li><a href="reservas.html">Reservar mesa</a></li>
+      <li><a href="pedidos.html">Pedir a domicilio</a></li>
       <li><a href="contacto.html">Contacto</a></li>
     </ul>
     <div class="nav-acciones">
+      <a href="pedidos.html" class="btn-carrito" id="btn-carrito" title="Ver mi pedido">
+        <span aria-hidden="true">🛒</span>
+        <span>Pedido</span>
+        <span class="carrito-badge" data-carrito-badge data-vacio="1"></span>
+      </a>
       <div id="nav-sesion"></div>
     </div>
   </div>
@@ -45,7 +52,9 @@
     </div>
 
     <div class="carta-seccion">
-      <div class="menu-grid" id="grid-productos"></div>
+      <div class="container">
+        <div class="menu-grid" id="grid-productos"></div>
+      </div>
     </div>
 
     <div id="estado-vacio" style="display:none; text-align:center; padding: 3rem; color: var(--color-text-muted);">
@@ -73,10 +82,11 @@
   </div>
 </footer>
 
-<script type="module" src="assets/js/api.js?v=2"></script>
+<script type="module" src="assets/js/api.js?v=3"></script>
+<script type="module" src="assets/js/carrito.js?v=3"></script>
 <script type="module">
-  import { api } from './assets/js/api.js';
-  import { formatearMoneda, mostrarToast } from './assets/js/main.js';
+  import { api } from './assets/js/api.js?v=3';
+  import { formatearMoneda, mostrarToast } from './assets/js/main.js?v=3';
 
   const grid = document.getElementById('grid-productos');
   const estadoVacio = document.getElementById('estado-vacio');
@@ -105,6 +115,19 @@
     return d.innerHTML;
   }
 
+  // Escape para valores dentro de atributos HTML delimitados por comillas dobles
+  function escapeAttr(texto) {
+    return escapeHtml(texto).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Nivel de stock: disponible / bajo / agotado
+  function nivelStock(stock) {
+    if (stock === null || stock === undefined) return { texto: 'Consultar', nivel: 'disponible' };
+    if (stock <= 0) return { texto: 'Agotado', nivel: 'agotado' };
+    if (stock <= 5) return { texto: '¡Últimas ' + stock + '!', nivel: 'bajo' };
+    return { texto: stock + ' disponibles', nivel: 'disponible' };
+  }
+
   function render(categoria) {
     grid.innerHTML = '';
     let filtrados = categoria === 'todos'
@@ -124,29 +147,60 @@
     filtrados.forEach(function(p) {
       const card = document.createElement('div');
       card.className = 'menu-card';
+
       const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
-      const carrito = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
-      const enCarrito = (carrito[p.id_producto] || 0) > 0;
-      card.innerHTML = '<img src="' + escapeHtml(imagen) + '" alt="' + escapeHtml(p.nombre) + '" class="plato-imagen">' +
+      const stock = (p.stock_actual === undefined || p.stock_actual === null) ? null : Number(p.stock_actual);
+      const infoStock = nivelStock(stock);
+      const agotado = stock !== null && stock <= 0;
+
+      card.innerHTML =
+        '<img src="' + escapeHtml(imagen) + '" alt="' + escapeHtml(p.nombre) + '" class="plato-imagen">' +
         '<div class="plato-contenido">' +
-        '<h3>' + escapeHtml(p.nombre || 'Producto') + '</h3>' +
-        '<p>' + escapeHtml(p.categoria || '') + '</p>' +
-        '<span class="menu-precio">' + formatearMoneda(p.precio || 0) + '</span>' +
+          '<h3>' + escapeHtml(p.nombre || 'Producto') + '</h3>' +
+          '<p>' + escapeHtml(p.categoria || '') + '</p>' +
+          '<span class="menu-precio">' + formatearMoneda(p.precio || 0) + '</span>' +
         '</div>' +
-        '<button class="btn btn-pedido-carta" onclick="agregarAPedido(' + p.id_producto + ', \'' + escapeHtml(p.nombre || '') + '\', ' + (p.precio || 0) + ')' + (enCarrito ? ' disabled' : '') + '>' +
-        (enCarrito ? '✓ En pedido' : 'Pedir') +
-        '</button>';
+        '<div class="plato-pie">' +
+          '<span class="plato-stock" data-nivel="' + infoStock.nivel + '">' + infoStock.texto + '</span>' +
+          '<button type="button" class="btn btn-pedido-carta" data-id="' + Number(p.id_producto) + '"' +
+          ' data-precio="' + Number(p.precio || 0) + '"' +
+          ' data-stock="' + (stock === null ? '' : stock) + '"' +
+          (agotado ? ' disabled' : '') + '>' +
+          (agotado ? 'Agotado' : 'Pedir') +
+          '</button>' +
+        '</div>';
       grid.appendChild(card);
     });
   }
 
-  window.agregarAPedido = function(id, nombre, precio) {
-    const carrito = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
-    carrito[id] = (carrito[id] || 0) + 1;
-    localStorage.setItem('pedido_carrito', JSON.stringify(carrito));
-    mostrarToast('Agregado al pedido: ' + nombre, 'exito');
-    render('todos');
-  };
+  // -------------------------------------------------------------------------
+  // Modal de cantidad: se abre al pulsar "Pedir"
+  // -------------------------------------------------------------------------
+  grid.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-pedido-carta');
+    if (!btn || btn.disabled) return;
+
+    const id = parseInt(btn.dataset.id, 10);
+    const producto = productos.find(function(p) { return p.id_producto === id; });
+    if (!producto) return;
+
+    const stock = btn.dataset.stock === '' ? null : parseInt(btn.dataset.stock, 10);
+
+    window.Carrito.abrirModalCantidad(
+      { id_producto: id, nombre: producto.nombre, precio: producto.precio, imagen_url: producto.imagen_url, categoria: producto.categoria, stock_actual: stock },
+      function(cantidad) {
+        try {
+          window.Carrito.agregar(
+            { id_producto: id, nombre: producto.nombre, precio: producto.precio, imagen_url: producto.imagen_url, stock_actual: stock },
+            cantidad
+          );
+          mostrarToast(cantidad + ' × ' + producto.nombre + ' agregado al pedido.', 'exito');
+        } catch (err) {
+          mostrarToast(err.message || 'No se pudo agregar al pedido.', 'error');
+        }
+      }
+    );
+  });
 
   filtros.forEach(function(btn) {
     btn.addEventListener('click', function() {

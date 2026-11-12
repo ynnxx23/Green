@@ -32,7 +32,27 @@ final class Config
             return self::$valores[$clave];
         }
 
-        $valor = $_ENV[$clave] ?? getenv($clave) ?? $_SERVER[$clave] ?? self::DEFAULTS[$clave] ?? $valorPorDefecto;
+        // Nota: getenv() devuelve FALSE (no null) cuando la variable no existe.
+        // El operador ?? solo salta null, por lo que hay que comprobar getenv()
+        // explicitamente; de lo contrario la cadena cortocircuitaria en false
+        // y devolvia '' (host y usuario de BD vacios -> error 1045).
+        $valor = null;
+
+        if (isset($_ENV[$clave]) && $_ENV[$clave] !== '') {
+            $valor = $_ENV[$clave];
+        } elseif (isset($_SERVER[$clave]) && $_SERVER[$clave] !== '') {
+            $valor = $_SERVER[$clave];
+        } else {
+            $delEntorno = getenv($clave);
+            if ($delEntorno !== false && $delEntorno !== '') {
+                $valor = $delEntorno;
+            }
+        }
+
+        if ($valor === null) {
+            $valor = self::DEFAULTS[$clave] ?? $valorPorDefecto;
+        }
+
         self::$valores[$clave] = (string) $valor;
 
         return self::$valores[$clave];

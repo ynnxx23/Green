@@ -11,7 +11,9 @@ class ProductoDao
 {
     public function listarActivos(): array
     {
-        $sql = 'SELECT * FROM productos WHERE activo = 1 ORDER BY categoria, nombre';
+        $sql = 'SELECT p.*, c.nombre AS categoria FROM productos p
+                LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+                WHERE p.activo = 1 ORDER BY c.nombre, p.nombre';
         $stmt = Conexion::obtener()->query($sql);
         $filas = $stmt->fetchAll();
 
@@ -25,7 +27,9 @@ class ProductoDao
 
     public function listarTodos(): array
     {
-        $sql = 'SELECT * FROM productos ORDER BY nombre';
+        $sql = 'SELECT p.*, c.nombre AS categoria FROM productos p
+                LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+                ORDER BY p.nombre';
         $stmt = Conexion::obtener()->query($sql);
         $filas = $stmt->fetchAll();
 
@@ -43,30 +47,28 @@ class ProductoDao
     public function listarActivosConDetalles(?string $categoria = null, ?string $busqueda = null): array
     {
         $sql = '
-            SELECT p.*, 
-                   COALESCE(AVG(c.puntuacion), 0) AS calificacion_promedio,
-                   COUNT(c.id_calificacion) AS total_calificaciones,
+            SELECT p.*,
+                   c.nombre AS categoria,
                    sp.stock_actual,
                    sp.limite_venta
             FROM productos p
-            LEFT JOIN calificaciones_platos c ON c.id_producto = p.id_producto AND c.activo = 1
+            LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
             LEFT JOIN stock_producto sp ON sp.id_producto = p.id_producto AND sp.activo = 1
             WHERE p.activo = 1
         ';
         $params = [];
 
         if ($categoria !== null && $categoria !== '') {
-            $sql .= ' AND p.categoria = :categoria';
+            $sql .= ' AND c.nombre = :categoria';
             $params[':categoria'] = $categoria;
         }
 
         if ($busqueda !== null && $busqueda !== '') {
-            $sql .= ' AND (p.nombre LIKE :busqueda OR p.categoria LIKE :busqueda)';
+            $sql .= ' AND (p.nombre LIKE :busqueda OR c.nombre LIKE :busqueda)';
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
-        $sql .= ' GROUP BY p.id_producto, p.nombre, p.categoria, p.precio, p.activo, p.imagen_url, p.imagen_public_id, p.fecha_creacion, sp.stock_actual, sp.limite_venta';
-        $sql .= ' ORDER BY p.categoria, p.nombre';
+        $sql .= ' ORDER BY c.nombre, p.nombre';
 
         $stmt = Conexion::obtener()->prepare($sql);
         $stmt->execute($params);
@@ -77,14 +79,12 @@ class ProductoDao
             $productos[] = [
                 'id_producto' => (int) $fila['id_producto'],
                 'nombre' => $fila['nombre'],
-                'categoria' => $fila['categoria'],
+                'categoria' => $fila['categoria'] ?? 'Sin categoría',
                 'precio' => (float) $fila['precio'],
                 'activo' => (bool) $fila['activo'],
                 'imagen_url' => $fila['imagen_url'] ?? null,
                 'imagen_public_id' => $fila['imagen_public_id'] ?? null,
                 'fecha_creacion' => $fila['fecha_creacion'] ?? null,
-                'calificacion_promedio' => round((float) $fila['calificacion_promedio'], 2),
-                'total_calificaciones' => (int) $fila['total_calificaciones'],
                 'stock_actual' => $fila['stock_actual'] !== null ? (int) $fila['stock_actual'] : 0,
                 'disponible' => $fila['stock_actual'] !== null ? (bool) ((int) $fila['stock_actual'] > 0) : true,
             ];
@@ -95,13 +95,17 @@ class ProductoDao
 
     public function listarCategorias(): array
     {
-        $sql = 'SELECT DISTINCT categoria FROM productos WHERE activo = 1 AND categoria IS NOT NULL AND categoria != "" ORDER BY categoria';
+        $sql = 'SELECT c.nombre FROM categorias c
+                JOIN productos p ON p.id_categoria = c.id_categoria AND p.activo = 1
+                WHERE c.activo = 1
+                GROUP BY c.id_categoria, c.nombre
+                ORDER BY c.nombre';
         $stmt = Conexion::obtener()->query($sql);
         $filas = $stmt->fetchAll();
 
         $categorias = [];
         foreach ($filas as $fila) {
-            $categorias[] = $fila['categoria'];
+            $categorias[] = $fila['nombre'];
         }
 
         return $categorias;
@@ -109,32 +113,14 @@ class ProductoDao
 
     public function obtenerPorId(int $id_producto): ?Producto
     {
-        $sql = 'SELECT * FROM productos WHERE id_producto = :id_producto';
+        $sql = 'SELECT p.*, c.nombre AS categoria FROM productos p
+                LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+                WHERE p.id_producto = :id_producto';
         $stmt = Conexion::obtener()->prepare($sql);
         $stmt->execute([':id_producto' => $id_producto]);
         $fila = $stmt->fetch();
 
         return $fila === false ? null : $this->mapearProducto($fila);
-    }
-
-    public function obtenerCalificacionPromedio(int $id_producto): float
-    {
-        $sql = 'SELECT COALESCE(AVG(puntuacion), 0) AS promedio FROM calificaciones_platos WHERE id_producto = :id_producto AND activo = 1';
-        $stmt = Conexion::obtener()->prepare($sql);
-        $stmt->execute([':id_producto' => $id_producto]);
-        $fila = $stmt->fetch();
-
-        return $fila !== false ? (float) $fila['promedio'] : 0.0;
-    }
-
-    public function contarCalificaciones(int $id_producto): int
-    {
-        $sql = 'SELECT COUNT(*) AS total FROM calificaciones_platos WHERE id_producto = :id_producto AND activo = 1';
-        $stmt = Conexion::obtener()->prepare($sql);
-        $stmt->execute([':id_producto' => $id_producto]);
-        $fila = $stmt->fetch();
-
-        return $fila !== false ? (int) $fila['total'] : 0;
     }
 
     // ========================================================================
@@ -181,8 +167,10 @@ class ProductoDao
     public function listarStockBajo(): array
     {
         $sql = '
-            SELECT p.id_producto, p.nombre, p.categoria, p.precio, sp.stock_actual, sp.limite_venta
+            SELECT p.id_producto, p.nombre, c.nombre AS categoria, p.precio,
+                   sp.stock_actual, sp.limite_venta
             FROM productos p
+            LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
             JOIN stock_producto sp ON sp.id_producto = p.id_producto AND sp.activo = 1
             WHERE p.activo = 1
               AND (sp.stock_actual <= sp.limite_venta OR sp.stock_actual <= 5)
@@ -195,12 +183,12 @@ class ProductoDao
 
     public function crear(Producto $producto): int
     {
-        $sql = 'INSERT INTO productos (nombre, categoria, precio, activo, imagen_url, imagen_public_id, fecha_creacion)
-                VALUES (:nombre, :categoria, :precio, :activo, :imagen_url, :imagen_public_id, CURRENT_TIMESTAMP)';
+        $sql = 'INSERT INTO productos (nombre, id_categoria, precio, activo, imagen_url, imagen_public_id, fecha_creacion)
+                VALUES (:nombre, :id_categoria, :precio, :activo, :imagen_url, :imagen_public_id, CURRENT_TIMESTAMP)';
         $stmt = Conexion::obtener()->prepare($sql);
         $stmt->execute([
             ':nombre' => $producto->nombre,
-            ':categoria' => $producto->categoria,
+            ':id_categoria' => $this->resolverCategoria($producto->categoria),
             ':precio' => $producto->precio,
             ':activo' => $producto->activo ? 1 : 0,
             ':imagen_url' => $producto->imagen_url,
@@ -213,14 +201,14 @@ class ProductoDao
     public function actualizar(Producto $producto): bool
     {
         $sql = 'UPDATE productos
-                    SET nombre = :nombre, categoria = :categoria, precio = :precio, activo = :activo,
+                    SET nombre = :nombre, id_categoria = :id_categoria, precio = :precio, activo = :activo,
                         imagen_url = :imagen_url, imagen_public_id = :imagen_public_id,
                         fecha_actualizacion = CURRENT_TIMESTAMP
                   WHERE id_producto = :id_producto';
         $stmt = Conexion::obtener()->prepare($sql);
         $stmt->execute([
             ':nombre' => $producto->nombre,
-            ':categoria' => $producto->categoria,
+            ':id_categoria' => $this->resolverCategoria($producto->categoria),
             ':precio' => $producto->precio,
             ':activo' => $producto->activo ? 1 : 0,
             ':imagen_url' => $producto->imagen_url,
@@ -241,12 +229,37 @@ class ProductoDao
         return $stmt->rowCount() > 0;
     }
 
+    /**
+     * Resuelve el id de categoria a partir de su nombre, creandola si
+     * todavia no existe. Mantiene la coherencia con el catalogo de la carta.
+     */
+    private function resolverCategoria(?string $nombre): ?int
+    {
+        $nombre = trim((string) $nombre);
+        if ($nombre === '') {
+            return null;
+        }
+
+        $pdo = Conexion::obtener();
+        $stmt = $pdo->prepare('SELECT id_categoria FROM categorias WHERE nombre = :n');
+        $stmt->execute([':n' => $nombre]);
+        $id = $stmt->fetchColumn();
+        if ($id !== false) {
+            return (int) $id;
+        }
+
+        $ins = $pdo->prepare('INSERT INTO categorias (nombre) VALUES (:n)');
+        $ins->execute([':n' => $nombre]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
     private function mapearProducto(array $fila): Producto
     {
         $producto = new Producto(
             $this->fixEncoding($fila['nombre']),
             (float) $fila['precio'],
-            $this->fixEncoding($fila['categoria']),
+            $this->fixEncoding($fila['categoria'] ?? 'Sin categoría'),
             $fila['imagen_url'] ?? null,
             $fila['imagen_public_id'] ?? null
         );
@@ -259,7 +272,7 @@ class ProductoDao
 
     private function fixEncoding(string $texto): string
     {
-        // Corregir doble codificación UTF-8 (ej: "CafÃ© expreso" -> "Café expreso")
+        // Corregir doble codificacion UTF-8 (ej: "CafA9 expreso" -> "Cafe expreso")
         if (mb_detect_encoding($texto, ['UTF-8', 'ISO-8859-1'], true) === 'ISO-8859-1') {
             return mb_convert_encoding($texto, 'UTF-8', 'ISO-8859-1');
         }

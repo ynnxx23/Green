@@ -15,6 +15,10 @@ class Reserva
     public string $estado = 'pendiente';
     public ?string $fecha_creacion = null;
     public ?string $fecha_actualizacion = null;
+    public ?string $observaciones = null;
+    public int $comensales = 1;
+    public ?string $telefono = null;
+    public ?string $ocasion = null;
 
     public function __construct(
         int $id_mesa,

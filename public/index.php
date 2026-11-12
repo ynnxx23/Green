@@ -451,7 +451,7 @@ try {
                     exit;
                 }
                 // Obtener detalles
-                $stmtDet = $pdo->prepare('SELECT dp.*, pr.nombre AS nombre_producto, pr.categoria FROM detalle_pedidos dp JOIN productos pr ON pr.id_producto = dp.id_producto WHERE dp.id_pedido = ?');
+                $stmtDet = $pdo->prepare('SELECT dp.*, pr.nombre AS nombre_producto, cat.nombre AS categoria FROM detalle_pedidos dp JOIN productos pr ON pr.id_producto = dp.id_producto LEFT JOIN categorias cat ON cat.id_categoria = pr.id_categoria WHERE dp.id_pedido = ?');
                 $stmtDet->execute([$id_pedido]);
                 $detalles = $stmtDet->fetchAll();
 
@@ -573,13 +573,14 @@ try {
                     exit;
                 }
                 $pdo = Conexion::obtener();
-                $sql = 'SELECT pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url,
+                $sql = 'SELECT pr.id_producto, pr.nombre, cat.nombre AS categoria, pr.precio, pr.imagen_url,
                                SUM(dp.cantidad) AS cantidad_vendida
                         FROM detalle_pedidos dp
                         JOIN pedidos p ON p.id_pedido = dp.id_pedido
                         JOIN productos pr ON pr.id_producto = dp.id_producto
+                        LEFT JOIN categorias cat ON cat.id_categoria = pr.id_categoria
                         WHERE p.estado <> :cancelado AND pr.activo = 1
-                        GROUP BY pr.id_producto, pr.nombre, pr.categoria, pr.precio, pr.imagen_url
+                        GROUP BY pr.id_producto, pr.nombre, cat.nombre, pr.precio, pr.imagen_url
                         ORDER BY cantidad_vendida DESC';
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([':cancelado' => 'cancelado']);
@@ -675,9 +676,10 @@ try {
                 $authMiddleware->requiereMeseroOAdministrador();
                 $pdo = Conexion::obtener();
                 $umbral = isset($query_params['umbral']) ? (int) $query_params['umbral'] : 5;
-                $sql = 'SELECT sp.id_stock, sp.id_producto, p.nombre, p.categoria, sp.stock_actual, sp.limite_venta, sp.activo
+                $sql = 'SELECT sp.id_stock, sp.id_producto, p.nombre, cat.nombre AS categoria, sp.stock_actual, sp.limite_venta, sp.activo
                         FROM stock_producto sp
                         JOIN productos p ON p.id_producto = sp.id_producto
+                        LEFT JOIN categorias cat ON cat.id_categoria = p.id_categoria
                         WHERE sp.activo = 1 AND p.activo = 1
                           AND (sp.stock_actual <= :umbral OR (sp.limite_venta > 0 AND sp.stock_actual <= sp.limite_venta))
                         ORDER BY sp.stock_actual ASC';
@@ -794,50 +796,6 @@ try {
             break;
 
         // -------------------------------------------------------------------------
-        // Cupones y descuentos (RF-88)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/cupones'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/cupones')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarCupones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Calificaciones de platos (RF-91)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/calificaciones'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/calificaciones')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarCalificaciones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Preferencias y alergias del cliente (RF-92)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/preferencias'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/preferencias')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarPreferencias($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Puntos de fidelidad (RF-90)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/puntos-fidelidad'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/puntos-fidelidad')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarPuntosFidelidad($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
         // RF-84: Estado de entrega de delivery
         // -------------------------------------------------------------------------
         case str_starts_with($uri, '/api/admin/pedidos/{id}/entrega'):
@@ -850,50 +808,6 @@ try {
             break;
 
         // -------------------------------------------------------------------------
-        // RF-87: Cierre de caja diario
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/cierre-caja'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/cierre-caja')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarCierreCaja($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-89: Platos favoritos del cliente
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/favoritos'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/favoritos')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarFavoritos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-93: Reservas recurrentes
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/reservas-recurrentes'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/reservas-recurrentes')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarReservasRecurrentes($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-94 a RF-96: Notificaciones
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/notificaciones'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/notificaciones')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarNotificaciones($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
         // RF-97 a RF-100: Reportes avanzados
         // -------------------------------------------------------------------------
         case str_starts_with($uri, '/api/admin/reportes-avanzados'):
@@ -901,39 +815,6 @@ try {
             $query_params = $_GET ?? [];
             $cuerpo = leerCuerpoJson();
             $respuesta = manejarReportesAvanzados($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-102: Sucursales múltiples
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/sucursales'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/sucursales')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarSucursales($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-103: Respaldos de base de datos
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/respaldos'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/respaldos')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarRespaldos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-105: Roles y permisos avanzados
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/permisos'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/permisos')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarPermisos($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
 
@@ -1144,11 +1025,12 @@ function manejarMenuSemanal(string $ruta, string $metodo, array $query, array $c
         foreach ($semanas as $s) {
             $id_menu = (int) $s['id_menu_semanal'];
             $stmt2 = $pdo->prepare('
-                SELECT msi.id_item, msi.id_producto, p.nombre, p.categoria, p.precio, msi.disponible, msi.precio_semanal
+                SELECT msi.id_item, msi.id_producto, p.nombre, cat.nombre AS categoria, p.precio, msi.disponible, msi.precio_semanal
                 FROM menu_semanal_items msi
                 JOIN productos p ON p.id_producto = msi.id_producto
+                LEFT JOIN categorias cat ON cat.id_categoria = p.id_categoria
                 WHERE msi.id_menu_semanal = ?
-                ORDER BY p.categoria, p.nombre
+                ORDER BY cat.nombre, p.nombre
             ');
             $stmt2->execute([$id_menu]);
             $items = $stmt2->fetchAll();
@@ -1739,281 +1621,15 @@ function manejarRepartidores(string $ruta, string $metodo, array $query, array $
 // -------------------------------------------------------------------------
 // Cupones y descuentos (RF-88)
 // -------------------------------------------------------------------------
-function manejarCupones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT c.*, u.nombre AS creado_por_nombre FROM cupones_descuento c LEFT JOIN usuarios u ON u.id_usuario = c.creado_por ORDER BY c.codigo');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Cupones obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $codigo = $cuerpo['codigo'] ?? '';
-        $tipo = $cuerpo['tipo_descuento'] ?? 'porcentaje';
-        $valor = isset($cuerpo['valor_descuento']) ? (float) $cuerpo['valor_descuento'] : 0.00;
-        $minimo = isset($cuerpo['monto_minimo']) ? (float) $cuerpo['monto_minimo'] : 0.00;
-        $maximo = isset($cuerpo['descuento_maximo']) && $cuerpo['descuento_maximo'] !== '' ? (float) $cuerpo['descuento_maximo'] : null;
-        $inicio = $cuerpo['fecha_inicio'] ?? '';
-        $fin = $cuerpo['fecha_fin'] ?? null;
-        $uso_max = isset($cuerpo['uso_maximo']) && $cuerpo['uso_maximo'] !== '' ? (int) $cuerpo['uso_maximo'] : null;
-        $uso_cliente = isset($cuerpo['uso_por_cliente']) ? (int) $cuerpo['uso_por_cliente'] : 1;
-
-        if ($codigo === '') {
-            return errorJson('Se requiere el código del cupón.', 400);
-        }
-        if (!in_array($tipo, ['porcentaje', 'monto_fijo'], true)) {
-            return errorJson('Tipo de descuento inválido.', 400);
-        }
-        if ($inicio === '') {
-            return errorJson('Se requiere fecha de inicio.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO cupones_descuento (codigo, tipo_descuento, valor_descuento, monto_minimo, descuento_maximo, fecha_inicio, fecha_fin, uso_maximo, uso_por_cliente, activo, creado_por)
-                VALUES (:cd, :td, :vd, :mm, :dm, :fi, :ff, :um, :uc, 1, :cp)
-            ');
-            $stmt->execute([
-                ':cd' => $codigo,
-                ':td' => $tipo,
-                ':vd' => $valor,
-                ':mm' => $minimo,
-                ':dm' => $maximo,
-                ':fi' => $inicio,
-                ':ff' => $fin,
-                ':um' => $uso_max,
-                ':uc' => $uso_cliente,
-                ':cp' => $id_usuario,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Cupón creado.', 'codigo' => 200, 'datos' => ['id_cupon' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear el cupón.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_cupon = (int) $c[1];
-        $campos = [];
-        $params = [];
-        foreach (['codigo', 'tipo_descuento', 'valor_descuento', 'monto_minimo', 'descuento_maximo', 'fecha_inicio', 'fecha_fin', 'uso_maximo', 'uso_por_cliente', 'activo'] as $campo) {
-            if (isset($cuerpo[$campo])) {
-                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
-                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
-            }
-        }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_cupon;
-        try {
-            $stmt = $pdo->prepare('UPDATE cupones_descuento SET ' . implode(', ', $campos) . ' WHERE id_cupon = :id');
-            $stmt->execute($params);
-            return ['exito' => true, 'mensaje' => 'Cupón actualizado.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al actualizar el cupón.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_cupon = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE cupones_descuento SET activo = 0 WHERE id_cupon = ?');
-        $stmt->execute([$id_cupon]);
-        return ['exito' => true, 'mensaje' => 'Cupón desactivado.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de cupones no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // Calificaciones de platos (RF-91)
 // -------------------------------------------------------------------------
-function manejarCalificaciones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $pdo = Conexion::obtener();
-
-    // GET público: listar calificaciones de un producto
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $id_producto = isset($query['id_producto']) ? (int) $query['id_producto'] : 0;
-        if ($id_producto <= 0) {
-            return errorJson('Se requiere id_producto.', 400);
-        }
-        $stmt = $pdo->prepare('
-            SELECT cp.*, u.nombre AS nombre_usuario
-            FROM calificaciones_platos cp
-            JOIN usuarios u ON u.id_usuario = cp.id_usuario
-            WHERE cp.id_producto = ? AND cp.activo = 1
-            ORDER BY cp.fecha_calificacion DESC
-        ');
-        $stmt->execute([$id_producto]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Calificaciones obtenidas.', 'codigo' => 200];
-    }
-
-    // POST: crear calificación (cliente autenticado)
-    if ($ruta === '' && $metodo === 'POST') {
-        $authMiddleware->requiereAutenticacion();
-        $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-        $id_producto = isset($cuerpo['id_producto']) ? (int) $cuerpo['id_producto'] : 0;
-        $puntuacion = isset($cuerpo['puntuacion']) ? (int) $cuerpo['puntuacion'] : 0;
-        $comentario = $cuerpo['comentario'] ?? null;
-
-        if ($id_producto <= 0) {
-            return errorJson('id_producto inválido.', 400);
-        }
-        if ($puntuacion < 1 || $puntuacion > 5) {
-            return errorJson('La puntuación debe estar entre 1 y 5.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO calificaciones_platos (id_producto, id_usuario, puntuacion, comentario, activo)
-                VALUES (:ip, :iu, :p, :c, 1)
-                ON DUPLICATE KEY UPDATE puntuacion = VALUES(puntuacion), comentario = VALUES(comentario), fecha_calificacion = CURRENT_TIMESTAMP, activo = 1
-            ');
-            $stmt->execute([
-                ':ip' => $id_producto,
-                ':iu' => $id_usuario,
-                ':p' => $puntuacion,
-                ':c' => $comentario,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Calificación guardada.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al guardar la calificación.', 500);
-        }
-    }
-
-    return errorJson('Endpoint de calificaciones no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // Preferencias y alergias del cliente (RF-92)
 // -------------------------------------------------------------------------
-function manejarPreferencias(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereAutenticacion();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->prepare('SELECT * FROM preferencias_cliente WHERE id_usuario = ? AND activo = 1 ORDER BY tipo, descripcion');
-        $stmt->execute([$id_usuario]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Preferencias obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $tipo = $cuerpo['tipo'] ?? 'preferencia';
-        $descripcion = $cuerpo['descripcion'] ?? '';
-        if (!in_array($tipo, ['alergia', 'preferencia', 'restriccion'], true)) {
-            return errorJson('Tipo inválido.', 400);
-        }
-        if ($descripcion === '') {
-            return errorJson('Se requiere la descripción.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO preferencias_cliente (id_usuario, tipo, descripcion, activo)
-                VALUES (:iu, :t, :d, 1)
-            ');
-            $stmt->execute([
-                ':iu' => $id_usuario,
-                ':t' => $tipo,
-                ':d' => $descripcion,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Preferencia guardada.', 'codigo' => 200, 'datos' => ['id_preferencia' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al guardar la preferencia.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_preferencia = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE preferencias_cliente SET activo = 0 WHERE id_preferencia = ? AND id_usuario = ?');
-        $stmt->execute([$id_preferencia, $id_usuario]);
-        return ['exito' => true, 'mensaje' => 'Preferencia desactivada.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de preferencias no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // Puntos de fidelidad (RF-90)
 // -------------------------------------------------------------------------
-function manejarPuntosFidelidad(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $pdo = Conexion::obtener();
-
-    // GET: consultar puntos del cliente autenticado
-    if (($ruta === '' || $ruta === 'mis-puntos') && $metodo === 'GET') {
-        $authMiddleware->requiereAutenticacion();
-        $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-        $stmt = $pdo->prepare('SELECT * FROM puntos_fidelidad WHERE id_usuario = ?');
-        $stmt->execute([$id_usuario]);
-        $puntos = $stmt->fetch();
-        if (!$puntos) {
-            return ['exito' => true, 'datos' => ['puntos_disponibles' => 0, 'puntos_acumulados' => 0, 'puntos_canjeados' => 0], 'mensaje' => 'El cliente no tiene puntos acumulados.', 'codigo' => 200];
-        }
-        return ['exito' => true, 'datos' => $puntos, 'mensaje' => 'Puntos obtenidos.', 'codigo' => 200];
-    }
-
-    // PUT: actualizar puntos (solo admin/encargado)
-    if ($ruta === '' && $metodo === 'PUT') {
-        $authMiddleware->requiereMeseroOAdministrador();
-        $id_usuario = isset($cuerpo['id_usuario']) ? (int) $cuerpo['id_usuario'] : 0;
-        $puntos = isset($cuerpo['puntos']) ? (int) $cuerpo['puntos'] : 0;
-        $tipo = $cuerpo['tipo'] ?? 'sumar'; // sumar, restar, set
-
-        if ($id_usuario <= 0) {
-            return errorJson('id_usuario requerido.', 400);
-        }
-        try {
-            $pdo->beginTransaction();
-            $stmt = $pdo->prepare('SELECT puntos_disponibles, puntos_acumulados, puntos_canjeados FROM puntos_fidelidad WHERE id_usuario = ?');
-            $stmt->execute([$id_usuario]);
-            $actual = $stmt->fetch();
-
-            if (!$actual) {
-                $stmt = $pdo->prepare('INSERT INTO puntos_fidelidad (id_usuario, puntos_disponibles, puntos_acumulados, puntos_canjeados) VALUES (:iu, 0, 0, 0)');
-                $stmt->execute([':iu' => $id_usuario]);
-                $disponibles = 0;
-                $acumulados = 0;
-                $canjeados = 0;
-            } else {
-                $disponibles = (int) $actual['puntos_disponibles'];
-                $acumulados = (int) $actual['puntos_acumulados'];
-                $canjeados = (int) $actual['puntos_canjeados'];
-            }
-
-            if ($tipo === 'sumar') {
-                $disponibles += $puntos;
-                $acumulados += $puntos;
-            } elseif ($tipo === 'restar') {
-                $disponibles = max(0, $disponibles - $puntos);
-            } elseif ($tipo === 'set') {
-                $disponibles = $puntos;
-            }
-
-            $stmt = $pdo->prepare('
-                INSERT INTO puntos_fidelidad (id_usuario, puntos_disponibles, puntos_acumulados, puntos_canjeados)
-                VALUES (:iu, :d, :a, :c)
-                ON DUPLICATE KEY UPDATE puntos_disponibles = :d, puntos_acumulados = :a, puntos_canjeados = :c, fecha_actualizacion = CURRENT_TIMESTAMP
-            ');
-            $stmt->execute([
-                ':iu' => $id_usuario,
-                ':d' => $disponibles,
-                ':a' => $acumulados,
-                ':c' => $canjeados,
-            ]);
-            $pdo->commit();
-            return ['exito' => true, 'mensaje' => 'Puntos actualizados.', 'codigo' => 200, 'datos' => ['puntos_disponibles' => $disponibles]];
-        } catch (\PDOException $e) {
-            $pdo->rollBack();
-            return errorJson('Error al actualizar los puntos.', 500);
-        }
-    }
-
-    return errorJson('Endpoint de puntos de fidelidad no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-84: Estado de entrega de delivery
 // -------------------------------------------------------------------------
@@ -2122,229 +1738,15 @@ function manejarEstadoEntrega(string $ruta, string $metodo, array $query, array 
 // -------------------------------------------------------------------------
 // RF-87: Cierre de caja diario
 // -------------------------------------------------------------------------
-function manejarCierreCaja(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if ($ruta === '' && $metodo === 'GET') {
-        $fecha = $query['fecha'] ?? date('Y-m-d');
-        $stmt = $pdo->prepare('SELECT * FROM cierre_caja WHERE fecha = ?');
-        $stmt->execute([$fecha]);
-        $cierre = $stmt->fetch();
-        if (!$cierre) {
-            return ['exito' => true, 'datos' => null, 'mensaje' => 'No hay cierre de caja para esa fecha.', 'codigo' => 200];
-        }
-        return ['exito' => true, 'datos' => $cierre, 'mensaje' => 'Cierre de caja obtenido.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $fecha = $cuerpo['fecha'] ?? date('Y-m-d');
-        $monto_apertura = isset($cuerpo['monto_apertura']) ? (float) $cuerpo['monto_apertura'] : 0.00;
-        $observaciones = $cuerpo['observaciones'] ?? null;
-        $stmt = $pdo->prepare('INSERT INTO cierre_caja (fecha, apertura_por, monto_apertura, estado, fecha_apertura, observaciones) VALUES (:f, :u, :ma, "abierto", CURRENT_TIMESTAMP, :o) ON DUPLICATE KEY UPDATE monto_apertura = VALUES(monto_apertura), observaciones = VALUES(observaciones)');
-        $stmt->execute([':f' => $fecha, ':u' => $id_usuario, ':ma' => $monto_apertura, ':o' => $observaciones]);
-        return ['exito' => true, 'mensaje' => 'Caja abierta para el día.', 'codigo' => 200];
-    }
-
-    if (preg_match('/^(\d+)\/cerrar$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_cierre = (int) $c[1];
-        $monto_cierre = isset($cuerpo['monto_cierre']) ? (float) $cuerpo['monto_cierre'] : 0.00;
-        $efectivo = isset($cuerpo['efectivo']) ? (float) $cuerpo['efectivo'] : 0.00;
-        $tarjeta = isset($cuerpo['tarjeta']) ? (float) $cuerpo['tarjeta'] : 0.00;
-        $transferencia = isset($cuerpo['transferencia']) ? (float) $cuerpo['transferencia'] : 0.00;
-        $observaciones = $cuerpo['observaciones'] ?? null;
-        $diferencia = $monto_cierre - ($efectivo + $tarjeta + $transferencia);
-        $stmt = $pdo->prepare('UPDATE cierre_caja SET monto_cierre = :mc, efectivo = :ef, tarjeta = :tj, transferencia = :tr, diferencia = :dif, estado = "cerrado", cierre_por = :cp, fecha_cierre = CURRENT_TIMESTAMP, observaciones = :o WHERE id_cierre = :id');
-        $stmt->execute([':mc' => $monto_cierre, ':ef' => $efectivo, ':tj' => $tarjeta, ':tr' => $transferencia, ':dif' => $diferencia, ':cp' => $id_usuario, ':o' => $observaciones, ':id' => $id_cierre]);
-        if ($stmt->rowCount() === 0) {
-            return errorJson('Cierre de caja no encontrado.', 404);
-        }
-        return ['exito' => true, 'mensaje' => 'Caja cerrada.', 'datos' => ['diferencia' => $diferencia], 'codigo' => 200];
-    }
-
-    if ($ruta === 'listar' && $metodo === 'GET') {
-        $fechaDesde = $query['fecha_desde'] ?? '';
-        $fechaHasta = $query['fecha_hasta'] ?? '';
-        $sql = 'SELECT c.*, u.nombre AS nombre_usuario FROM cierre_caja c LEFT JOIN usuarios u ON u.id_usuario = c.apertura_por WHERE 1=1';
-        $params = [];
-        if ($fechaDesde !== '') { $sql .= ' AND c.fecha >= :fd'; $params[':fd'] = $fechaDesde; }
-        if ($fechaHasta !== '') { $sql .= ' AND c.fecha <= :fh'; $params[':fh'] = $fechaHasta; }
-        $sql .= ' ORDER BY c.fecha DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Cierres de caja obtenidos.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de cierre de caja no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-89: Platos favoritos del cliente
 // -------------------------------------------------------------------------
-function manejarFavoritos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereAutenticacion();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->prepare('SELECT pf.id_favorito, pf.id_producto, p.nombre, p.categoria, p.precio, pf.fecha_agregado FROM platos_favoritos pf JOIN productos p ON p.id_producto = pf.id_producto WHERE pf.id_usuario = ? ORDER BY pf.fecha_agregado DESC');
-        $stmt->execute([$id_usuario]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Platos favoritos obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $id_producto = isset($cuerpo['id_producto']) ? (int) $cuerpo['id_producto'] : 0;
-        if ($id_producto <= 0) {
-            return errorJson('id_producto requerido.', 400);
-        }
-        try {
-            $pdo->prepare('INSERT IGNORE INTO platos_favoritos (id_usuario, id_producto) VALUES (:iu, :ip)')->execute([':iu' => $id_usuario, ':ip' => $id_producto]);
-            return ['exito' => true, 'mensaje' => 'Plato agregado a favoritos.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al agregar favorito.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_producto = (int) $c[1];
-        $stmt = $pdo->prepare('DELETE FROM platos_favoritos WHERE id_usuario = ? AND id_producto = ?');
-        $stmt->execute([$id_usuario, $id_producto]);
-        return ['exito' => true, 'mensaje' => 'Plato removido de favoritos.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de favoritos no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-93: Reservas recurrentes
 // -------------------------------------------------------------------------
-function manejarReservasRecurrentes(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereAutenticacion();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->prepare('SELECT rr.*, m.numero_mesa FROM reservas_recurrentes rr LEFT JOIN mesas m ON m.id_mesa = rr.id_mesa WHERE rr.id_usuario = ? AND rr.activa = 1 ORDER BY rr.dia_semana, rr.hora_inicio');
-        $stmt->execute([$id_usuario]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Reservas recurrentes obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $id_mesa = isset($cuerpo['id_mesa']) ? (int) $cuerpo['id_mesa'] : null;
-        $dia_semana = isset($cuerpo['dia_semana']) ? (int) $cuerpo['dia_semana'] : null;
-        $hora_inicio = $cuerpo['hora_inicio'] ?? '';
-        $hora_fin = $cuerpo['hora_fin'] ?? '';
-        $cantidad_personas = isset($cuerpo['cantidad_personas']) ? (int) $cuerpo['cantidad_personas'] : 1;
-        $fecha_inicio = $cuerpo['fecha_inicio'] ?? '';
-        $fecha_fin = $cuerpo['fecha_fin'] ?? null;
-        if ($dia_semana === null || $hora_inicio === '' || $hora_fin === '' || $fecha_inicio === '') {
-            return errorJson('Faltan datos: dia_semana, hora_inicio, hora_fin, fecha_inicio.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('INSERT INTO reservas_recurrentes (id_usuario, id_mesa, dia_semana, hora_inicio, hora_fin, cantidad_personas, fecha_inicio, fecha_fin, activa) VALUES (:iu, :im, :ds, :hi, :hf, :cp, :fi, :ff, 1)');
-            $stmt->execute([':iu' => $id_usuario, ':im' => $id_mesa, ':ds' => $dia_semana, ':hi' => $hora_inicio, ':hf' => $hora_fin, ':cp' => $cantidad_personas, ':fi' => $fecha_inicio, ':ff' => $fecha_fin]);
-            return ['exito' => true, 'mensaje' => 'Reserva recurrente creada.', 'codigo' => 200, 'datos' => ['id_reserva_recurrente' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear reserva recurrente.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_reserva_recurrente = (int) $c[1];
-        $campos = [];
-        $params = [];
-        foreach (['id_mesa','dia_semana','hora_inicio','hora_fin','cantidad_personas','fecha_inicio','fecha_fin','activa'] as $campo) {
-            if (isset($cuerpo[$campo])) {
-                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
-                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
-            }
-        }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_reserva_recurrente;
-        try {
-            $stmt = $pdo->prepare('UPDATE reservas_recurrentes SET ' . implode(', ', $campos) . ' WHERE id_reserva_recurrente = :id AND id_usuario = :iu');
-            $params[':iu'] = $id_usuario;
-            $stmt->execute($params);
-            if ($stmt->rowCount() === 0) {
-                return errorJson('Reserva recurrente no encontrada.', 404);
-            }
-            return ['exito' => true, 'mensaje' => 'Reserva recurrente actualizada.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al actualizar reserva recurrente.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_reserva_recurrente = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE reservas_recurrentes SET activa = 0 WHERE id_reserva_recurrente = ? AND id_usuario = ?');
-        $stmt->execute([$id_reserva_recurrente, $id_usuario]);
-        return ['exito' => true, 'mensaje' => 'Reserva recurrente desactivada.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de reservas recurrentes no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-94 a RF-96: Notificaciones
 // -------------------------------------------------------------------------
-function manejarNotificaciones(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereAutenticacion();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-    $esAdmin = ServicioDeAutenticacion::esAdministrador();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $sql = 'SELECT * FROM notificaciones WHERE id_usuario = ?';
-        $params = [$id_usuario];
-        if (!$esAdmin && isset($query['solo_no_leidas']) && $query['solo_no_leidas'] === '1') {
-            $sql .= ' AND estado IN ("pendiente","enviado")';
-        }
-        $sql .= ' ORDER BY fecha_creacion DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Notificaciones obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $tipo = $cuerpo['tipo'] ?? 'sistema';
-        $canal = $cuerpo['canal'] ?? 'push';
-        $asunto = $cuerpo['asunto'] ?? '';
-        $mensaje = $cuerpo['mensaje'] ?? null;
-        if ($asunto === '') {
-            return errorJson('Se requiere asunto.', 400);
-        }
-        if (!in_array($tipo, ['reserva','pedido','pago','sistema'], true)) {
-            return errorJson('Tipo inválido.', 400);
-        }
-        if (!in_array($canal, ['whatsapp','email','push'], true)) {
-            return errorJson('Canal inválido.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('INSERT INTO notificaciones (id_usuario, tipo, canal, asunto, mensaje, estado) VALUES (:iu, :t, :c, :a, :m, "pendiente")');
-            $stmt->execute([':iu' => $id_usuario, ':t' => $tipo, ':c' => $canal, ':a' => $asunto, ':m' => $mensaje]);
-            return ['exito' => true, 'mensaje' => 'Notificación registrada (pendiente de envío).', 'codigo' => 200, 'datos' => ['id_notificacion' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al registrar notificación.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)\/leer$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_notificacion = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE notificaciones SET estado = "leido", fecha_lectura = CURRENT_TIMESTAMP WHERE id_notificacion = ? AND id_usuario = ?');
-        $stmt->execute([$id_notificacion, $id_usuario]);
-        return ['exito' => true, 'mensaje' => 'Notificación marcada como leída.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de notificaciones no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-97 a RF-100: Reportes avanzados
 // -------------------------------------------------------------------------
@@ -2396,198 +1798,12 @@ function manejarReportesAvanzados(string $ruta, string $metodo, array $query, ar
 // -------------------------------------------------------------------------
 // RF-102: Sucursales múltiples
 // -------------------------------------------------------------------------
-function manejarSucursales(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereAdministrador();
-    $pdo = Conexion::obtener();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT * FROM sucursales ORDER BY nombre');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Sucursales obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $nombre = $cuerpo['nombre'] ?? '';
-        $direccion = $cuerpo['direccion'] ?? null;
-        $telefono = $cuerpo['telefono'] ?? null;
-        $email = $cuerpo['email'] ?? null;
-        if ($nombre === '') {
-            return errorJson('Se requiere el nombre de la sucursal.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('INSERT INTO sucursales (nombre, direccion, telefono, email, activa) VALUES (:n, :d, :t, :e, 1)');
-            $stmt->execute([':n' => $nombre, ':d' => $direccion, ':t' => $telefono, ':e' => $email]);
-            return ['exito' => true, 'mensaje' => 'Sucursal creada.', 'codigo' => 200, 'datos' => ['id_sucursal' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear sucursal.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_sucursal = (int) $c[1];
-        $campos = [];
-        $params = [];
-        foreach (['nombre','direccion','telefono','email','activa'] as $campo) {
-            if (isset($cuerpo[$campo])) {
-                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
-                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
-            }
-        }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_sucursal;
-        $stmt = $pdo->prepare('UPDATE sucursales SET ' . implode(', ', $campos) . ' WHERE id_sucursal = :id');
-        $stmt->execute($params);
-        return ['exito' => true, 'mensaje' => 'Sucursal actualizada.', 'codigo' => 200];
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_sucursal = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE sucursales SET activa = 0 WHERE id_sucursal = ?');
-        $stmt->execute([$id_sucursal]);
-        return ['exito' => true, 'mensaje' => 'Sucursal desactivada.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de sucursales no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-103: Respaldos de base de datos
 // -------------------------------------------------------------------------
-function manejarRespaldos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereAdministrador();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT r.*, u.nombre AS nombre_usuario FROM respaldos_bd r LEFT JOIN usuarios u ON u.id_usuario = r.creado_por ORDER BY r.fecha_creacion DESC');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Respaldos obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $tipo = $cuerpo['tipo'] ?? 'manual';
-        if (!in_array($tipo, ['completo','parcial','programado','manual'], true)) {
-            return errorJson('Tipo inválido.', 400);
-        }
-        $nombreArchivo = 'backup_' . date('Ymd_His') . '.sql';
-        try {
-            $stmt = $pdo->prepare('INSERT INTO respaldos_bd (nombre_archivo, tipo, tamaño_bytes, creado_por, estado) VALUES (:n, :t, 0, :u, "exitoso")');
-            $stmt->execute([':n' => $nombreArchivo, ':t' => $tipo, ':u' => $id_usuario]);
-            return ['exito' => true, 'mensaje' => 'Respaldo registrado.', 'codigo' => 200, 'datos' => ['archivo' => $nombreArchivo, 'id_respaldo' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al registrar respaldo.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_respaldo = (int) $c[1];
-        $stmt = $pdo->prepare('DELETE FROM respaldos_bd WHERE id_respaldo = ?');
-        $stmt->execute([$id_respaldo]);
-        return ['exito' => true, 'mensaje' => 'Registro de respaldo eliminado.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de respaldos no encontrado.', 404);
-}
-
 // -------------------------------------------------------------------------
 // RF-105: Roles y permisos avanzados
 // -------------------------------------------------------------------------
-function manejarPermisos(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereAdministrador();
-    $pdo = Conexion::obtener();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT * FROM permisos ORDER BY modulo, nombre');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Permisos obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $nombre = $cuerpo['nombre'] ?? '';
-        $codigo = $cuerpo['codigo'] ?? '';
-        $modulo = $cuerpo['modulo'] ?? '';
-        $descripcion = $cuerpo['descripcion'] ?? null;
-        if ($nombre === '' || $codigo === '' || $modulo === '') {
-            return errorJson('Se requieren nombre, código y módulo.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('INSERT INTO permisos (nombre, codigo, modulo, descripcion) VALUES (:n, :c, :m, :d)');
-            $stmt->execute([':n' => $nombre, ':c' => $codigo, ':m' => $modulo, ':d' => $descripcion]);
-            return ['exito' => true, 'mensaje' => 'Permiso creado.', 'codigo' => 200, 'datos' => ['id_permiso' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear permiso.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_permiso = (int) $c[1];
-        $campos = [];
-        $params = [];
-        foreach (['nombre','codigo','modulo','descripcion'] as $campo) {
-            if (isset($cuerpo[$campo])) {
-                $campos[] = $campo . ' = :' . str_replace('_', '', $campo);
-                $params[':' . str_replace('_', '', $campo)] = $cuerpo[$campo];
-            }
-        }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_permiso;
-        $stmt = $pdo->prepare('UPDATE permisos SET ' . implode(', ', $campos) . ' WHERE id_permiso = :id');
-        $stmt->execute($params);
-        return ['exito' => true, 'mensaje' => 'Permiso actualizado.', 'codigo' => 200];
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_permiso = (int) $c[1];
-        $stmt = $pdo->prepare('DELETE FROM permisos WHERE id_permiso = ?');
-        $stmt->execute([$id_permiso]);
-        return ['exito' => true, 'mensaje' => 'Permiso eliminado.', 'codigo' => 200];
-    }
-
-    // Asignar permiso a rol
-    if ($ruta === 'asignar' && $metodo === 'POST') {
-        $id_rol = isset($cuerpo['id_rol']) ? (int) $cuerpo['id_rol'] : 0;
-        $id_permiso = isset($cuerpo['id_permiso']) ? (int) $cuerpo['id_permiso'] : 0;
-        if ($id_rol <= 0 || $id_permiso <= 0) {
-            return errorJson('Se requieren id_rol e id_permiso.', 400);
-        }
-        try {
-            $pdo->prepare('INSERT IGNORE INTO roles_permisos (id_rol, id_permiso) VALUES (:r, :p)')->execute([':r' => $id_rol, ':p' => $id_permiso]);
-            return ['exito' => true, 'mensaje' => 'Permiso asignado al rol.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al asignar permiso.', 500);
-        }
-    }
-
-    // Quitar permiso de rol
-    if ($ruta === 'desasignar' && $metodo === 'DELETE') {
-        $query_params = $query;
-        $id_rol = isset($query_params['id_rol']) ? (int) $query_params['id_rol'] : 0;
-        $id_permiso = isset($query_params['id_permiso']) ? (int) $query_params['id_permiso'] : 0;
-        if ($id_rol <= 0 || $id_permiso <= 0) {
-            return errorJson('Se requieren id_rol e id_permiso.', 400);
-        }
-        $pdo->prepare('DELETE FROM roles_permisos WHERE id_rol = ? AND id_permiso = ?')->execute([$id_rol, $id_permiso]);
-        return ['exito' => true, 'mensaje' => 'Permiso desasignado del rol.', 'codigo' => 200];
-    }
-
-    // Permisos de un rol
-    if ($ruta === 'rol-permisos' && $metodo === 'GET') {
-        $id_rol = isset($query['id_rol']) ? (int) $query['id_rol'] : 0;
-        if ($id_rol <= 0) {
-            return errorJson('Se requiere id_rol.', 400);
-        }
-        $stmt = $pdo->prepare('SELECT p.* FROM permisos p JOIN roles_permisos rp ON rp.id_permiso = p.id_permiso WHERE rp.id_rol = ? ORDER BY p.modulo, p.nombre');
-        $stmt->execute([$id_rol]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Permisos del rol obtenidos.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de permisos no encontrado.', 404);
-}
-
 function aplicarMigraciones(PDO $pdo): void
 {
     $migrationsDir = __DIR__ . '/../migrations';

@@ -27,6 +27,12 @@ class ReservaController
             return $this->misReservas();
         }
 
+        // Crear reserva (POST en la raiz). Se evalua antes que el listado
+        // para que un POST a /api/reservas no se interprete como consulta.
+        if ($ruta_interna === '' && $metodo === 'POST') {
+            return $this->crearReserva();
+        }
+
         if ($ruta_interna === '' || $ruta_interna === 'listar') {
             if ($metodo !== 'GET') {
                 return $this->error('Método no permitido.', 405);
@@ -53,88 +59,117 @@ class ReservaController
             }
         }
 
-        if ($ruta_interna === '' && $metodo === 'POST') {
-            return $this->crearReserva();
-        }
-
         return $this->error('Endpoint no encontrado.', 404);
     }
 
     private function crearReserva(): array
     {
-        $this->authMiddleware->requiereAutenticacion();
-
+        // La reserva la puede crear un cliente sin sesion: se registra con los
+        // datos que envia (nombre, email, telefono). Si hay sesion, se usan los
+        // datos del usuario autenticado.
         $entrada = $this->leerCuerpoJson();
 
-        $id_mesa = (int) ($entrada['id_mesa'] ?? 0);
-        $fecha_reserva = $entrada['fecha_reserva'] ?? '';
-        $hora_inicio = $entrada['hora_inicio'] ?? '';
-        $hora_fin = $entrada['hora_fin'] ?? '';
-        $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
+        $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::estaAutenticado()
+            ? \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado()
+            : 0;
+        $nombre = trim((string) ($entrada['nombre'] ?? ''));
+        $email = trim(strtolower((string) ($entrada['email'] ?? '')));
+        $telefono = trim((string) ($entrada['telefono'] ?? ''));
+        $comensales = (int) ($entrada['comensales'] ?? 1);
+        $fecha_reserva = (string) ($entrada['fecha_reserva'] ?? '');
+        $hora_inicio = substr((string) ($entrada['hora_inicio'] ?? ''), 0, 5);
+        $hora_fin = substr((string) ($entrada['hora_fin'] ?? ''), 0, 5);
+        $ocasion = trim((string) ($entrada['ocasion'] ?? ''));
+        $observaciones = trim((string) ($entrada['observaciones'] ?? ''));
 
-        if ($id_mesa <= 0 || $fecha_reserva === '' || $hora_inicio === '' || $hora_fin === '') {
-            return $this->error('Faltan datos obligatorios: id_mesa, fecha_reserva, hora_inicio, hora_fin.', 400);
+        if ($id_usuario <= 0) {
+            if ($nombre === '' || $email === '') {
+                return $this->error('Faltan datos obligatorios: nombre, email, fecha_reserva y hora_inicio.', 400);
+            }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $this->error('El email no tiene un formato válido.', 400);
+            }
+        }
+
+        if ($fecha_reserva === '' || $hora_inicio === '') {
+            return $this->error('Faltan datos obligatorios: fecha_reserva y hora_inicio.', 400);
+        }
+        if ($comensales < 1) {
+            $comensales = 1;
         }
 
         $pdo = \Restaurante\Database\Conexion::obtener();
 
-        // 1. Verificar que exista disponibilidad para la fecha y el rango horario cubra la reserva
+        // -----------------------------------------------------------------
+        // 1. Verificar disponibilidad del cupo (fecha + franja) y mesas libres
+        // -----------------------------------------------------------------
         $stmt = $pdo->prepare('
             SELECT id_disponibilidad, mesas_disponibles, hora_inicio as disp_inicio, hora_fin as disp_fin
             FROM disponibilidad_mesa
             WHERE fecha = ? AND activo = 1
         ');
         $stmt->execute([$fecha_reserva]);
-        $disponibilidad = $stmt->fetch();
+        $disponibilidad = null;
+        while ($f = $stmt->fetch()) {
+            if ($hora_inicio >= substr((string) $f['disp_inicio'], 0, 5)
+                && $hora_inicio < substr((string) $f['disp_fin'], 0, 5)) {
+                $disponibilidad = $f;
+                break;
+            }
+        }
 
         if (!$disponibilidad) {
-            return $this->error('No hay disponibilidad de mesas para la fecha seleccionada.', 400);
+            return $this->error('No hay disponibilidad de mesas para la fecha y hora seleccionadas.', 400);
         }
 
         if ((int) $disponibilidad['mesas_disponibles'] <= 0) {
             return $this->error('No quedan mesas disponibles para esa fecha y horario.', 400);
         }
 
-        // Verificar que la hora de la reserva esté dentro del rango de disponibilidad
-        $disp_inicio = $disponibilidad['disp_inicio'];
-        $disp_fin = $disponibilidad['disp_fin'];
-        if ($hora_inicio < $disp_inicio || $hora_fin > $disp_fin) {
-            return $this->error('El horario seleccionado está fuera del rango de disponibilidad.', 400);
+        // Si no se indico hora_fin, se usa el fin del cupo disponible.
+        if ($hora_fin === '') {
+            $hora_fin = substr((string) $disponibilidad['disp_fin'], 0, 5);
+        }
+        if ($hora_fin <= $hora_inicio) {
+            $hora_fin = substr((string) $disponibilidad['disp_fin'], 0, 5);
         }
 
-        // 2. Verificar que no haya solapamiento con otra reserva de la misma mesa
-        $stmt = $pdo->prepare('
-            SELECT COUNT(*) as solapamientos
-            FROM reservas
-            WHERE id_mesa = ?
-              AND fecha_reserva = ?
-              AND estado IN (\'pendiente\', \'confirmada\')
-              AND hora_inicio < ?
-              AND hora_fin > ?
-        ');
-        $stmt->execute([$id_mesa, $fecha_reserva, $hora_fin, $hora_inicio]);
-        $solapamientos = (int) $stmt->fetchColumn();
-
-        if ($solapamientos > 0) {
-            return $this->error('La mesa ya tiene una reserva en ese horario.', 400);
+        // -----------------------------------------------------------------
+        // 2. Asignar automaticamente una mesa libre con capacidad suficiente
+        // -----------------------------------------------------------------
+        $id_mesa = $this->buscarMesaLibre($pdo, $fecha_reserva, $hora_inicio, $hora_fin, $comensales);
+        if ($id_mesa === null) {
+            return $this->error('No hay mesas libres con capacidad suficiente para ese horario.', 400);
         }
 
         try {
             $pdo->beginTransaction();
 
+            // Usuario de la sesion o usuario creado con los datos del formulario
+            if ($id_usuario <= 0) {
+                $id_usuario = $this->obtenerOCrearUsuario($pdo, $nombre, $email, $telefono);
+            }
+
             // Decrementar mesas disponibles
             $stmt = $pdo->prepare('
                 UPDATE disponibilidad_mesa SET mesas_disponibles = mesas_disponibles - 1
-                WHERE id_disponibilidad = ?
+                WHERE id_disponibilidad = ? AND mesas_disponibles > 0
             ');
             $stmt->execute([$disponibilidad['id_disponibilidad']]);
+            if ($stmt->rowCount() === 0) {
+                throw new \RuntimeException('Se agotaron las mesas disponibles para ese horario.');
+            }
 
             $id_reserva = $this->servicioDeReservas->crearReserva(
                 $id_mesa,
                 $id_usuario,
                 $fecha_reserva,
                 $hora_inicio,
-                $hora_fin
+                $hora_fin,
+                $comensales,
+                $telefono,
+                $ocasion,
+                $observaciones
             );
 
             // Historial de movimiento
@@ -142,7 +177,8 @@ class ReservaController
                 'id_mesa' => $id_mesa,
                 'fecha_reserva' => $fecha_reserva,
                 'hora_inicio' => $hora_inicio,
-                'hora_fin' => $hora_fin
+                'hora_fin' => $hora_fin,
+                'comensales' => $comensales
             ], $id_usuario);
 
             $pdo->commit();
@@ -155,17 +191,95 @@ class ReservaController
                     'fecha_reserva' => $fecha_reserva,
                     'hora_inicio' => $hora_inicio,
                     'hora_fin' => $hora_fin,
-                    'estado' => 'pendiente',
+                    'comensales' => $comensales,
+                    'estado' => 'confirmada',
                 ],
-                'mensaje' => 'Reserva creada correctamente.',
+                'mensaje' => '¡Reserva confirmada! Te esperamos en el restaurante.',
             ];
         } catch (\InvalidArgumentException $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             return $this->error($e->getMessage(), 400);
+        } catch (\RuntimeException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return $this->error($e->getMessage(), 409);
         } catch (\PDOException $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             return $this->error('Error al crear la reserva. Intente nuevamente.', 500);
         }
+    }
+
+    /**
+     * Busca una mesa activa, con capacidad suficiente y sin reservas que se
+     * solapen con el rango horario indicado.
+     */
+    private function buscarMesaLibre(\PDO $pdo, string $fecha, string $hora_inicio, string $hora_fin, int $comensales): ?int
+    {
+        $stmt = $pdo->prepare('
+            SELECT m.id_mesa
+            FROM mesas m
+            WHERE m.activo = 1
+              AND m.capacidad >= :comensales
+              AND NOT EXISTS (
+                  SELECT 1 FROM reservas r
+                  WHERE r.id_mesa = m.id_mesa
+                    AND r.fecha_reserva = :fecha
+                    AND r.estado IN (\'pendiente\', \'confirmada\')
+                    AND r.hora_inicio < :hora_fin
+                    AND r.hora_fin > :hora_inicio
+              )
+            ORDER BY m.capacidad ASC, m.id_mesa ASC
+            LIMIT 1
+        ');
+        $stmt->execute([
+            ':comensales' => $comensales,
+            ':fecha' => $fecha,
+            ':hora_inicio' => $hora_inicio,
+            ':hora_fin' => $hora_fin,
+        ]);
+        $fila = $stmt->fetch();
+
+        return $fila === false ? null : (int) $fila['id_mesa'];
+    }
+
+    /**
+     * Devuelve el id de un usuario existente con ese email o crea uno nuevo
+     * (rol cliente) para poder asociarle la reserva.
+     */
+    private function obtenerOCrearUsuario(\PDO $pdo, string $nombre, string $email, string $telefono): int
+    {
+        $stmt = $pdo->prepare('SELECT id_usuario FROM usuarios WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $existente = $stmt->fetch();
+        if ($existente !== false) {
+            $id = (int) $existente['id_usuario'];
+            if ($telefono !== '') {
+                $stmt = $pdo->prepare('UPDATE usuarios SET telefono = ? WHERE id_usuario = ?');
+                $stmt->execute([$telefono, $id]);
+            }
+            return $id;
+        }
+
+        // Contrasena aleatoria: el usuario no inicia sesion desde la web publica.
+        $contrasena = bin2hex(random_bytes(12)) . 'Aa1';
+
+        $stmt = $pdo->prepare('
+            INSERT INTO usuarios (nombre, email, contrasena_hash, telefono, id_rol, activo, fecha_creacion)
+            VALUES (:nombre, :email, :hash, :tel, 1, 1, CURRENT_TIMESTAMP)
+        ');
+        $stmt->execute([
+            ':nombre' => $nombre !== '' ? $nombre : 'Cliente',
+            ':email' => $email,
+            ':hash' => password_hash($contrasena, PASSWORD_BCRYPT),
+            ':tel' => $telefono !== '' ? $telefono : null,
+        ]);
+
+        return (int) $pdo->lastInsertId();
     }
 
     private function misReservas(): array
@@ -323,6 +437,10 @@ class ReservaController
             'hora_inicio' => $reserva->hora_inicio,
             'hora_fin' => $reserva->hora_fin,
             'estado' => $reserva->estado,
+            'comensales' => $reserva->comensales ?? 1,
+            'telefono' => $reserva->telefono ?? null,
+            'ocasion' => $reserva->ocasion ?? null,
+            'observaciones' => $reserva->observaciones ?? null,
             'fecha_creacion' => $reserva->fecha_creacion,
             'fecha_actualizacion' => $reserva->fecha_actualizacion,
         ];

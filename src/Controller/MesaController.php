@@ -37,11 +37,10 @@ class MesaController
     {
         $id_area = isset($query_params['id_area']) ? (int) $query_params['id_area'] : 0;
 
-        if ($id_area <= 0) {
-            return $this->error('Se requiere el parámetro id_area.', 400);
-        }
-
-        $mesas = $this->servicioDeMesas->listarMesas($id_area);
+        // id_area es opcional: si no se envia, se listan todas las mesas activas.
+        $mesas = $id_area > 0
+            ? $this->servicioDeMesas->listarMesas($id_area)
+            : $this->servicioDeMesas->listarTodasMesas();
 
         $datos = [];
         foreach ($mesas as $mesa) {

@@ -1,434 +1,436 @@
 # Diagrama de Clases — Sistema de Gestión de Restaurante "Green en la Casa Blanca"
 
-*Generado con Mermaid (sintaxis .md). Equivalente al entregable "Diagrama_Clases_Panol.drawio" de referencia, adaptado al proyecto del restaurante.*
+*Entregable 12 — Documento de texto equivalente (Mermaid) del diagrama `Diagrama_Clases_Green.drawio`, siguiendo el modelo de referencia `entregables/referencia/Diagrama_Clases_Panol.drawio`.*
+
+> **Esquema simplificado (migración 025).** El diagrama de clases refleja las **23 entidades**
+> reales de la base de datos más la capa de servicios, y ya no incluye las clases de las
+> funcionalidades eliminadas (`RecuperarContrasena`, `CierreCaja`, `RespaldoBD`, `Notificacion`,
+> `CalificacionPlato`, `PreferenciaCliente`, `PlatoFavorito`, `PuntosFidelidad`,
+> `ReservaRecurrente`, `Sucursal`, `Permiso`, `RolPermiso`, `CuponDescuento` y `UsoCuponCliente`).
+
+## Diagrama en formato `.drawio`
+
+Archivo editable: **`Diagrama_Clases_Green.drawio`** (draw.io / diagrams.net).
+
+Convenciones UML empleadas:
+
+| Relación | Símbolo draw.io | Significado |
+|---|---|---|
+| Asociación | Línea continua | Relación simple entre clases. |
+| Composición | Rombo relleno (◆) | La parte depende del todo (ciclo de vida asociado). |
+| Agregación | Rombo hueco (◇) | Relación débil entre clases. |
+| Dependencia | Línea punteada con flecha abierta | Uso puntual de una clase. |
+| Atributos | Compartimento bajo el nombre de la clase | `-` privado, `+` público. |
+| Métodos | Compartimento inferior | `+` público, `-` privado. |
+
+## Diagrama en sintaxis Mermaid
 
 ```mermaid
 classDiagram
-    %% ============================================================
-    %% CLASES CORE
-    %% ============================================================
-    class Rol {
-        <<enumeration>>
-        int id_rol PK
-        string nombre UK
-        string descripcion
-        datetime fecha_creacion
-    }
-    class Usuario {
-        int id_usuario PK
-        string nombre
-        string email UK
-        string contrasena_hash
-        int id_rol FK
-        bool activo
-        int id_sucursal FK NULL
-        string avatar NULL
-        string telefono NULL
-        date fecha_nacimiento NULL
-        datetime fecha_creacion
-        datetime fecha_actualizacion
-        +login(email, password)
-        +logout()
-        +verPerfil()
-        +editarPerfil()
-    }
+    direction LR
+
     class Area {
-        int id_area PK
-        string nombre
-        string descripcion
-        bool activo
-        datetime fecha_creacion
+        int id_area
+        String nombre
+        String descripcion
+        boolean activo
+        DateTime fecha_creacion
     }
-    class Mesa {
-        int id_mesa PK
-        int id_area FK
-        string numero_mesa UK(area)
-        int capacidad
-        bool activo
-        datetime fecha_creacion
-    }
-    class Producto {
-        int id_producto PK
-        string nombre
-        string categoria
-        decimal precio
-        bool activo
-        datetime fecha_creacion
-    }
-    class StockProducto {
-        int id_stock PK
-        int id_producto FK UK
-        int stock_actual
-        int limite_venta
-        bool activo
-        datetime fecha_actualizacion
-    }
-    class Pedido {
-        int id_pedido PK
-        int id_mesa FK NULL
-        int id_mesero FK NULL
-        int id_usuario FK NULL
-        int id_zona_delivery FK NULL
-        int id_repartidor FK NULL
-        int id_sucursal FK NULL
-        datetime fecha_pedido
-        string estado
-        string estado_entrega NULL
-        decimal total
-        string tipo_pedido
-        decimal seña
-        string estado_seña
-        string direccion_domicilio NULL
-        decimal costo_envio NULL
-        string observaciones NULL
-        datetime fecha_creacion
-        datetime fecha_actualizacion
-    }
-    class DetallePedido {
-        int id_detalle PK
-        int id_pedido FK
-        int id_producto FK
-        int cantidad
-        decimal precio_unitario
-    }
-    class Reserva {
-        int id_reserva PK
-        int id_mesa FK
-        int id_usuario FK
-        int id_sucursal FK NULL
-        date fecha_reserva
-        time hora_inicio
-        time hora_fin
-        string estado
-        string observaciones NULL
-        datetime fecha_creacion
-        datetime fecha_actualizacion
-    }
-    class DisponibilidadMesa {
-        int id_disponibilidad PK
-        date fecha UK(hora_inicio)
-        time hora_inicio
-        time hora_fin
-        int mesas_disponibles
-        bool activo
-        int creado_por FK NULL
-        datetime fecha_creacion
-    }
-    class HorarioFuncionamiento {
-        int id_horario PK
-        int id_area FK
-        tinyint dia_semana
-        time hora_apertura
-        time hora_cierre
-        bool activo
-        datetime fecha_creacion
-    }
+
     class BloqueMesa {
-        int id_bloque PK
-        int id_mesa FK
-        datetime fecha_inicio
-        datetime fecha_fin
-        string motivo NULL
-        int creado_por FK NULL
-        datetime fecha_creacion
-    }
-    class MenuSemanal {
-        int id_menu_semanal PK
-        date semana_inicio UK
-        date semana_fin
-        bool activo
-        int creado_por FK NULL
-        datetime fecha_creacion
-    }
-    class MenuSemanalItem {
-        int id_item PK
-        int id_menu_semanal FK
-        int id_producto FK
-        bool disponible
-        decimal precio_semanal NULL
-    }
-    class HistorialMovimiento {
-        int id_historial PK
-        string tabla_afectada
-        int id_registro NULL
-        string accion
-        json detalles NULL
-        int id_usuario FK NULL
-        datetime fecha_movimiento
-        string direccion_ip NULL
+        int id_bloque
+        int id_mesa
+        DateTime fecha_inicio
+        DateTime fecha_fin
+        String motivo
+        int creado_por
+        DateTime fecha_creacion
+        +crear(idMesa, inicio, fin, motivo): int
+        +listarPorMesa(idMesa): List
+        +eliminar(idBloque): boolean
     }
 
-    %% ============================================================
-    %% CLASES EXTENDIDAS (RF-68 a RF-105 / migraciones 008-013)
-    %% ============================================================
+    class Categoria {
+        int id_categoria
+        String nombre
+        boolean activo
+    }
+
     class ConfiguracionSistema {
-        int id_config PK
-        string clave UK
-        text valor
-        string descripcion
-        string tipo
-        datetime fecha_actualizacion
+        String clave
+        String valor
+        String descripcion
+        DateTime fecha_actualizacion
+        int actualizado_por
+        +obtener(clave): String
+        +guardar(clave, valor): void
+        +listar(): List
     }
+
     class ContadorPedidosSinReserva {
-        int id_contador PK
-        string periodo UK
-        date fecha_inicio
-        date fecha_fin
-        int cantidad
-        int limite_maximo
-        bool bloqueado
-        datetime fecha_actualizacion
+        Date fecha
+        enum tipo_pedido
+        int cantidad_pedidos
+        DateTime fecha_actualizacion
+        +incrementar(fecha, tipo): int
+        +obtenerLimite(clave): int
     }
-    class CuponDescuento {
-        int id_cupon PK
-        string codigo UK
-        string tipo_descuento
-        decimal valor_descuento
-        decimal pedido_minimo
-        date fecha_inicio
-        date fecha_fin
-        int usos_maximos_totales
-        int usos_maximos_por_cliente
-        int usos_actuales
-        bool activo
-        int creado_por FK
-        datetime fecha_creacion
+
+    class DetallePedido {
+        int id_detalle
+        int id_pedido
+        int id_producto
+        int(11) cantidad
+        Decimal precio_unitario
     }
-    class UsoCuponCliente {
-        int id_uso PK
-        int id_cupon FK
-        int id_usuario FK
-        int id_pedido FK NULL
-        datetime fecha_uso
+
+    class DisponibilidadMesa {
+        int id_disponibilidad
+        Date fecha
+        Time hora_inicio
+        Time hora_fin
+        int(11) mesas_disponibles
+        boolean activo
+        int creado_por
+        DateTime fecha_creacion
+        +guardar(fecha, horaInicio, horaFin, mesas): void
+        +generarLote(rangoFechas, dias, horario, mesas): int
+        +listarPorFecha(fecha): List
+        +eliminarRango(fechaInicio, fechaFin): int
     }
-    class CalificacionPlato {
-        int id_calificacion PK
-        int id_usuario FK
-        int id_producto FK
-        int id_pedido FK
-        tinyint puntuacion
-        text comentario NULL
-        datetime fecha_creacion
+
+    class HistorialMovimiento {
+        int id_historial
+        String tabla_afectada
+        int id_registro
+        String accion
+        String detalles
+        int id_usuario
+        DateTime fecha_movimiento
+        String direccion_ip
+        +registrar(tabla, idRegistro, accion, detalles): void
     }
-    class PreferenciaCliente {
-        int id_preferencia PK
-        int id_usuario FK UK
-        bool vegetariano
-        bool vegano
-        bool sin_gluten
-        bool sin_lactosa
-        text alergenos NULL
-        text platos_favoritos NULL
-        text observaciones NULL
-        datetime fecha_actualizacion
-    }
-    class ReservaRecurrente {
-        int id_reserva_recurrente PK
-        int id_usuario FK
-        int id_mesa FK NULL
+
+    class HorarioFuncionamiento {
+        int id_horario
+        int id_area
         tinyint dia_semana
-        time hora_inicio
-        time hora_fin
-        int cantidad_personas
-        date fecha_inicio
-        date fecha_fin NULL
-        bool activa
-        datetime fecha_creacion
+        Time hora_apertura
+        Time hora_cierre
+        boolean activo
+        DateTime fecha_creacion
     }
-    class PuntosFidelidad {
-        int id_puntos PK
-        int id_usuario FK UK
-        int puntos_actuales
-        int puntos_totales_ganados
-        int puntos_totales_canjeados
-        datetime fecha_actualizacion
+
+    class IntentoLogin {
+        String email
+        boolean exitoso
+        DateTime fecha_intento
+        String direccion_ip
+        +registrar(email, exitoso): void
+        +contarFallosRecientes(email): int
     }
-    class ZonaDelivery {
-        int id_zona_delivery PK
-        string nombre
-        text descripcion NULL
-        decimal costo_envio
-        decimal radio_km NULL
-        int tiempo_estimado_min
-        bool activa
-        datetime fecha_creacion
+
+    class MenuSemanal {
+        int id_menu_semanal
+        Date semana_inicio
+        Date semana_fin
+        boolean activo
+        int creado_por
+        DateTime fecha_creacion
+        +listar(): List
+        +guardar(datos): void
     }
+
+    class MenuSemanalItem {
+        int id_item
+        int id_menu_semanal
+        int id_producto
+        boolean disponible
+        Decimal precio_semanal
+    }
+
+    class Mesa {
+        int id_mesa
+        int id_area
+        String numero_mesa
+        int(11) capacidad
+        boolean activo
+        DateTime fecha_creacion
+        +obtenerPorId(idMesa): Mesa
+    }
+
+    class MigracionAplicada {
+        String version
+        DateTime fecha_aplicacion
+    }
+
+    class Pedido {
+        int id_pedido
+        int id_mesa
+        int id_mesero
+        int id_usuario
+        DateTime fecha_pedido
+        String estado
+        Decimal total
+        DateTime fecha_actualizacion
+        enum tipo_pedido
+        Decimal senia
+        enum estado_senia
+        Decimal saldo_pendiente
+        String direccion_domicilio
+        String numero_pedido
+        int id_zona_delivery
+        Decimal costo_envio
+        int id_repartidor
+        enum estado_entrega
+        DateTime fecha_pedido_hora
+        String observaciones
+        DateTime fecha_creacion
+        +registrar(detalles, tipo, direccion): Pedido
+        +cambiarEstado(idPedido, estado): void
+        +actualizarSenia(idPedido, estado): void
+        +listarPropios(): List
+        +listarTodos(): List
+    }
+
+    class Producto {
+        int id_producto
+        String nombre
+        int id_categoria
+        Decimal precio
+        String imagen_url
+        String imagen_public_id
+        boolean activo
+        DateTime fecha_creacion
+        +listarParaCarta(categoria, busqueda): List
+        +crear(datos): Producto
+        +editar(id, datos): Producto
+        +activar(id, activar): boolean
+    }
+
+    class RateLimitState {
+        String clave
+        Decimal tokens
+        DateTime ultima_actualizacion
+        +consumir(clave, coste): boolean
+    }
+
     class Repartidor {
-        int id_repartidor PK
-        string nombre
-        string telefono NULL
-        string vehiculo NULL
-        string placa NULL
-        int id_zona_delivery FK NULL
-        string estado
-        datetime fecha_creacion
-    }
-    class TokenRecuperacion {
-        int id_token PK
-        int id_usuario FK
-        string token UK
-        datetime expira_en
-        bool usado
-        datetime fecha_creacion
-    }
-    class PlatoFavorito {
-        int id_favorito PK
-        int id_usuario FK
-        int id_producto FK
-        datetime fecha_agregado
-    }
-    class Notificacion {
-        int id_notificacion PK
-        int id_usuario FK
-        string tipo
-        string canal
-        string asunto
-        text mensaje NULL
-        string estado
-        datetime fecha_creacion
-        datetime fecha_envio NULL
-        datetime fecha_lectura NULL
-    }
-    class CierreCaja {
-        int id_cierre PK
-        date fecha UK
-        int apertura_por FK NULL
-        int cierre_por FK NULL
-        decimal monto_apertura
-        decimal monto_cierre
-        decimal ventas_totales
-        int pedidos_count
-        decimal efectivo
-        decimal tarjeta
-        decimal transferencia
-        decimal diferencia
-        string estado
-        datetime fecha_apertura NULL
-        datetime fecha_cierre NULL
-        text observaciones NULL
-    }
-    class Sucursal {
-        int id_sucursal PK
-        string nombre
-        string direccion NULL
-        string telefono NULL
-        string email NULL
-        bool activa
-        datetime fecha_creacion
-    }
-    class RespaldoBD {
-        int id_respaldo PK
-        string nombre_archivo
-        string tipo
-        int tamano_bytes NULL
-        datetime fecha_creacion
-        int creado_por FK NULL
-        string estado
-    }
-    class Permiso {
-        int id_permiso PK
-        string nombre
-        string codigo UK
-        string modulo
-        string descripcion NULL
-    }
-    class RolPermiso {
-        int id_rol FK
-        int id_permiso FK
+        int id_repartidor
+        int id_usuario
+        String nombre
+        String telefono
+        boolean activo
+        DateTime fecha_creacion
+        +crear(datos): int
+        +listar(): List
     }
 
-    %% ============================================================
-    %% RELACIONES CORE
-    %% ============================================================
-    Rol ||--o{ Usuario : posee
-    Usuario ||--|| Reserva : realiza
-    Usuario ||--|| Pedido : realiza
-    Usuario ||--o{ DisponibilidadMesa : crea
-    Usuario ||--o{ BloqueMesa : crea
-    Usuario ||--o{ MenuSemanal : publica
-    Usuario ||--o{ HistorialMovimiento : ejecuta
+    class Reserva {
+        int id_reserva
+        int id_mesa
+        int id_usuario
+        int comensales
+        String telefono
+        String ocasion
+        Date fecha_reserva
+        Time hora_inicio
+        Time hora_fin
+        String estado
+        DateTime fecha_creacion
+        DateTime fecha_actualizacion
+        String observaciones
+        +crearReserva(mesa, usuario, fecha, horaInicio, horaFin): int
+        +cancelar(idReserva): boolean
+        +cambiarEstado(idReserva, estado): boolean
+        +listarPorUsuario(idUsuario): List
+        +listarTodas(): List
+    }
 
-    Area ||--|| Mesa : contiene
-    Mesa ||--o{ Reserva : soporta
-    Mesa ||--o{ Pedido : aloja_opcional
-    Mesa ||--o{ BloqueMesa : sufre
+    class Rol {
+        int id_rol
+        String nombre
+        String descripcion
+        DateTime fecha_creacion
+    }
 
-    Producto ||--|| StockProducto : tiene
-    Producto ||--o{ DetallePedido : incluido_en
-    Producto ||--o{ MenuSemanalItem : forma_parte_de
+    class StockProducto {
+        int id_stock
+        int id_producto
+        int(11) stock_actual
+        int(11) limite_venta
+        boolean activo
+        DateTime fecha_actualizacion
+        +guardarStock(datos): void
+        +listar(): List
+        +listarStockBajo(umbral): List
+    }
 
-    Pedido ||--|| DetallePedido : contiene
-    Reserva ||--|| Mesa : usa
+    class Usuario {
+        int id_usuario
+        String nombre
+        String email
+        String telefono
+        String contrasena_hash
+        int id_rol
+        boolean activo
+        DateTime fecha_creacion
+        DateTime fecha_actualizacion
+        +autenticar(email, contrasena, ip): Usuario
+        +registrar(nombre, email, contrasena, rol): Usuario
+        +iniciarSesion(datos): void
+        +cerrarSesion(): void
+        +estaAutenticado(): boolean
+        +esAdministrador(): boolean
+    }
 
-    MenuSemanal ||--|| MenuSemanalItem : contiene
+    class ZonaDelivery {
+        int id_zona
+        String nombre
+        Decimal costo_envio
+        int tiempo_estimado_minutos
+        String cobertura
+        boolean activa
+        DateTime fecha_creacion
+        +crear(datos): int
+        +actualizar(idZona, campos): boolean
+        +listar(): List
+    }
 
-    %% ============================================================
-    %% RELACIONES EXTENDIDAS
-    %% ============================================================
-    Usuario ||--o{ CuponDescuento : crea
-    Usuario ||--o{ UsoCuponCliente : usa
-    Usuario ||--o{ CalificacionPlato : califica
-    Usuario ||--|| PreferenciaCliente : tiene
-    Usuario ||--o{ ReservaRecurrente : programa
-    Usuario ||--|| PuntosFidelidad : acumula
-    Usuario ||--o{ Repartidor : gestiona
-    Usuario ||--o{ ZonaDelivery : gestiona
-    Usuario ||--o{ ConfiguracionSistema : configura
-    Usuario ||--o{ TokenRecuperacion : solicita
-    Usuario ||--o{ PlatoFavorito : marca
-    Usuario ||--o{ Notificacion : recibe
-    Usuario ||--o{ CierreCaja : abre_cierra
-    Usuario ||--o{ RespaldoBD : genera
+    %% ================= Capa de servicios =================
+    class ServicioDeAutenticacion {
+        -usuarioDao: UsuarioDao
+        -intentosDao: IntentosLoginDao
+        +autenticar(email, contrasena, ip): Usuario
+        +registrar(nombre, email, contrasena, rol): Usuario
+        +iniciarSesion(datos): void
+        +cerrarSesion(): void
+        +estaAutenticado(): boolean
+        +esAdministrador(): boolean
+    }
 
-    Producto ||--o{ CalificacionPlato : recibe
-    Producto ||--o{ PlatoFavorito : favorito_de
+    class ServicioDeReservas {
+        -reservaDao: ReservaDao
+        -validador: ValidadorDeReserva
+        +crearReserva(mesa, usuario, fecha, horaInicio, horaFin): int
+        +obtenerReserva(id): Reserva
+        +listarReservasUsuario(id): List
+        +listarTodasLasReservas(): List
+        +cancelarReserva(id, usuario): boolean
+        +cambiarEstadoReserva(id, estado): boolean
+    }
 
-    Pedido ||--o{ UsoCuponCliente : aplica
-    Pedido ||--o| Repartidor : asigna
-    Pedido ||--o| ZonaDelivery : zona
-    Pedido ||--o| Sucursal : pertenece
+    class ValidadorDeReserva {
+        -reservaDao: ReservaDao
+        -mesaDao: MesaDao
+        +validarCreacion(mesa, usuario, fecha, horaInicio, horaFin): void
+        +validarCancelacion(reserva): void
+        -validarFormatoFecha(fecha): void
+        -validarFormatoHora(hora): void
+        -validarNoPasado(fecha, hora): void
+        -validarAnticipacionMaxima(fecha): void
+        -validarHorarioFuncionamiento(mesa, fecha, horaInicio, horaFin): void
+        -validarSinSolapamiento(mesa, fecha, horaInicio, horaFin): void
+    }
 
-    Reserva ||--o| Sucursal : pertenece
+    class ServicioDeProductos {
+        -productoDao: ProductoDao
+        -cloudinary: ServicioDeCloudinary
+        +listarParaCarta(categoria, busqueda): List
+        +crear(datos): Producto
+        +editar(id, datos): Producto
+        +activar(id, activar): boolean
+    }
 
-    ZonaDelivery ||--o{ Repartidor : asigna
+    class ServicioDeMesas {
+        -areaDao: AreaDao
+        -mesaDao: MesaDao
+        +listarAreas(): List
+        +obtenerArea(id): Area
+        +listarMesas(idArea): List
+        +listarTodasMesas(): List
+        +obtenerMesa(id): Mesa
+    }
 
-    Rol ||--o{ RolPermiso : tiene
-    Permiso ||--o{ RolPermiso : asignado_a
+    class ServicioDeDisponibilidad {
+        -disponibilidadDao: DisponibilidadMesaDao
+        +listarDisponibilidad(fecha): List
+        +generarLote(rango, dias, horario, mesas): int
+        +eliminarRango(inicio, fin): int
+    }
 
-    Sucursal ||--o{ Usuario : tiene
-    Sucursal ||--o{ Pedido : tiene
-    Sucursal ||--o{ Reserva : tiene
+    class ServicioDePedidos {
+        -pedidoDao: PedidoDao
+        -productoDao: ProductoDao
+        -mesaDao: MesaDao
+        +registrar(datos, usuario): Pedido
+        +cambiarEstado(id, estado): boolean
+        +actualizarSenia(id, estado): boolean
+        +listarPorUsuario(id): List
+    }
+
+    class ServicioDeBloques {
+        -bloqueDao: BloqueMesaDao
+        +listarPorMesa(idMesa): List
+        +crearBloque(datos): int
+        +desactivarBloque(id): boolean
+    }
+
+    %% ================= Relaciones =================
+    Rol "1" -- "*" Usuario : posee
+    Area "1" *-- "*" Mesa : contiene
+    Area "1" *-- "*" HorarioFuncionamiento : opera
+    Area "1" -- "*" BloqueMesa : gestiona
+    Mesa "1" *-- "*" DisponibilidadMesa : genera_cupos
+    Mesa "1" -- "*" Reserva : recibe
+    Mesa "1" *-- "*" BloqueMesa : sufre
+    Mesa "0..1" -- "*" Pedido : alberga
+    Usuario "0..1" -- "*" DisponibilidadMesa : abre
+    Usuario "0..1" -- "*" BloqueMesa : registra
+    Usuario "1" -- "*" Reserva : efectua
+    Usuario "0..1" -- "*" Pedido : realiza
+    Usuario "0..1" -- "*" MenuSemanal : publica
+    Usuario "0..1" -- "*" HistorialMovimiento : audita
+    Usuario "0..1" -- "*" ConfiguracionSistema : modifica
+    Usuario "0..1" -- "1" Repartidor : es
+    Categoria "1" o-- "*" Producto : agrupa
+    Producto "1" *-- "1" StockProducto : inventaria
+    Producto "1" -- "*" DetallePedido : vendido_en
+    Producto "1" -- "*" MenuSemanalItem : incluido_en
+    Pedido "1" *-- "1..*" DetallePedido : contiene
+    Pedido "0..*" -- "0..1" ZonaDelivery : entrega_en
+    ZonaDelivery "1" o-- "*" Repartidor : asigna
+    MenuSemanal "1" *-- "*" MenuSemanalItem : contiene
+    Usuario "1" -- "*" IntentoLogin : genera
+    ServicioDeAutenticacion ..> Usuario : autentica
+    ServicioDeReservas ..> Reserva : gestiona
+    ServicioDeReservas ..> ValidadorDeReserva : valida_con
+    ValidadorDeReserva ..> Reserva : valida
+    ServicioDeProductos ..> Producto : administra
+    ServicioDeMesas ..> Mesa : consulta
+    ServicioDeDisponibilidad ..> DisponibilidadMesa : genera_cupos
+    ServicioDePedidos ..> Pedido : registra
+    ServicioDeBloques ..> BloqueMesa : gestiona
 ```
 
 ## Descripción de las clases
 
-| Clase | Responsabilidad |
+Las clases de entidad corresponden una a una con las tablas del DER (`10_diagrama_der.md`).
+
+## Capa de servicios
+
+| Servicio | Responsabilidad |
 |---|---|
-| `Rol` | Define los roles del sistema (cliente, encargado, administrador). |
-| `Usuario` | Datos de acceso y autenticación de cada usuario con su rol asignado. |
-| `Area` | Salones o áreas físicas del restaurante. |
-| `Mesa` | Mesas físicas pertenecientes a un área. |
-| `Producto` | Catálogo de productos vendibles (platos y bebidas). |
-| `StockProducto` | Inventario y límite de venta por producto. |
-| `Pedido` | Pedido de productos con estado, seña, tipo de entrega y totales. |
-| `DetallePedido` | Líneas de detalle (ítems) de cada pedido. |
-| `Reserva` | Reserva de mesa realizada por un cliente. |
-| `DisponibilidadMesa` | Disponibilidad de mesas abierta por el encargado para reservas. |
-| `HorarioFuncionamiento` | Horarios de apertura y cierre por área y día. |
-| `BloqueMesa` | Bloqueo de mesas por mantenimiento o eventos. |
-| `MenuSemanal` | Menú semanal publicado por el encargado. |
-| `MenuSemanalItem` | Platos disponibles y precio de cada semana. |
-| `HistorialMovimiento` | Auditoría de movimientos del sistema (quién, qué, cuándo). |
-
-## Clases extendidas (funcionalidades RF-68 a RF-105)
-
-Soportan cupones, calificaciones, preferencias, fidelidad, delivery, repartidores, recuperación de contraseña, cierre de caja, sucursales, respaldos y permisos granulares por rol, tal como se definen en las migraciones 008 a 013 y en los casos de uso extendidos (CU20–CU33).
+| `ServicioDeAutenticacion` | Verificación de credenciales, emisión de sesión y control de intentos fallidos. |
+| `ServicioDeReservas` | Orquestación de la reserva: valida, descuenta cupo y persiste. |
+| `ValidadorDeReserva` | Reglas de negocio: formato de fecha y hora, anticipación máxima, horario de funcionamiento y solapamiento. |
+| `ServicioDeProductos` | Alta, edición y activación de platos, con integración de imágenes. |
+| `ServicioDeMesas` | Consulta de áreas y mesas, incluida la lista global sin filtro de área. |
+| `ServicioDeDisponibilidad` | Generación masiva y eliminación de cupos por rango de fechas. |
+| `ServicioDePedidos` | Registro del pedido, cálculo de seña y saldo, y control de stock. |
+| `ServicioDeBloques` | Alta, listado y desactivación de bloqueos de mesa. |
 
 ## Trazabilidad
 
-- Las clases `Rol`, `Usuario`, `Area`, `Mesa`, `Producto`, `StockProducto`, `Pedido`, `DetallePedido`, `Reserva`, `DisponibilidadMesa`, `HorarioFuncionamiento`, `BloqueMesa`, `MenuSemanal`, `MenuSemanalItem` y `HistorialMovimiento` corresponden a las entidades del DER (`10_diagrama_der.md`).
-- Las clases extendidas se derivan de los casos de uso extendidos CU20–CU33 (`09_diagrama_caso_uso.md`) y de los requerimientos RF-68 a RF-105.
-
---- 
-
-**Archivo creado:** `entregables/12_diagrama_clases.md` como equivalente `.md` (Mermaid) del entregable de referencia `Diagrama_Clases_Panol.drawio`.
+- Las clases `Rol`, `Usuario`, `Area`, `Mesa`, `HorarioFuncionamiento`, `DisponibilidadMesa`, `BloqueMesa`, `Reserva`, `Categoria`, `Producto`, `StockProducto`, `Pedido`, `DetallePedido`, `MenuSemanal`, `MenuSemanalItem`, `ZonaDelivery`, `Repartidor`, `ConfiguracionSistema`, `ContadorPedidosSinReserva`, `HistorialMovimiento`, `IntentoLogin`, `RateLimitState` y `MigracionAplicada` corresponden uno a uno con las entidades del DER (`10_diagrama_der.md`) y con las tablas documentadas en `13_diccionario_datos.md`.
+- Los casos de uso CU1 a CU34 (`09_diagrama_caso_uso.md`) se corresponden con los métodos de los servicios y controladores.

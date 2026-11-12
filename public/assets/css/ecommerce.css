@@ -1,0 +1,580 @@
+/* =============================================================================
+   CARRITO / PEDIDOS - Layout de dos columnas con scroll propio
+   ============================================================================= */
+.pedido-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 1.5rem;
+  align-items: start;
+  max-width: 1200px;
+}
+
+.pedido-col-izq {
+  min-width: 0;
+}
+
+/* Columna derecha: fija al hacer scroll, con su propio scroll interno */
+.pedido-col-der {
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+}
+
+.pedido-card-lista {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
+}
+
+/* Lista con scroll propio: no scrollea toda la pagina */
+.lista-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(100vh - 15rem);
+  min-height: 12rem;
+  padding-right: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.lista-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lista-scroll::-webkit-scrollbar-track {
+  background: rgba(27, 67, 50, 0.06);
+  border-radius: 4px;
+}
+
+.lista-scroll::-webkit-scrollbar-thumb {
+  background: rgba(27, 67, 50, 0.28);
+  border-radius: 4px;
+}
+
+.lista-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(27, 67, 50, 0.45);
+}
+
+/* Filtros compactos dentro de la columna */
+.filtros-categoria-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  justify-content: flex-start;
+}
+
+.filtros-categoria-compact .filtro-btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+/* Los items de la lista lateral se compactan un poco */
+.lista-scroll .pedido-item {
+  padding: 0.75rem 0.25rem;
+  gap: 0.7rem;
+}
+
+.lista-scroll .pedido-item img {
+  width: 56px;
+  height: 56px;
+}
+
+.lista-scroll .pedido-item-info h4 {
+  font-size: 0.9rem;
+}
+
+.lista-scroll .pedido-item-info p {
+  font-size: 0.78rem;
+}
+
+.lista-scroll .pedido-item-precio {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.lista-scroll .plato-stock {
+  font-size: 0.68rem;
+}
+
+@media (max-width: 900px) {
+  .pedido-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pedido-col-der {
+    position: static;
+    top: auto;
+  }
+
+  .pedido-card-lista {
+    max-height: none;
+  }
+
+  .lista-scroll {
+    max-height: 26rem;
+  }
+}
+
+/* =============================================================================
+   E-COMMERCE: Carrito, tarjetas de producto, modal de cantidad y stock
+   ============================================================================= */
+
+/* --- Hint bajo los campos (disponibilidad de reservas) --- */
+.hint-campo {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.3;
+}
+
+/* --- Botón de carrito en la navegación --- */
+.btn-carrito {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-carrito:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.carrito-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.btn-carrito:hover .carrito-badge {
+  background: var(--color-white);
+}
+
+.carrito-badge:empty,
+.carrito-badge[data-vacio="1"] {
+  display: none;
+}
+
+/* --- Tarjetas de producto: tamaño uniforme y botón siempre en el mismo sitio --- */
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.plato-imagen {
+  height: 190px;
+  width: 100%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.plato-contenido {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.1rem 1.25rem 0.75rem;
+  min-height: 132px;
+}
+
+.menu-card h3 {
+  /* Altura fija: los titulos largos no descuadran las tarjetas */
+  min-height: 2.4em;
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.menu-card p {
+  min-height: 1.3em;
+}
+
+.menu-precio {
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+/* --- Pie de la tarjeta: stock + botón, siempre alineados --- */
+.plato-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1.1rem;
+  border-top: 1px solid rgba(27, 67, 50, 0.08);
+  margin-top: auto;
+}
+
+/* --- Indicador de stock --- */
+.plato-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  white-space: nowrap;
+}
+
+.plato-stock::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2D6A4F;
+  flex-shrink: 0;
+}
+
+.plato-stock[data-nivel="bajo"] {
+  color: #b8860b;
+}
+
+.plato-stock[data-nivel="bajo"]::before {
+  background: #d4a017;
+}
+
+.plato-stock[data-nivel="agotado"] {
+  color: #a83636;
+}
+
+.plato-stock[data-nivel="agotado"]::before {
+  background: #a83636;
+}
+
+/* --- Botón Pedir: más pequeño --- */
+.btn-pedido-carta {
+  padding: 0.42rem 0.85rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.4px;
+  margin-top: 0;
+  width: auto;
+  flex-shrink: 0;
+  min-width: 78px;
+}
+
+/* --- Modal de cantidad --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 33, 25, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.modal-overlay.abierta {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  width: min(420px, 100%);
+  overflow: hidden;
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.22s ease;
+}
+
+.modal-overlay.abierta .modal {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.1);
+  background: linear-gradient(180deg, rgba(184, 134, 11, 0.08), transparent);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.modal-cerrar {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.modal-cerrar:hover {
+  color: var(--color-primary);
+}
+
+.modal-body {
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.modal-producto {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.modal-producto img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.modal-producto-info h4 {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-heading);
+  font-size: 0.98rem;
+  color: var(--color-primary);
+}
+
+.modal-producto-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.modal-producto-info .precio {
+  font-weight: 700;
+  color: var(--color-secondary);
+  font-size: 0.95rem;
+}
+
+.modal-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.modal-cantidad label {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+}
+
+.cantidad-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cantidad-control button {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: var(--transition);
+}
+
+.cantidad-control button:hover:not(:disabled) {
+  background: var(--color-secondary);
+}
+
+.cantidad-control button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cantidad-control span {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.modal-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(27, 67, 50, 0.1);
+  font-weight: 700;
+}
+
+.modal-total .valor {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--color-secondary);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0 1.4rem 1.4rem;
+}
+
+.modal-footer button {
+  flex: 1;
+  padding: 0.8rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+
+.btn-modal-ok {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.btn-modal-ok:hover:not(:disabled) {
+  background: #d4a017;
+}
+
+.btn-modal-cancel {
+  background: transparent;
+  border: 1px solid rgba(27, 67, 50, 0.2);
+  color: var(--color-text-muted);
+}
+
+.btn-modal-cancel:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.modal-footer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+   CARTES DE PRODUCTO - Espaciado interior del bloque de carta
+   Las tarjetas deben respirar: no pegadas al borde del fondo con esquinas
+   doradas.
+   ============================================================================= */
+.carta-seccion {
+  padding: var(--space-lg) 0;
+}
+
+.carta-seccion > .container {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+.carta-destacada > .container {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+.menu-grid {
+  gap: 2rem;
+}
+
+/* =============================================================================
+   PANEL DE ENCARGADO - Generacion masiva de cupos
+   ============================================================================= */
+.dias-semana-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dia-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(27, 67, 50, 0.2);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: #fff;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.dia-check:hover {
+  border-color: var(--color-primary);
+}
+
+.dia-check input {
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+
+.dia-check:has(input:checked) {
+  background: rgba(46, 95, 78, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .carta-seccion > .container,
+  .carta-destacada > .container {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .plato-pie {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .btn-pedido-carta {
+    width: 100%;
+  }
+}

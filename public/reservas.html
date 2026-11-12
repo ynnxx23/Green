@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/main.css">
 <link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/css/ecommerce.css">
 <link rel="stylesheet" href="assets/icons/icons.css">
 </head>
 <body>
@@ -22,10 +23,16 @@
     <ul class="nav-links">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="carta.html">Carta</a></li>
+      <li><a href="pedidos.html">Pedir a domicilio</a></li>
       <li><a href="nosotros.html">Nosotros</a></li>
       <li><a href="contacto.html">Contacto</a></li>
     </ul>
     <div class="nav-acciones">
+      <a href="pedidos.html" class="btn-carrito" id="btn-carrito" title="Ver mi pedido">
+        <span aria-hidden="true">🛒</span>
+        <span>Pedido</span>
+        <span class="carrito-badge" data-carrito-badge data-vacio="1"></span>
+      </a>
       <div id="nav-sesion"></div>
     </div>
   </div>
@@ -36,6 +43,7 @@
     <div class="reservas-inner">
       <h2>Reserva tu mesa</h2>
       <p>Selecciona fecha, hora y número de comensales para tu visita.</p>
+      <div id="alerta-reserva" class="alerta" style="display:none;"></div>
       <form id="form-reserva" class="form-reserva">
         <div class="form-grid">
           <div>
@@ -53,18 +61,14 @@
           <div>
             <label for="fecha">Fecha</label>
             <input type="date" id="fecha" name="fecha" required>
+            <p id="hint-fecha" class="hint-campo">Cargando disponibilidad...</p>
           </div>
           <div>
             <label for="hora">Hora</label>
-            <select id="hora" name="hora" required>
-              <option value="">Seleccionar hora</option>
-              <option value="12:00">12:00</option>
-              <option value="13:30">13:30</option>
-              <option value="15:00">15:00</option>
-              <option value="19:00">19:00</option>
-              <option value="20:30">20:30</option>
-              <option value="22:00">22:00</option>
+            <select id="hora" name="hora" required disabled>
+              <option value="">Seleccione primero una fecha</option>
             </select>
+            <p id="hint-hora" class="hint-campo"></p>
           </div>
           <div style="grid-column: 1 / -1;">
             <label for="comensales">Número de comensales</label>
@@ -87,7 +91,7 @@
           </div>
         </div>
         <div id="mensaje-estado" class="mensaje-estado"></div>
-        <button type="submit" class="btn btn-reserva">Enviar solicitud de reserva</button>
+        <button type="submit" class="btn btn-reserva" id="btn-reservar">Reservar mesa</button>
       </form>
       <p style="margin-top: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
         También puede reservar por WhatsApp: <strong>+57 300 000 0001</strong>
@@ -115,19 +119,204 @@
   </div>
 </footer>
 
-<script type="module" src="/assets/js/api.js?v=2"></script>
-<script type="module" src="/assets/js/main.js"></script>
+<script type="module" src="/assets/js/api.js?v=3"></script>
+<script type="module" src="/assets/js/main.js?v=3"></script>
+<script type="module" src="/assets/js/carrito.js?v=3"></script>
 <script type="module">
-  import { api } from '/assets/js/api.js';
+  import { api } from './assets/js/api.js?v=3';
+  import { mostrarToast } from './assets/js/main.js?v=3';
 
-  // Configurar input de fecha: no permitir fechas pasadas
+  const form = document.getElementById('form-reserva');
   const fechaInput = document.getElementById('fecha');
-  if (fechaInput) {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    fechaInput.min = hoy.toISOString().split('T')[0];
-    fechaInput.value = hoy.toISOString().split('T')[0];
+  const horaSelect = document.getElementById('hora');
+  const hintFecha = document.getElementById('hint-fecha');
+  const hintHora = document.getElementById('hint-hora');
+  const mensajeEstado = document.getElementById('mensaje-estado');
+  const btnReservar = document.getElementById('btn-reservar');
+
+  // Mapa de fechas (YYYY-MM-DD) -> { cupos, mesas }
+  let fechasDisponibles = {};
+  let horariosPorFecha = {};
+
+  const hoyISO = () => {
+    const h = new Date();
+    h.setHours(0, 0, 0, 0);
+    // toISOString usa UTC: se construye en local para evitar desfase de dia.
+    return h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0') + '-' + String(h.getDate()).padStart(2, '0');
+  };
+
+  function mostrarAlerta(texto, tipo = 'error') {
+    if (!mensajeEstado) return;
+    mensajeEstado.textContent = texto;
+    mensajeEstado.className = 'mensaje-estado ' + (tipo === 'exito' ? 'exito' : 'error');
+    mensajeEstado.style.display = 'block';
   }
+
+  function limpiarAlerta() {
+    if (!mensajeEstado) return;
+    mensajeEstado.textContent = '';
+    mensajeEstado.style.display = 'none';
+  }
+
+  // -------------------------------------------------------------------------
+  // Cargar los dias que tienen cupos disponibles
+  // -------------------------------------------------------------------------
+  async function cargarFechasDisponibles() {
+    try {
+      const r = await api.get('/disponibilidad/fechas');
+      if (!r.exito) throw new Error(r.mensaje || 'No se pudo cargar la disponibilidad.');
+
+      fechasDisponibles = {};
+      (r.datos || []).forEach(f => {
+        fechasDisponibles[f.fecha] = f;
+      });
+
+      const hoy = hoyISO();
+      fechaInput.min = hoy;
+
+      const fechas = Object.keys(fechasDisponibles);
+      if (fechas.length === 0) {
+        hintFecha.textContent = 'No hay días disponibles por el momento.';
+        fechaInput.value = '';
+        horaSelect.innerHTML = '<option value="">Sin días disponibles</option>';
+        horaSelect.disabled = true;
+        return;
+      }
+
+      // Seleccionar automáticamente la primera fecha con disponibilidad
+      const primera = fechas[0];
+      fechaInput.value = primera;
+      hintFecha.textContent = fechas.length === 1
+        ? '1 día disponible para reservar.'
+        : fechas.length + ' días disponibles para reservar.';
+
+      await cargarHorarios(primera);
+    } catch (e) {
+      hintFecha.textContent = 'Error al cargar la disponibilidad.';
+      horaSelect.innerHTML = '<option value="">Sin disponibilidad</option>';
+      horaSelect.disabled = true;
+      console.error(e);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Cargar las horas (cupos) de la fecha seleccionada
+  // -------------------------------------------------------------------------
+  async function cargarHorarios(fecha) {
+    horaSelect.innerHTML = '<option value="">Cargando...</option>';
+    horaSelect.disabled = true;
+    hintHora.textContent = '';
+
+    try {
+      const r = await api.get('/disponibilidad/horarios?fecha=' + encodeURIComponent(fecha));
+      if (!r.exito) throw new Error(r.mensaje || 'No se pudieron cargar los horarios.');
+
+      const horarios = (r.datos && r.datos.horarios) || [];
+      horariosPorFecha = {};
+      horarios.forEach(h => { horariosPorFecha[h.hora_inicio] = h; });
+
+      if (horarios.length === 0) {
+        horaSelect.innerHTML = '<option value="">Sin horarios para esta fecha</option>';
+        horaSelect.disabled = true;
+        hintHora.textContent = 'Elija otra fecha.';
+        return;
+      }
+
+      horaSelect.innerHTML = '<option value="">Seleccionar hora</option>';
+      horarios.forEach(h => {
+        const op = document.createElement('option');
+        op.value = h.hora_inicio;
+        op.textContent = h.hora_inicio + ' - ' + h.hora_fin;
+        horaSelect.appendChild(op);
+      });
+      horaSelect.disabled = false;
+      hintHora.textContent = horarios.length + (horarios.length === 1 ? ' horario disponible.' : ' horarios disponibles.');
+    } catch (e) {
+      horaSelect.innerHTML = '<option value="">Error al cargar</option>';
+      horaSelect.disabled = true;
+      console.error(e);
+    }
+  }
+
+  // Al cambiar la fecha, recargar las horas de esa fecha
+  fechaInput.addEventListener('change', async () => {
+    const fecha = fechaInput.value;
+    limpiarAlerta();
+    if (!fecha) return;
+
+    if (!fechasDisponibles[fecha]) {
+      mostrarAlerta('Ese día no tiene disponibilidad. Elija una de las fechas con cupos abiertos.');
+      horaSelect.innerHTML = '<option value="">Sin disponibilidad</option>';
+      horaSelect.disabled = true;
+      return;
+    }
+    await cargarHorarios(fecha);
+  });
+
+  // -------------------------------------------------------------------------
+  // Envio de la reserva
+  // -------------------------------------------------------------------------
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    limpiarAlerta();
+
+    const fecha = fechaInput.value;
+    const hora = horaSelect.value;
+    const nombre = document.getElementById('nombre').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const comensales = parseInt(document.getElementById('comensales').value, 10) || 1;
+    const ocasion = document.getElementById('ocasion').value.trim();
+    const comentarios = document.getElementById('comentarios').value.trim();
+
+    if (!fecha || !hora) {
+      mostrarAlerta('Seleccione una fecha y una hora disponibles.');
+      return;
+    }
+    if (!nombre || !email || !telefono) {
+      mostrarAlerta('Complete nombre, correo y teléfono.');
+      return;
+    }
+
+    const cupo = horariosPorFecha[hora];
+    const datos = {
+      nombre: nombre,
+      email: email,
+      telefono: telefono,
+      comensales: comensales,
+      fecha_reserva: fecha,
+      hora_inicio: hora,
+      hora_fin: cupo ? cupo.hora_fin : '',
+      ocasion: ocasion,
+      observaciones: comentarios
+    };
+
+    btnReservar.disabled = true;
+    btnReservar.textContent = 'Reservando...';
+
+    try {
+      const r = await api.post('/reservas', datos);
+      if (r.exito) {
+        mostrarAlerta(r.mensaje || '¡Reserva confirmada! Te esperamos en el restaurante.', 'exito');
+        mostrarToast(r.mensaje || 'Reserva confirmada.', 'exito');
+        form.reset();
+        horaSelect.innerHTML = '<option value="">Seleccione una fecha</option>';
+        horaSelect.disabled = true;
+        await cargarFechasDisponibles();
+      } else {
+        mostrarAlerta(r.mensaje || 'No se pudo crear la reserva.');
+        mostrarToast(r.mensaje || 'Error al reservar.', 'error');
+      }
+    } catch (err) {
+      mostrarAlerta(err.message || 'Error de red al crear la reserva.');
+      mostrarToast(err.message || 'Error de red.', 'error');
+    } finally {
+      btnReservar.disabled = false;
+      btnReservar.textContent = 'Reservar mesa';
+    }
+  });
+
+  cargarFechasDisponibles();
 </script>
 
 </body>

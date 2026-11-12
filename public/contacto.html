@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/main.css">
 <link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/css/ecommerce.css">
 <link rel="stylesheet" href="assets/icons/icons.css">
 </head>
 <body>
@@ -24,8 +25,14 @@
       <li><a href="carta.html">Carta</a></li>
       <li><a href="nosotros.html">Nosotros</a></li>
       <li><a href="reservas.html">Reservas</a></li>
+      <li><a href="pedidos.html">Pedir a domicilio</a></li>
     </ul>
     <div class="nav-acciones">
+      <a href="pedidos.html" class="btn-carrito" id="btn-carrito" title="Ver mi pedido">
+        <span aria-hidden="true">🛒</span>
+        <span>Pedido</span>
+        <span class="carrito-badge" data-carrito-badge data-vacio="1"></span>
+      </a>
       <div id="nav-sesion"></div>
     </div>
   </div>
@@ -72,8 +79,9 @@
   </div>
 </footer>
 
-<script type="module" src="assets/js/api.js?v=2"></script>
-<script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/api.js?v=3"></script>
+<script type="module" src="assets/js/main.js?v=3"></script>
+<script type="module" src="assets/js/carrito.js?v=3"></script>
 
 </body>
 </html>

@@ -36,7 +36,12 @@ $migraciones = @(
     "015_datos_prueba_completos.sql",
     "016_datos_finales.sql",
     "017_reparacion_productos.sql",
-    "018_pedidos_saldo_numero.sql"
+    "018_pedidos_saldo_numero.sql",
+    "019_renombrar_columnas_senia.sql",
+    "020_add_id_usuario_pedidos.sql",
+    "021_add_fecha_creacion_pedidos.sql",
+    "022_id_mesa_nullable.sql",
+    "023_fix_encoding_utf8.sql"
 )
 
 $fallos = @()
@@ -51,7 +56,8 @@ foreach ($mig in $migraciones) {
     Write-Host "Aplicando $mig..." -ForegroundColor Cyan
 
     # Aplicar migración (ignorar errores de SQL individuales)
-    $salida = Get-Content $ruta -Raw | & $mysql -u $dbUser $dbName 2>&1
+    # --default-character-set=utf8mb4 evita que los acentos se guarden como "??" (codepage de consola)
+    $salida = Get-Content $ruta -Raw | & $mysql -u $dbUser --default-character-set=utf8mb4 $dbName 2>&1
     $codigoSalida = $LASTEXITCODE
 
     if ($codigoSalida -ne 0) {

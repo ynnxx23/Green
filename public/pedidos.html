@@ -9,9 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/main.css">
 <link rel="stylesheet" href="assets/css/componentes.css">
+<link rel="stylesheet" href="assets/css/ecommerce.css">
 <link rel="stylesheet" href="assets/icons/icons.css">
 <style>
   .pedido-container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+  .pedido-layout { max-width: 1200px; }
   .pedido-card { background: var(--color-surface); border: 1px solid rgba(27,67,50,0.12); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
   .pedido-item { display: flex; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(27,67,50,0.08); }
   .pedido-item img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md); }
@@ -58,65 +60,84 @@
       <li><a href="contacto.html">Contacto</a></li>
     </ul>
     <div class="nav-acciones">
+      <a href="pedidos.html" class="btn-carrito" id="btn-carrito" title="Ver mi pedido">
+        <span aria-hidden="true">🛒</span>
+        <span>Pedido</span>
+        <span class="carrito-badge" data-carrito-badge data-vacio="1"></span>
+      </a>
       <div id="nav-sesion"></div>
     </div>
   </div>
 </nav>
 
-<div class="pedido-container">
-  <h1 style="font-family: var(--font-heading); color: var(--color-primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">Pedir a Domicilio</h1>
-  <p style="color: var(--color-text-muted); margin-bottom: 2rem;">Selecciona los platos que deseas pedir. Puedes pedir para llevar o a domicilio.</p>
+<div class="pedido-container pedido-layout">
+  <div class="pedido-col-izq">
+    <h1 style="font-family: var(--font-heading); color: var(--color-primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">Pedir a Domicilio</h1>
+    <p style="color: var(--color-text-muted); margin-bottom: 2rem;">Selecciona los platos que deseas pedir. Puedes pedir para llevar o a domicilio.</p>
 
-  <div id="alerta-pedido" class="alerta" style="display:none;"></div>
+    <div id="alerta-pedido" class="alerta" style="display:none;"></div>
 
-  <div class="tipo-pedido">
-    <div class="tipo-btn activo" id="tipo-para_llevar">Para Llevar</div>
-    <div class="tipo-btn" id="tipo-domicilio">Domicilio</div>
-  </div>
-
-  <div class="ubicacion-group" id="grupo-direccion" style="display:none;">
-    <label>Dirección de entrega</label>
-    <textarea id="ubicacion" rows="3" placeholder="Ej. Calle 123 #45-67, Barrio Centro, Apartamento 301"></textarea>
-    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.5rem;">Solo necesitamos tu ubicación para llevar el pedido.</p>
-  </div>
-
-  <div class="pedido-card">
-    <h3 style="margin-top:0; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px;">Seleccionar Platos</h3>
-    <div id="grid-pedidos" class="menu-grid"></div>
-  </div>
-
-  <div class="pedido-resumen">
-    <h3>Resumen del Pedido</h3>
-    <div class="resumen-fila">
-      <span>Subtotal:</span>
-      <span id="resumen-subtotal">$0.00</span>
+    <div class="tipo-pedido">
+      <div class="tipo-btn activo" id="tipo-para_llevar">Para Llevar</div>
+      <div class="tipo-btn" id="tipo-domicilio">Domicilio</div>
     </div>
-    <div class="resumen-fila">
-      <span>Total:</span>
-      <span id="resumen-total">$0.00</span>
+
+    <div class="ubicacion-group" id="grupo-direccion" style="display:none;">
+      <label>Dirección de entrega</label>
+      <textarea id="ubicacion" rows="3" placeholder="Ej. Calle 123 #45-67, Barrio Centro, Apartamento 301"></textarea>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.5rem;">Solo necesitamos tu ubicación para llevar el pedido.</p>
     </div>
-    <div class="resumen-total" id="resumen-items">0 platos seleccionados</div>
+
+    <div class="pedido-card">
+      <h3 style="margin-top:0; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px;">Mi Pedido</h3>
+      <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top:0;">
+        Los platos que agregues desde la <a href="carta.html" style="color: var(--color-primary);">carta</a> aparecen aquí.
+      </p>
+      <div id="carrito-vacio" class="vacio" style="display:none; padding:1.5rem 0;">
+        <p>Su pedido está vacío.</p>
+        <a href="carta.html" class="btn-pedido" style="display:inline-block; width:auto; padding:0.7rem 1.5rem; margin-top:1rem; text-decoration:none;">Ver la carta</a>
+      </div>
+      <div id="lista-carrito"></div>
+    </div>
+
+    <div class="pedido-resumen">
+      <h3>Resumen del Pedido</h3>
+      <div class="resumen-fila">
+        <span>Subtotal:</span>
+        <span id="resumen-subtotal">$0.00</span>
+      </div>
+      <div class="resumen-fila">
+        <span>Total:</span>
+        <span id="resumen-total">$0.00</span>
+      </div>
+      <div class="resumen-total" id="resumen-items">0 platos seleccionados</div>
+    </div>
+
+    <button type="button" class="btn-pedido" id="btn-confirmar-pedido">Confirmar Pedido</button>
   </div>
 
-  <button type="button" class="btn-pedido" id="btn-confirmar-pedido">Confirmar Pedido</button>
+  <aside class="pedido-col-der">
+    <div class="pedido-card pedido-card-lista">
+      <h3 style="margin-top:0; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px;">Agregar más platos</h3>
+
+      <div class="filtros-categoria filtros-categoria-compact" id="filtros-disponibles">
+        <button type="button" class="filtro-btn activo" data-categoria="todas">Todas</button>
+      </div>
+
+      <div id="lista-disponibles" class="lista-scroll"></div>
+    </div>
+  </aside>
 </div>
 
-<script type="module" src="/assets/js/api.js?v=2"></script>
-<script type="module" src="/assets/js/main.js"></script>
+<script type="module" src="/assets/js/api.js?v=3"></script>
+<script type="module" src="/assets/js/main.js?v=3"></script>
+<script type="module" src="/assets/js/carrito.js?v=3"></script>
 <script type="module">
-  import { api } from '/assets/js/api.js';
-  import { formatearMoneda, mostrarToast } from '/assets/js/main.js';
+  import { api } from './assets/js/api.js?v=3';
+  import { formatearMoneda, mostrarToast } from './assets/js/main.js?v=3';
 
   let productos = [];
-  let pedido = {}; // id_producto => { producto, cantidad }
   let tipoPedido = 'para_llevar';
-
-  // Cargar carrito desde localStorage (agregado desde la carta)
-  const carritoLS = JSON.parse(localStorage.getItem('pedido_carrito') || '{}');
-  for (const [id, cant] of Object.entries(carritoLS)) {
-    pedido[parseInt(id)] = cant;
-  }
-  localStorage.removeItem('pedido_carrito');
 
   const grid = document.getElementById('grid-pedidos');
   const btnTipoLlevar = document.getElementById('tipo-para_llevar');
@@ -128,12 +149,15 @@
   const resumenTotal = document.getElementById('resumen-total');
   const resumenItems = document.getElementById('resumen-items');
   const alertaPedido = document.getElementById('alerta-pedido');
+  const vacioCarrito = document.getElementById('carrito-vacio');
 
   async function cargarProductos() {
     try {
       const r = await api.productos();
-      productos = r.datos.filter(p => p.activo && (p.stock_actual === undefined || p.stock_actual > 0));
-      renderProductos();
+      productos = (r.datos || []).filter(p => p.activo);
+      renderFiltrosCategorias();
+      renderCarrito();
+      renderDisponibles();
       actualizarResumen();
     } catch (e) {
       grid.innerHTML = '<p class="vacio">No se pudieron cargar los platos.</p>';
@@ -141,59 +165,207 @@
     }
   }
 
-  function renderProductos() {
-    grid.innerHTML = '';
-    if (productos.length === 0) {
-      grid.innerHTML = '<p class="vacio">No hay platos disponibles.</p>';
+  // Filtro por categoría de la lista "Agregar más platos"
+  document.getElementById('filtros-disponibles').addEventListener('click', function(e) {
+    const btn = e.target.closest('.filtro-btn');
+    if (!btn) return;
+    categoriaFiltro = btn.dataset.categoria;
+    document.querySelectorAll('#filtros-disponibles .filtro-btn').forEach(function(b) {
+      b.classList.toggle('activo', b === btn);
+    });
+    renderDisponibles();
+  });
+
+  // ---------------------------------------------------------------------
+  // Carrito actual (viene de la carta, guardado en localStorage)
+  // ---------------------------------------------------------------------
+  function itemsCarrito() {
+    return window.Carrito.items();
+  }
+
+  function renderCarrito() {
+    const items = itemsCarrito();
+    const contenedor = document.getElementById('lista-carrito');
+    if (!contenedor) return;
+
+    if (items.length === 0) {
+      contenedor.innerHTML = '';
+      if (vacioCarrito) vacioCarrito.style.display = 'block';
       return;
     }
-    productos.forEach(p => {
-      const item = document.createElement('div');
-      item.className = 'pedido-item';
-      const cantidad = pedido[p.id_producto] || 0;
-      const subtotal = cantidad * p.precio;
-      item.innerHTML = `
-        <img src="${p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'}" alt="${p.nombre}" class="plato-imagen">
-        <div class="pedido-item-info">
-          <h4>${p.nombre}</h4>
-          <p>${p.categoria || ''}</p>
-        </div>
-        <div class="pedido-item-precio">${formatearMoneda(p.precio)}</div>
-        <div class="cantidad-control">
-          <button onclick="cambiarCantidad(${p.id_producto}, -1)" ${cantidad <= 0 ? 'disabled' : ''}>-</button>
-          <span>${cantidad}</span>
-          <button onclick="cambiarCantidad(${p.id_producto}, 1)" ${p.stock_actual !== undefined && cantidad >= p.stock_actual ? 'disabled' : ''}>+</button>
-        </div>
-        ${cantidad > 0 ? `<div style="font-weight:700; color:var(--color-primary);">${formatearMoneda(subtotal)}</div>` : ''}
-      `;
-      grid.appendChild(item);
+    if (vacioCarrito) vacioCarrito.style.display = 'none';
+
+    contenedor.innerHTML = items.map(function(item) {
+      const subtotal = (Number(item.precio) || 0) * (Number(item.cantidad) || 0);
+      const imagen = item.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+      const nombre = escapeHtml(item.nombre);
+      return '<div class="pedido-item">' +
+        '<img src="' + escapeHtml(imagen) + '" alt="' + nombre + '" class="plato-imagen">' +
+        '<div class="pedido-item-info">' +
+          '<h4>' + nombre + '</h4>' +
+          '<p>' + formatearMoneda(item.precio) + ' c/u</p>' +
+        '</div>' +
+        '<div class="cantidad-control">' +
+          '<button type="button" data-accion="restar" data-id="' + item.id + '" aria-label="Restar">-</button>' +
+          '<span>' + (Number(item.cantidad) || 0) + '</span>' +
+          '<button type="button" data-accion="sumar" data-id="' + item.id + '" aria-label="Sumar"' +
+            (item.stock !== null && item.stock !== undefined && (Number(item.cantidad) || 0) >= Number(item.stock) ? ' disabled' : '') + '>+</button>' +
+        '</div>' +
+        '<div class="pedido-item-precio">' + formatearMoneda(subtotal) + '</div>' +
+        '<button type="button" class="btn-sm btn-accion danger" data-accion="quitar" data-id="' + item.id + '">Quitar</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ---------------------------------------------------------------------
+  // Platos disponibles para agregar (con stock visible y filtro por categoría)
+  // ---------------------------------------------------------------------
+  let categoriaFiltro = 'todas';
+
+  function renderFiltrosCategorias() {
+    const cont = document.getElementById('filtros-disponibles');
+    if (!cont) return;
+
+    const categorias = [];
+    const vistas = new Set();
+    productos.forEach(function(p) {
+      const c = p.categoria || 'Sin categoría';
+      if (!vistas.has(c)) { vistas.add(c); categorias.push(c); }
+    });
+    categorias.sort();
+
+    cont.innerHTML = '<button type="button" class="filtro-btn activo" data-categoria="todas">Todas</button>';
+    categorias.forEach(function(c) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filtro-btn';
+      btn.dataset.categoria = c;
+      btn.textContent = c;
+      cont.appendChild(btn);
     });
   }
 
-  window.cambiarCantidad = function(id, delta) {
-    const nueva = (pedido[id] || 0) + delta;
-    if (nueva < 0) return;
-    const producto = productos.find(p => p.id_producto === id);
-    if (nueva > 0 && producto.stock_actual !== undefined && nueva > producto.stock_actual) return;
-    if (nueva === 0) delete pedido[id];
-    else pedido[id] = nueva;
-    renderProductos();
-    actualizarResumen();
-  };
+  function renderDisponibles() {
+    const cont = document.getElementById('lista-disponibles');
+    if (!cont) return;
+
+    const disponibles = productos.filter(function(p) {
+      const tieneStock = p.stock_actual === undefined || p.stock_actual === null || Number(p.stock_actual) > 0;
+      if (!tieneStock) return false;
+      if (categoriaFiltro === 'todas') return true;
+      return (p.categoria || 'Sin categoría') === categoriaFiltro;
+    });
+
+    if (disponibles.length === 0) {
+      cont.innerHTML = '<p class="vacio">No hay platos disponibles en esta categoría.</p>';
+      return;
+    }
+
+    cont.innerHTML = disponibles.map(function(p) {
+      const stock = p.stock_actual === undefined || p.stock_actual === null ? null : Number(p.stock_actual);
+      const imagen = p.imagen_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+      const textoStock = stock === null ? 'Consultar' : (stock <= 5 ? '¡Ultimas ' + stock + '!' : stock + ' disponibles');
+      const nivel = stock === null ? 'disponible' : (stock <= 5 ? 'bajo' : 'disponible');
+      return '<div class="pedido-item">' +
+        '<img src="' + escapeHtml(imagen) + '" alt="' + escapeHtml(p.nombre) + '" class="plato-imagen">' +
+        '<div class="pedido-item-info">' +
+          '<h4>' + escapeHtml(p.nombre) + '</h4>' +
+          '<p>' + escapeHtml(p.categoria || '') + '</p>' +
+        '</div>' +
+        '<span class="plato-stock" data-nivel="' + nivel + '">' + textoStock + '</span>' +
+        '<div class="pedido-item-precio">' + formatearMoneda(p.precio) + '</div>' +
+        '<button type="button" class="btn-sm btn-accion" data-agregar="' + p.id_producto + '">Agregar</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function escapeHtml(texto) {
+    const d = document.createElement('div');
+    d.textContent = texto;
+    return d.innerHTML;
+  }
+
+  // Acciones del carrito (restar / sumar / quitar)
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-accion]');
+    if (btn) {
+      const id = btn.dataset.id;
+      const accion = btn.dataset.accion;
+      const items = itemsCarrito();
+      const item = items.find(function(i) { return String(i.id) === String(id); });
+      if (!item) return;
+
+      if (accion === 'sumar') {
+        if (item.stock !== null && item.stock !== undefined && (Number(item.cantidad) || 0) >= Number(item.stock)) {
+          mostrarToast('No hay mas stock de ' + item.nombre + '.', 'error');
+          return;
+        }
+        window.Carrito.agregar(
+          { id_producto: item.id, nombre: item.nombre, precio: item.precio, imagen_url: item.imagen, stock_actual: item.stock },
+          1
+        );
+      } else if (accion === 'restar') {
+        const nueva = (Number(item.cantidad) || 0) - 1;
+        if (nueva <= 0) {
+          window.Carrito.quitar(item.id);
+        } else {
+          window.Carrito.quitar(item.id);
+          window.Carrito.agregar(
+            { id_producto: item.id, nombre: item.nombre, precio: item.precio, imagen_url: item.imagen, stock_actual: item.stock },
+            nueva
+          );
+        }
+      } else if (accion === 'quitar') {
+        window.Carrito.quitar(item.id);
+        mostrarToast(item.nombre + ' quitado del pedido.', 'exito');
+      }
+
+      renderCarrito();
+      actualizarResumen();
+      return;
+    }
+
+    // Boton "Agregar" de la lista de disponibles
+    const btnAgregar = e.target.closest('[data-agregar]');
+    if (btnAgregar) {
+      const id = parseInt(btnAgregar.dataset.agregar, 10);
+      const producto = productos.find(function(p) { return p.id_producto === id; });
+      if (!producto) return;
+
+      window.Carrito.abrirModalCantidad(
+        { id_producto: producto.id_producto, nombre: producto.nombre, precio: producto.precio, imagen_url: producto.imagen_url, categoria: producto.categoria, stock_actual: producto.stock_actual },
+        function(cantidad) {
+          try {
+            window.Carrito.agregar(
+              { id_producto: producto.id_producto, nombre: producto.nombre, precio: producto.precio, imagen_url: producto.imagen_url, stock_actual: producto.stock_actual },
+              cantidad
+            );
+            mostrarToast(cantidad + ' × ' + producto.nombre + ' agregado al pedido.', 'exito');
+            renderCarrito();
+            actualizarResumen();
+          } catch (err) {
+            mostrarToast(err.message || 'No se pudo agregar al pedido.', 'error');
+          }
+        }
+      );
+    }
+  });
 
   function actualizarResumen() {
-    let subtotal = 0;
-    let totalItems = 0;
-    for (const [id, cant] of Object.entries(pedido)) {
-      const p = productos.find(x => x.id_producto === parseInt(id));
-      if (p) {
-        subtotal += cant * p.precio;
-        totalItems += cant;
-      }
-    }
+    const items = itemsCarrito();
+    const subtotal = items.reduce(function(suma, item) {
+      return suma + (Number(item.precio) || 0) * (Number(item.cantidad) || 0);
+    }, 0);
+    const totalItems = items.reduce(function(suma, item) {
+      return suma + (Number(item.cantidad) || 0);
+    }, 0);
+
     resumenSubtotal.textContent = formatearMoneda(subtotal);
     resumenTotal.textContent = formatearMoneda(subtotal);
-    resumenItems.textContent = totalItems > 0 ? totalItems + ' plato' + (totalItems > 1 ? 's' : '') + ' seleccionado' + (totalItems > 1 ? 's' : '') : '0 platos seleccionados';
+    resumenItems.textContent = totalItems > 0
+      ? totalItems + ' plato' + (totalItems > 1 ? 's' : '') + ' seleccionado' + (totalItems > 1 ? 's' : '')
+      : '0 platos seleccionados';
+
     btnConfirmar.disabled = totalItems === 0 || (tipoPedido === 'domicilio' && !txtUbicacion.value.trim());
   }
 
@@ -216,24 +388,31 @@
   txtUbicacion.addEventListener('input', actualizarResumen);
 
   btnConfirmar.addEventListener('click', async () => {
-    const detalles = [];
-    for (const [id, cant] of Object.entries(pedido)) {
-      detalles.push({ id_producto: parseInt(id), cantidad: cant });
+    const items = itemsCarrito();
+    if (items.length === 0) {
+      mostrarToast('Su pedido esta vacio.', 'error');
+      return;
     }
+
+    const detalles = items.map(function(item) {
+      return { id_producto: item.id, cantidad: Number(item.cantidad) || 0 };
+    });
+
     const datos = {
       detalles: detalles,
       tipo_pedido: tipoPedido,
       direccion_domicilio: tipoPedido === 'domicilio' ? txtUbicacion.value.trim() : null,
       estado_senia: 'pendiente'
     };
+
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = 'Procesando...';
     try {
       const r = await api.crearPedido(datos);
       if (r.exito) {
-        mostrarToast('Pedido confirmado correctamente. Número: #' + r.datos.id_pedido, 'exito');
-        pedido = {};
-        renderProductos();
+        mostrarToast('Pedido confirmado correctamente. Numero: #' + r.datos.id_pedido, 'exito');
+        window.Carrito.vaciar();
+        renderCarrito();
         actualizarResumen();
         setTimeout(() => { window.location.href = 'panel-cliente.html'; }, 2000);
       } else {
@@ -246,6 +425,11 @@
       btnConfirmar.disabled = false;
       btnConfirmar.textContent = 'Confirmar Pedido';
     }
+  });
+
+  window.addEventListener('carrito:cambio', function() {
+    renderCarrito();
+    actualizarResumen();
   });
 
   cargarProductos();

@@ -12,7 +12,14 @@ class ReservaDao
     public function crearConBloqueo(Reserva $reserva): int
     {
         $pdo = Conexion::obtener();
-        $pdo->beginTransaction();
+
+        // Si ya hay una transaccion abierta (p. ej. el controller envuelve la
+        // operacion para decrementar la disponibilidad), se reutiliza en vez de
+        // abrir otra: MySQL no admite transacciones anidadas.
+        $transaccionPropia = !$pdo->inTransaction();
+        if ($transaccionPropia) {
+            $pdo->beginTransaction();
+        }
 
         try {
             $stmt = $pdo->prepare('
@@ -30,8 +37,10 @@ class ReservaDao
             $stmt->fetchAll();
 
             $sql = 'INSERT INTO reservas
-                        (id_mesa, id_usuario, fecha_reserva, hora_inicio, hora_fin, estado, fecha_creacion)
-                    VALUES (:id_mesa, :id_usuario, :fecha_reserva, :hora_inicio, :hora_fin, :estado, CURRENT_TIMESTAMP)';
+                        (id_mesa, id_usuario, fecha_reserva, hora_inicio, hora_fin, estado,
+                         comensales, telefono, ocasion, observaciones, fecha_creacion)
+                    VALUES (:id_mesa, :id_usuario, :fecha_reserva, :hora_inicio, :hora_fin, :estado,
+                            :comensales, :telefono, :ocasion, :observaciones, CURRENT_TIMESTAMP)';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':id_mesa' => $reserva->id_mesa,
@@ -40,14 +49,23 @@ class ReservaDao
                 ':hora_inicio' => $reserva->hora_inicio,
                 ':hora_fin' => $reserva->hora_fin,
                 ':estado' => $reserva->estado,
+                ':comensales' => $reserva->comensales,
+                ':telefono' => $reserva->telefono,
+                ':ocasion' => $reserva->ocasion,
+                ':observaciones' => $reserva->observaciones,
             ]);
 
             $id = (int) $pdo->lastInsertId();
-            $pdo->commit();
+
+            if ($transaccionPropia) {
+                $pdo->commit();
+            }
 
             return $id;
         } catch (\Throwable $e) {
-            $pdo->rollBack();
+            if ($transaccionPropia && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             throw $e;
         }
     }
@@ -207,6 +225,10 @@ class ReservaDao
         $reserva->id_reserva = (int) $fila['id_reserva'];
         $reserva->fecha_creacion = $fila['fecha_creacion'] ?? null;
         $reserva->fecha_actualizacion = $fila['fecha_actualizacion'] ?? null;
+        $reserva->observaciones = $fila['observaciones'] ?? null;
+        $reserva->comensales = isset($fila['comensales']) ? (int) $fila['comensales'] : 1;
+        $reserva->telefono = $fila['telefono'] ?? null;
+        $reserva->ocasion = $fila['ocasion'] ?? null;
 
         return $reserva;
     }

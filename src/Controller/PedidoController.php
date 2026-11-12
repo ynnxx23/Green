@@ -361,7 +361,7 @@ class PedidoController
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero,
+                   p.id_mesero, p.direccion_domicilio, p.observaciones,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -389,7 +389,7 @@ class PedidoController
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero,
+                   p.id_mesero, p.direccion_domicilio, p.observaciones,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -446,7 +446,7 @@ class PedidoController
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero,
+                   p.id_mesero, p.direccion_domicilio, p.observaciones,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario, u.email AS email_usuario
             FROM pedidos p
@@ -480,7 +480,7 @@ class PedidoController
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
                    p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero,
+                   p.id_mesero, p.direccion_domicilio, p.observaciones,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario
             FROM pedidos p
@@ -532,7 +532,7 @@ class PedidoController
 
         // Obtener detalles
         $stmtDet = $pdo->prepare('
-            SELECT dp.id_producto, pr.nombre AS nombre_producto, pr.categoria,
+            SELECT dp.id_producto, pr.nombre AS nombre_producto, cat.nombre AS categoria,
                    dp.cantidad, dp.precio_unitario,
                    (dp.cantidad * dp.precio_unitario) AS subtotal
             FROM detalle_pedidos dp
@@ -796,6 +796,9 @@ class PedidoController
             'estado_senia' => $pedido['estado_senia'] ?? 'pendiente',
             'saldo_pendiente' => (float) ($pedido['saldo_pendiente'] ?? 0),
             'tipo_pedido' => $pedido['tipo_pedido'],
+            'direccion_domicilio' => $pedido['direccion_domicilio'] ?? null,
+            'observaciones' => $pedido['observaciones'] ?? null,
+            'numero_pedido' => $pedido['numero_pedido'] ?? null,
             'fecha_actualizacion' => $pedido['fecha_actualizacion'] ?? null,
         ];
     }

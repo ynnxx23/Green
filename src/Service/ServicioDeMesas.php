@@ -35,6 +35,11 @@ class ServicioDeMesas
         return $this->mesaDao->listarPorArea($id_area, true);
     }
 
+    public function listarTodasMesas(): array
+    {
+        return $this->mesaDao->listarTodas(true);
+    }
+
     public function obtenerMesa(int $id_mesa): ?Mesa
     {
         return $this->mesaDao->obtenerPorId($id_mesa);

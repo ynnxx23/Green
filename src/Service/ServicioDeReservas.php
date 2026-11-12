@@ -24,7 +24,11 @@ class ServicioDeReservas
         int $id_usuario,
         string $fecha_reserva,
         string $hora_inicio,
-        string $hora_fin
+        string $hora_fin,
+        int $comensales = 1,
+        string $telefono = '',
+        string $ocasion = '',
+        string $observaciones = ''
     ): int {
         $this->validador->validarCreacion(
             $id_mesa,
@@ -34,7 +38,20 @@ class ServicioDeReservas
             $hora_fin
         );
 
-        $reserva = new Reserva($id_mesa, $id_usuario, $fecha_reserva, $hora_inicio, $hora_fin, 'pendiente');
+        // La reserva se confirma directamente (no es una solicitud pendiente
+        // de aprobacion): el cupo ya fue reservado por el cliente.
+        $reserva = new Reserva(
+            $id_mesa,
+            $id_usuario,
+            $fecha_reserva,
+            $hora_inicio,
+            $hora_fin,
+            'confirmada'
+        );
+        $reserva->comensales = $comensales;
+        $reserva->telefono = $telefono !== '' ? $telefono : null;
+        $reserva->ocasion = $ocasion !== '' ? $ocasion : null;
+        $reserva->observaciones = $observaciones !== '' ? $observaciones : null;
 
         $id_reserva = $this->reservaDao->crearConBloqueo($reserva);
         $reserva->id_reserva = $id_reserva;

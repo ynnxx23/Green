@@ -37,6 +37,34 @@ class MesaDao
         return $mesas;
     }
 
+    public function listarTodas(bool $soloActivas = true): array
+    {
+        $sql = 'SELECT * FROM mesas WHERE 1 = 1';
+        $params = [];
+
+        if ($soloActivas) {
+            $sql .= ' AND activo = 1';
+        }
+
+        $sql .= ' ORDER BY id_area, numero_mesa';
+
+        $stmt = Conexion::obtener()->prepare($sql);
+        $stmt->execute($params);
+        $filas = $stmt->fetchAll();
+
+        $mesas = [];
+        foreach ($filas as $fila) {
+            $mesa = new Mesa((int) $fila['id_area'], $fila['numero_mesa']);
+            $mesa->id_mesa = (int) $fila['id_mesa'];
+            $mesa->capacidad = (int) ($fila['capacidad'] ?? 1);
+            $mesa->activo = (bool) $fila['activo'];
+            $mesa->fecha_creacion = $fila['fecha_creacion'] ?? null;
+            $mesas[] = $mesa;
+        }
+
+        return $mesas;
+    }
+
     public function obtenerPorId(int $id_mesa): ?Mesa
     {
         $sql = 'SELECT * FROM mesas WHERE id_mesa = :id_mesa';
