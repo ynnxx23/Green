@@ -859,3 +859,75 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.3);
   cursor: pointer;
 }
+
+/* Footer - menos espacio interno */
+footer {
+  padding: 2rem 10% 1rem;
+}
+
+footer .footer-info p {
+  margin: 0.25rem 0;
+}
+
+/* Reserva rápida en footer */
+.reserva-footer {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(46, 95, 78, 0.15);
+  border: 1px solid rgba(46, 95, 78, 0.25);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.reserva-footer h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.reserva-footer p {
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.reserva-footer .btn-accent {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* Selects y date inputs mejorados */
+select, input[type="date"], input[type="time"] {
+  background: #FAFAF0;
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  border-radius: var(--radius-md);
+  padding: 0.9rem;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+select:hover, input[type="date"]:hover, input[type="time"]:hover {
+  border-color: var(--color-secondary);
+}
+
+select option {
+  background: #fff;
+  color: var(--color-text);
+  padding: 0.5rem;
+}
+
+/* Estilo para fechas pasadas en date input - desactivadas visualmente */
+input[type="date"]::-webkit-datetime-edit {
+  color: var(--color-text);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+  cursor: pointer;
+}

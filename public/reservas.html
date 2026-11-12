@@ -128,21 +128,6 @@
     fechaInput.min = hoy.toISOString().split('T')[0];
     fechaInput.value = hoy.toISOString().split('T')[0];
   }
-
-  // Verificar sesión al cargar: si hay sesión, ir al panel de cliente para reservar con calendario;
-  // si no, ir al login.
-  (async () => {
-    try {
-      const sesion = await api.sesion();
-      if (sesion.exito) {
-        window.location.href = 'panel-cliente.html';
-      } else {
-        window.location.href = 'login.html';
-      }
-    } catch (err) {
-      window.location.href = 'login.html';
-    }
-  })();
 </script>
 
 </body>
