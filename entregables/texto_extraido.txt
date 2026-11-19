@@ -1,0 +1,1828 @@
+﻿Sistema de Gestión de Restaurante “Green en la Casa Blanca”
+ProyectoIntegradordelPrimerCuatrimestre
+Acosta,AzulyVillalba, Yensel
+EscuelaProvincialdeEducaciónTécnicaN.°7“VicenteArcadioSalemi” Tecnicatura en Programación — 6.º IV
+LaboratoriodeDesarrollodeAplicacionesIIIyPrácticasPre-Profesionalizantes
+Profesoresresponsables:PedroVerayYaninaMartínez
+18 de Noviembre 2026
+El presente documento describe el análisis, diseño e implementación de un sistema web de gestión para el restaurante “Green en la Casa Blanca”, desarrollado como Proyecto Integrador Cuatrimestral 2026. El sistema permite administrar reservas de mesas, registrar pedidos, controlar inventario (stock y límite de venta), publicar el menú semanal, gestionar señas del 50 %, administrar usuarios con 3 roles (cliente, encargado, administrador) y generar reportes de ventas e historial de movimientos.
+índice
+Resumen2
+Situación Problemática4
+Diagrama de Gantt5
+Entrevistas6
+Entrevista al Administrador6
+Preguntas abiertas — Administrador6
+Preguntas cerradas — Administrador (Sí/No)6
+Entrevista al Encargado7
+Preguntas abiertas — Encargado7
+Preguntas cerradas — Encargado (Sí/No)7
+Entrevista al Cliente8
+Preguntas abiertas — Cliente8
+Preguntas cerradas — Cliente (Sí/No)8
+Cuadro del Mundo del Problema9
+Matriz FODA9
+Objetivos10
+Requerimientos Funcionales10
+Requerimientos No Funcionales36
+Alcance del Sistema36
+Alcance General36
+Funciones Incluidas en el Sistema37
+Gestión de Usuarios37
+Gestión de Reservas37
+Gestión de Mesas y Áreas37
+Gestión de Horarios y Disponibilidad37
+Gestión de Pedidos37
+Gestión de Señas37
+Gestión de Productos y Menú37
+Gestión de Stock37
+Gestión de Reportes37
+Gestión de Historial37
+Limitaciones del Sistema37
+Entregables del Proyecto38
+Despliegue del Programa:38
+Figura 4 Diagrama de Clases46
+1. Plan de Mantenimiento de Software47
+1.1 Objetivo47
+1.2 Responsables del mantenimiento47
+1.3 Cuadro de actividades47
+1.4 Atención de incidencias49
+1.5 Justificación de los tiempos49
+2. Plan de Capacitación de Usuarios49
+2.1 Objetivo49
+2.2 Destinatarios50
+2.3 Cuadro de capacitación50
+2.4 Duración total por destinatario51
+2.5 Cronograma52
+2.6 Materiales, evaluación y soporte52
+2.7 Justificación de los tiempos53
+Referencias54
+El restaurante “Green en la Casa Blanca” presenta dificultades para organizar las reservas de mesas, registrar los pedidos y controlar su estado de forma ordenada. Actualmente el control se realiza de manera manual o desordenada, lo que genera demoras en la atención, mesas ocupadas sin reserva registrada, pedidos extraviados o mal anotados, falta de trazabilidad sobre el estado de cada orden y errores al momento de cobrar o administrar las señas. Esto afecta la experiencia del cliente y la operación del local.
+Frente a esta problemática surge la necesidad de desarrollar un sistema digital de gestión que permita registrar usuarios, reservas, pedidos, señas, stock y estados de los materiales, mejorando la administración, organización y seguimiento de los recursos disponibles dentro del restaurante.
+De acuerdo con Pressman (2010), un relevamiento deficiente de los procesos manuales incrementa el riesgo de pérdida de trazabilidad y dificulta la toma de decisiones operativas, por lo que la digitalización se vuelve una estrategia prioritaria para comercios con atención intensiva al cliente.
+Figura 1
+Diagrama de Gantt: Cronograma de actividades (cuatrimestre 2026)
+Periodo de
+3 semanas
+Fechas
+Lunes
+Martes
+Miercoles
+Jueves
+Viernes
+Horas
+12345678
+12345678
+12345678
+12345678
+12345678
+Actividad
+Entrevistas
+29/10/26
+Mundo del Problema
+29/10/26
+Matriz FODA
+Objetivos
+29/10/26
+Requerimientos
+29/10/26-30/10/26
+Alcance
+30/10/26
+Limitaciones
+30/10/26
+Entregables
+30/10/26
+Diagrama de casos de uso
+2/11/26-
+3/11/26
+Diagrama ER
+3/11/26 -
+4/11/26
+Diccionario de datos
+2/11/26-
+3/11/26
+Diagrama de clases
+5/11/26-
+6/11/26
+Plan de
+Mantenimiento
+10/11/26-
+11/11/26
+Plan de
+Capacitación
+10/11/26
+Entrega del proyecto
+19/11/26
+Para el relevamiento se diseñaron entrevistas abiertas y cerradas dirigidas a los tres perfiles clave del sistema: administrador, encargado y cliente. Las entrevistas permiten contrastar la percepción operativa, de gestión y de uso final del sistema.
+¿Cómo administra actualmente los usuarios y roles del personal del restaurante?
+¿Qué reportes le serían más útiles para supervisar el negocio (ventas, reservas, pedidos)?
+¿Cómo da seguimiento al historial de cambios y movimientos críticos del sistema?
+¿Qué tan difícil es para usted supervisar múltiples áreas o mesas al mismo tiempo?
+¿Qué funcionalidades considera prioritarias para el rol de administrador?
+Preguntas cerradas dirigidas al administrador
+¿Existe un registro de usuarios con roles diferenciados en el restaurante? Sí/No
+¿Genera reportes de ventas o reservas periódicamente? Sí/No
+¿Puede consultar el historial de movimientos de pedidos y reservas? Sí/No
+¿Bloquea mesas por mantenimiento o eventos especiales? Sí/No
+¿Considera necesario un panel exclusivo de administración? Sí/No
+¿Asigna roles y permisos a los usuarios del sistema? Sí/No
+¿Requiere exportar reportes a PDF o Excel? Sí/No
+¿Considera útil recibir alertas automáticas de stock bajo? Sí/No
+¿Apoyaría la implementación de un sistema digital para el restaurante? Sí/No
+¿Utilizaría un panel web para administrar usuarios y reportes? Sí/No
+¿Cómo gestiona actualmente la disponibilidad de mesas y el calendario de reservas?
+¿Qué problemas le genera no tener control del stock y el límite de venta por plato?
+¿Cómo coordina los estados de los pedidos entre la cocina, el salón y la caja?
+¿Qué tan difícil es para usted gestionar las señas y los tipos de entrega (para llevar, domicilio)?
+¿Qué mejoras le gustaría ver en el panel de control del restaurante?
+Preguntas cerradas dirigidas al encargado
+¿Registra las reservas de mesas de forma digital o en papel? Sí/No
+¿Tiene un sistema para abrir disponibilidad de mesas por varias fechas? Sí/No
+¿Controla el stock de productos en el restaurante? Sí/No
+¿Cambia el estado de los pedidos (pendiente, listo, entregado)? Sí/No
+¿Gestiona el estado de las señas de los pedidos anticipados? Sí/No
+¿Registra los productos del menú semanal con precios y disponibilidad? Sí/No
+¿Considera útil un historial digital de movimientos de pedidos? Sí/No
+¿Sería útil recibir alertas automáticas de pedidos vencidos o stock bajo? Sí/No
+¿Considera necesario generar reportes automáticos de ventas? Sí/No
+¿Apoyaría la implementación de un sistema digital para el restaurante? Sí/No
+¿Cómo describiría su experiencia actual al intentar reservar una mesa en el restaurante?
+¿Qué información le gustaría encontrar al consultar la carta o el menú semanal antes de visitar el local?
+¿Qué tan importante es para usted poder consultar el estado de su pedido en tiempo real?
+¿Qué dificultades ha tenido al realizar un pedido para llevar o a domicilio?
+¿Qué le parecería poder pagar una seña del 50 % al confirmar su pedido anticipado?
+Preguntas cerradas dirigidas al cliente
+¿Ha realizado alguna reserva en el restaurante? Sí/No
+¿Prefiere reservar con anticipación o llegar sin reserva? Sí/No
+¿Consulta el menú semanal antes de visitar el restaurante? Sí/No
+¿Le interesa recibir notificaciones del estado de su pedido? Sí/No
+¿Considera útil poder cancelar su reserva desde una aplicación web? Sí/No
+¿Ha pedido para llevar o a domicilio en el restaurante? Sí/No
+¿Le gustaría consultar el menú semanal desde su celular? Sí/No
+¿Considera útil pagar una seña del 50 % al confirmar un pedido anticipado? Sí/No
+¿Le sería útil ver el historial de sus propios pedidos y reservas? Sí/No
+¿Utilizaría un sistema digital para reservar mesas y hacer pedidos? Sí/No
+Tabla 1
+Cuadro del mundo del problema
+Cliente:
+Restaurante Green
+Mundo del Problema:
+El restaurante presenta dificultades para organizar las reservas de mesas y mantener actualizada la información disponible para los clientes.
+Requerimientos Funcionales (RF):
+Gestionar menú, gestionar reservas, gestionar pedidos, gestionar usuarios, pedir reservas y pedidos.
+Requerimientos No Funcionales (RNF):
+Debe tener un buen rendimiento, velocidad, seguridad, usabilidad, escalabilidad.
+Tabla 2
+Matriz FODA — Factores del sistema de gestión del restaurante
+Fortalezas
+Debilidades
+Centralizatodalainformacióndelrestauranteenunaúnica plataforma.
+Permiteconocerentiemporealladisponibilidadde mesas.
+Reducetiempo y esfuerzo de papeleos por reserva
+Mantieneunhistorialcompletodemovimientosy operaciones.
+Facilitalaidentificaciónderesponsablesdecada reserva realizada
+Mejoraelcontroldestock disponible.
+Generareportesautomáticossobrelosreservas y ventas.
+Eltiempoinicialdecargadedatosyorganizaciónes muy tardado.
+Algunasfuncionesavanzadaspuedenrequerir capacitación inicial.
+Necesitamantenimientoperiódicodelainformación almacenada.
+Puederequeriractualizaciónfuturaparaadaptarsea nuevas necesidades institucionales.
+Oportunidades
+Amenazas
+Digitalizacióndeprocesosadministrativosdentrodel restaurante
+Avancestecnológicosquepermitenincorporarnuevas funcionalidades y mejoras al sistema.
+Obtencióndeestadísticasparamejorarla administración del restaurante
+Automatizacióndetareasqueactualmenteserealizan manualmente.
+Mejoracontinuabasadaenlaexperienciadeusode encargados y clientes
+Fallasodeteriorofísicodelosequipostecnológicos de la institución.
+Pérdidadeinformaciónporerrorestécnicossino existen respaldos adecuados.
+Riesgodeintentosdeaccesoindebidooataques informáticos a los sistemas institucionales.
+Problemasdeconectividadquedificultenelaccesoal sistema.
+Objetivo General:
+Desarrollar un sistema web para el Restaurante Green que permita gestionar pedidos del restaurante, administrar las reservas, actualizar el menú por semana con sus precios y combos, administrar los permisos de encargados y gestionar las ventas del restaurante.
+Objetivos Específicos:
+1. Facilitar a los clientes la realización de reservas de mesas y pedidos anticipados, ofreciendo opciones de retiro en el local o entrega a domicilio.
+2. Proporcionar un menú semanal actualizado con información de los platos, precios y combos disponibles, permitiendo que los encargados administren su contenido.
+3. Optimizar la administración del restaurante mediante el control de usuarios, permisos, reservas, pedidos y ventas.
+A continuación se detallan los 53 requerimientos funcionales identificados, organizados por gestión. La especificación sigue el formato Nombre-Tipo-Prioridad-Descripcion-Entrada-Proceso-Salida, recomendado por Sommerville (2016) para la documentación de requisitos. Cada requerimiento se especifica en una tabla propia.
+Tabla 7
+RF01: Iniciar sesion / cerrar sesión / verificar sesión (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF01: Iniciar sesion / cerrar sesion / verificar sesion
+Tipo
+Seguridad
+Prioridad
+Alta
+Descripcion
+Permite acceder al sistema con credenciales y mantener la sesion activa, con verificacion de expiracion.
+Entrada
+Usuario y contrasena.
+Proceso
+Verifica credenciales registradas y crea la sesion de usuario.
+Salida
+Acceso autorizado o rechazado.
+Nota. Permite acceder al sistema mediante credenciales y cerrar la sesion cuando el usuario lo requiera.
+Tabla 8
+RF02: Registrar usuario (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF02: Registrar usuario
+Tipo
+Registro
+Prioridad
+Alta
+Descripcion
+Permite registrar nuevos usuarios en el sistema.
+Entrada
+Nombre, email, contrasena.
+Proceso
+Valida y almacena la informaciÃ³n ingresada.
+Salida
+Usuario registrado correctamente.
+Nota. Permite registrar nuevos clientes en el sistema.
+Tabla 9
+RF03: Editar perfil de usuario (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF03: Editar perfil de usuario
+Tipo
+Actualizacion
+Prioridad
+Alta
+Descripcion
+Permite al usuario autenticado modificar sus datos personales (nombre, email, contrasena).
+Entrada
+Datos modificados del usuario.
+Proceso
+Valida y actualiza el registro correspondiente.
+Salida
+Perfil de usuario actualizado.
+Nota. Permite actualizar la informacion del perfil del usuario.
+Tabla 10
+RF04: Cambiar contraseña (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF04: Cambiar contraseña
+Tipo
+Seguridad
+Prioridad
+Alta
+Descripción
+Permite al usuario autenticado cambiar su contraseña proporcionando la actual y la nueva.
+Entrada
+Contraseña actual, nueva contraseña.
+Proceso
+Verifica la contraseña actual y actualiza con la nueva.
+Salida
+Contraseña cambiada.
+Nota. Permite cambiar la contraseña del usuario autenticado.
+Tabla 11
+RF05: Gestionar usuarios (CRUD) (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF05: Gestionar usuarios (CRUD)
+Tipo
+Administracion
+Prioridad
+Alta
+Descripcion
+Permite al administrador crear, leer, actualizar y desactivar usuarios del sistema.
+Entrada
+Datos del usuario y rol asignado.
+Proceso
+Valida y ejecuta la operacion de alta, modificacion o baja.
+Salida
+Usuario dado de alta, modificado o desactivado.
+Nota. Permite administrar usuarios del sistema con roles diferenciados.
+Tabla 12
+RF06: Asignar roles y permisos (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF06: Asignar roles y permisos
+Tipo
+Administracion
+Prioridad
+Alta
+Descripcion
+Permite al administrador asignar roles (cliente, encargado, administrador) a cada usuario.
+Entrada
+Usuario y rol seleccionado.
+Proceso
+Asigna el rol y los permisos correspondientes al usuario.
+Salida
+Usuario con rol asignado.
+Nota. Permite asignar roles a los usuarios del sistema.
+Tabla 13
+RF07: Hacer reserva de mesa (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF07: Hacer reserva de mesa
+Tipo
+Reserva
+Prioridad
+Alta
+Descripcion
+Permite al cliente reservar una mesa seleccionando fecha, horario y cantidad de comensales en dias con disponibilidad abierta.
+Entrada
+Fecha, horario, cantidad de comensales, id_usuario, id_mesa.
+Proceso
+Valida disponibilidad y solapamiento de horarios, y crea la reserva.
+Salida
+Reserva registrada con estado pendiente.
+Nota. Permite hacer reservas de mesas en fechas con disponibilidad abierta.
+Tabla 14
+RF08: Ver y cancelar reservas propias (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF08: Ver y cancelar reservas propias
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al cliente consultar sus reservas y cancelar aquellas pendientes.
+Entrada
+id_usuario, id_reserva.
+Proceso
+Realiza la busqueda de reservas del usuario y cambia el estado a cancelada.
+Salida
+Listado de reservas y confirmacion de cancelacion.
+Nota. Permite ver y cancelar reservas propias desde el perfil del cliente.
+Tabla 15
+RF09: Consultar detalle de reserva (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF09: Consultar detalle de reserva
+Tipo
+Consulta
+Prioridad
+Media
+Descripcion
+Permite al dueÃ±o de la reserva o a un administrador/encargado consultar el detalle completo de una reserva.
+Entrada
+id_reserva.
+Proceso
+Valida propiedad o rol y devuelve el detalle de la reserva.
+Salida
+Detalle de la reserva con datos del usuario y mesa.
+Nota. Permite consultar el detalle de una reserva.
+Tabla 16
+RF10: Cambiar estado de reservas (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF10: Cambiar estado de reservas
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado cambiar el estado de las reservas (pendiente, confirmada, cancelada, vencida, completada).
+Entrada
+id_reserva, nuevo estado.
+Proceso
+Valida y actualiza el estado de la reserva.
+Salida
+Reserva con estado actualizado.
+Nota. Permite cambiar estados de reservas.
+Tabla 17
+RF11: Bloquear mesas (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF11: Bloquear mesas
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado bloquear una mesa por un rango de fechas con un motivo.
+Entrada
+mesa_id, fecha_inicio, fecha_fin, motivo.
+Proceso
+Valida y registra el bloque de la mesa.
+Salida
+Bloque creado con identificador.
+Nota. Permite bloquear mesas por mantenimiento o eventos.
+Tabla 18
+RF12: Abrir disponibilidad de mesas (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF12: Abrir disponibilidad de mesas
+Tipo
+Administración
+Prioridad
+Alta
+Descripción
+Permite al encargado abrir disponibilidad de mesas para una fecha y rango horario.
+Entrada
+Fecha, hora_inicio, hora_fin, mesas_disponibles.
+Proceso
+Valida y registra la disponibilidad de mesas para reservas.
+Salida
+Disponibilidad guardada o actualizada.
+Nota. Permite abrir disponibilidad de mesas para reservas.
+Tabla 19
+RF13: Listar áreas del restaurante (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF13: Listar áreas del restaurante
+Tipo
+Consulta
+Prioridad
+Media
+Descripción
+Permite consultar las áreas o salones del restaurante.
+Entrada
+Ninguna.
+Proceso
+Lista todas las áreas registradas en el sistema.
+Salida
+Listado de áreas con nombre, descripción y estado.
+Nota. Permite listar áreas del restaurante.
+Tabla 20
+RF14: Gestionar areas (CRUD) (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF14: Gestionar areas (CRUD)
+Tipo
+Administracion
+Prioridad
+Media
+Descripcion
+Permite al administrador crear, editar y desactivar areas del restaurante.
+Entrada
+Nombre, descripcion, id_area.
+Proceso
+Valida y almacena o modifica el area en la base de datos.
+Salida
+Area creada, editada o desactivada.
+Nota. Permite gestionar areas del restaurante.
+Tabla 21
+RF15: Listar mesas por area (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF15: Listar mesas por area
+Tipo
+Consulta
+Prioridad
+Media
+Descripcion
+Permite listar las mesas de un area especifica.
+Entrada
+id_area.
+Proceso
+Lista las mesas filtradas por area y estado de activacion.
+Salida
+Listado de mesas con numero, capacidad y estado.
+Nota. Permite listar mesas por area.
+Tabla 22
+RF16: Gestionar mesas (CRUD) (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF16: Gestionar mesas (CRUD)
+Tipo
+Administracion
+Prioridad
+Media
+Descripcion
+Permite al administrador crear, editar y desactivar mesas asignandolas a un area.
+Entrada
+id_area, numero_mesa, capacidad, id_mesa.
+Proceso
+Valida y almacena o modifica la mesa en la base de datos.
+Salida
+Mesa creada, editada o desactivada.
+Nota. Permite gestionar mesas del restaurante.
+Tabla 23
+RF17: Hacer pedido con seña 50% (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF17: Hacer pedido con seña50%
+Tipo
+Pedido
+Prioridad
+Alta
+Descripcion
+Permite al cliente registrar un pedido seleccionando productos y cantidades, con tipo de entrega y seña del 50%.
+Entrada
+id_usuario, productos, cantidades, tipo_pedido, senia.
+Proceso
+Valida stock y limite de venta, descuenta stock, registra el pedido y la senia.
+Salida
+Pedido registrado con estado pendiente y senia registrada.
+Nota. Permite hacer pedidos con senia del 50% y tipos de entrega (con reserva, para llevar).
+Tabla 24
+RF18: Ver mis pedidos y estado de senia (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF18: Ver mis pedidos y estado de seña
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al cliente consultar sus propios pedidos y el estado de la senia asociada.
+Entrada
+id_usuario.
+Proceso
+Realiza la busqueda de pedidos del usuario y su estado de senia.
+Salida
+Listado de pedidos con estado de senia (pendiente/pagada/devuelta).
+Nota. Permite ver mis pedidos y el estado de la senia.
+Tabla 25
+RF19: Consultar detalle de pedido con items (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF19: Consultar detalle de pedido con items
+Tipo
+Consulta
+Prioridad
+Media
+Descripcion
+Permite al duenio del pedido o a un administrador/encargado consultar el detalle completo de un pedido.
+Entrada
+id_pedido.
+Proceso
+Valida propiedad o rol y devuelve el pedido con sus lineas de detalle.
+Salida
+Detalle del pedido con items y categorias.
+Nota. Permite consultar el detalle de un pedido con sus items.
+Tabla 26
+RF20: Cambiar estado de pedidos (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF20: Cambiar estado de pedidos
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado cambiar el estado de los pedidos (pendiente, en_preparacion, listo, entregado, cancelado).
+Entrada
+id_pedido, nuevo estado.
+Proceso
+Valida y actualiza el estado del pedido; registra en historial.
+Salida
+Pedido con estado actualizado.
+Nota. Permite cambiar el estado de los pedidos.
+Tabla 27
+RF21: Asignar mesero a un pedido (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF21: Asignar mesero a un pedido
+Tipo
+Gestion
+Prioridad
+Media
+Descripcion
+Permite al encargado asignar un mesero o responsable a un pedido especÃ­fico.
+Entrada
+id_pedido, id_mesero.
+Proceso
+Valida que el pedido exista y que el mesero sea activo.
+Salida
+Pedido con mesero asignado.
+Nota. Permite asignar mesero o responsable a un pedido.
+Tabla 28
+RF22: Validar stock y limite de venta (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF22: Validar stock y limite de venta
+Tipo
+Validacion
+Prioridad
+Alta
+Descripcion
+Valida que exista stock suficiente y que no se supere el limite de venta por plato.
+Entrada
+id_producto, cantidad solicitada, stock_actual, limite de venta.
+Proceso
+Compara cantidad solicitada contra stock y limite de venta; rechaza si no hay disponibilidad.
+Salida
+Pedido autorizado o rechazado por falta de stock/limite.
+Nota. Valida stock y limite de venta antes de crear pedidos.
+Tabla 29
+RF23: Descontar stock automaticamente (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF23: Descontar stock automaticamente
+Tipo
+Proceso
+Prioridad
+Alta
+Descripcion
+Al confirmar un pedido, el sistema descuenta automaticamente las unidades vendidas del stock.
+Entrada
+id_pedido, detalle_pedidos.
+Proceso
+Valida disponibilidad y reduce stock_actual de cada producto.
+Salida
+Stock actualizado tras la confirmacion del pedido.
+Nota. Descuenta automaticamente el stock al confirmar pedidos.
+Tabla 30
+RF24: Actualizar estado de seña (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF24: Actualizar estado de senia
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado gestionar el estado de la senia de los pedidos (pendiente, pagada, devuelta).
+Entrada
+id_pedido, estado_senia.
+Proceso
+Valida y actualiza el estado de la senia del pedido.
+Salida
+Senia con estado actualizado.
+Nota. Permite gestionar el estado de la senia.
+Tabla 31
+RF25: Ver carta de productos con filtros (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF25: Ver carta de productos con filtros
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite consultar la carta de productos con filtros por categoria.
+Entrada
+Categoria (filtro opcional).
+Proceso
+Lista los productos activos, opcionalmente filtrados por categoria.
+Salida
+Listado de productos de la carta.
+Nota. Permite ver la carta de productos con filtros por categoria.
+Tabla 32
+RF26: Gestionar productos (CRUD) (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF26: Gestionar productos (CRUD)
+Tipo
+Registro
+Prioridad
+Alta
+Descripcion
+Permite al encargado crear, editar y activar/desactivar productos del catalogo.
+Entrada
+id_producto, nombre, categoria, precio, activo.
+Proceso
+Valida y crea, edita o cambia el estado de activacion del producto.
+Salida
+Producto creado, editado o activado/desactivado.
+Nota. Permite crear, editar y activar/desactivar productos.
+Tabla 33
+RF27: Gestionar categorías (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF27: Gestionar categorías
+Tipo
+Administración
+Prioridad
+Media
+Descripcion
+Permite al administrador crear, editar y desactivar categorias de productos.
+Entrada
+Nombre, id_categoria.
+Proceso
+Valida y almacena o modifica la categoria.
+Salida
+Categoria creada, editada o desactivada.
+Nota. Permite gestionar categorias del catalogo.
+Tabla 34
+RF28: Gestionar stock y limite de venta por producto (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF28: Gestionar stock y limite de venta por producto
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado administrar el stock actual y establecer el limite maximo de venta por producto.
+Entrada
+id_producto, stock_actual, limite de venta.
+Proceso
+Valida y actualiza el registro de stock del producto.
+Salida
+Stock y limite de venta actualizados.
+Nota. Permite gestionar stock y limite de venta por producto.
+Tabla 35
+RF29: Consultar stock bajo / alertas (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF29: Consultar stock bajo / alertas
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite consultar los productos con stock bajo y recibir alertas de reposicion.
+Entrada
+Umbral de stock bajo (opcional).
+Proceso
+Compara stock actual contra el umbral y lista productos por debajo.
+Salida
+Listado de productos con stock bajo y alertas activas.
+Nota. Permite consultar stock bajo y recibir alertas de reposicion.
+Tabla 36
+RF30: Ver menú destacado (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF30: Ver menú destacado
+Tipo
+Consulta
+Prioridad
+Media
+Descripcion
+Permite consultar los 3 productos mas vendidos como menu destacado.
+Entrada
+Ninguna.
+Proceso
+Calcula los 3 productos mas vendidos a partir de detalle_pedidos.
+Salida
+Listado de 3 productos mas vendidos.
+Nota. Permite ver el menú destacado de productos mas vendidos.
+Tabla 37
+RF31: Reportes de ventas (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF31: Reportes de ventas
+Tipo
+Reporte
+Prioridad
+Alta
+Descripcion
+Permite al administrador consultar reportes de ventas por periodo.
+Entrada
+Fecha desde, fecha hasta.
+Proceso
+Agrega y calcula metricas de ventas desde la base de datos.
+Salida
+Reportes de ventas por periodo.
+Nota. Permite ver reportes de ventas.
+Tabla 38
+RF32: Productos mas vendidos (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF32: Productos mas vendidos
+Tipo
+Reporte
+Prioridad
+Media
+Descripcion
+Permite consultar el ranking de productos mas vendidos.
+Entrada
+Ninguna.
+Proceso
+Agrupa y suma cantidades vendidas por producto.
+Salida
+Listado de productos mas vendidos con cantidades.
+Nota. Permite consultar productos mas vendidos.
+Tabla 39
+RF33: Reservas por dia (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF33: Reservas por dia
+Tipo
+Reporte
+Prioridad
+Media
+Descripcion
+Permite al administrador consultar la cantidad de reservas agrupadas por dia.
+Entrada
+Fecha desde, fecha hasta.
+Proceso
+Agrupa y cuenta reservas por fecha.
+Salida
+Reportes de reservas por dia.
+Nota. Permite ver reportes de reservas por dia.
+Tabla 40
+RF34: Exportar reportes a CSV (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF34: Exportar reportes a CSV
+Tipo
+Reporte
+Prioridad
+Alta
+Descripcion
+Permite al administrador exportar el reporte de ventas a formato CSV.
+Entrada
+Fecha desde, fecha hasta, formato.
+Proceso
+Genera el reporte y lo envia como archivo CSV descargable.
+Salida
+Archivo CSV con el reporte de ventas.
+Nota. Permite exportar reportes de ventas a CSV.
+Tabla 41
+RF35: Consultar historial de movimientos (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF35: Consultar historial de movimientos
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al administrador consultar el historial completo de movimientos del sistema.
+Entrada
+Filtros por tabla, accion o fechas.
+Proceso
+Busca y devuelve los movimientos registrados en historial_movimientos.
+Salida
+Listado de movimientos con usuario, fecha y detalles.
+Nota. Permite consultar el historial de movimientos.
+Tabla 42
+RF36: Registro automático de movimientos (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF36: Registro automatico de movimientos
+Tipo
+Proceso
+Prioridad
+Alta
+Descripcion
+El sistema registra automaticamente cada movimiento relevante (creaciones, modificaciones, cambios de estado).
+Entrada
+Accion ejecutada por un usuario.
+Proceso
+Crea un registro en historial_movimientos con tabla, registro, accion y usuario.
+Salida
+Movimiento registrado en el historial.
+Nota. Registra automaticamente los movimientos del sistema.
+Tabla 43
+RF37: Gestionar horarios de atencion (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF37: Gestionar horarios de atencion
+Tipo
+Configuracion
+Prioridad
+Media
+Descripcion
+Permite al encargado crear, editar y desactivar horarios de apertura y cierre.
+Entrada
+area, dia de la semana, hora apertura, hora cierre.
+Proceso
+Valida y almacena o modifica el horario de funcionamiento.
+Salida
+Horario creado, editado o desactivado.
+Nota. Permite gestionar horarios de atencion por area.
+Tabla 44
+RF38: Configuración del restaurante (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF38: Configuración del restaurante
+Tipo
+Configuración
+Prioridad
+Media
+Descripción
+Permite al administrador configurar datos del restaurante (nombre, direccion, contacto).
+Entrada
+Nombre, direccion, telefono, email.
+Proceso
+Valida y almacena la configuracion del restaurante.
+Salida
+Configuracion guardada o actualizada.
+Nota. Permite configurar los datos del restaurante.
+Tabla 45
+RF39: Verificar sesión activa (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF39: Verificar sesion activa
+Tipo
+Seguridad
+Prioridad
+Media
+Descripcion
+Permite verificar si la sesion del usuario sigue activa antes de operar.
+Entrada
+Cookie de sesion.
+Proceso
+Valida la expiracion y validez de la sesion.
+Salida
+Sesion valida o expirada.
+Nota. Verifica que la sesion este activa antes de cada operacion.
+Tabla 46
+RF40: Cerrar sesión (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF40: Cerrar sesión
+Tipo
+Seguridad
+Prioridad
+Media
+Descripcion
+Permite al usuario cerrar su sesion y salir del sistema.
+Entrada
+id de sesion.
+Proceso
+Invalida la sesion y redirige al inicio.
+Salida
+Sesion cerrada.
+Nota. Permite cerrar la sesión del usuario.
+Tabla 47
+RF43: Redirigir rutas por rol (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF43: Redirigir usuarios a paneles por rol
+Tipo
+Navegación
+Prioridad
+Alta
+Descripcion
+Redirige automáticamente al panel correspondiente según el rol del usuario.
+Entrada
+Rol del usuario autenticado.
+Proceso
+Detecta el rol y redirige al panel de cliente, encargado o administrador.
+Salida
+Panel correspondiente al rol.
+Nota. Redirige al panel segun el rol del usuario.
+Tabla 48
+RF44: Ver mis datos de perfil (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF44: Ver mis datos de perfil
+Tipo
+Consulta
+Prioridad
+Media
+Descripcion
+Permite al cliente consultar sus propios datos registrados en el sistema.
+Entrada
+id_usuario.
+Proceso
+Busca y devuelve los datos del usuario autenticado.
+Salida
+Datos del perfil del usuario.
+Nota. Permite ver los datos del perfil del cliente.
+Tabla 49
+RF45: Listar mesas disponibles para reserva (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF45: Listar mesas disponibles para reserva
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al cliente consultar que mesas estan disponibles en una fecha dada.
+Entrada
+Fecha.
+Proceso
+Calcula la disponibilidad basada en mesas y reservas existentes.
+Salida
+Listado de mesas disponibles para la fecha.
+Nota. Permite consultar disponibilidad de mesas para reserva.
+Tabla 50
+RF46: Consultar disponibilidad de mesas por fecha (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF46: Consultar disponibilidad de mesas por fecha
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite consultar horarios disponibles de mesas en una fecha especifica.
+Entrada
+Fecha, id_mesa (opcional).
+Proceso
+Calcula horarios disponibles basada en disponibilidad y reservas.
+Salida
+Horarios disponibles para la mesa/fecha consultada.
+Nota. Permite consultar disponibilidad de mesas para reservas.
+Tabla 51
+RF47: Cambiar estado de reserva (detallado) (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF47: Cambiar estado de reserva (detallado)
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado cambiar el estado de reservas entre pendiente, confirmada, cancelada, vencida, completada.
+Entrada
+id_reserva, nuevo estado.
+Proceso
+Valida y actualiza el estado de la reserva.
+Salida
+Reserva con estado actualizado.
+Nota. Permite cambiar estados de reservas del restaurante.
+Tabla 52
+RF48: Cambiar estado de pedido (detallado) (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF48: Cambiar estado de pedido (detallado)
+Tipo
+Gestion
+Prioridad
+Alta
+Descripcion
+Permite al encargado cambiar el estado de pedidos entre pendiente, en_preparacion, listo, entregado, cancelado.
+Entrada
+id_pedido, nuevo estado.
+Proceso
+Valida y actualiza el estado del pedido.
+Salida
+Pedido con estado actualizado.
+Nota. Permite cambiar estados de pedidos del restaurante.
+Tabla 53
+RF49: Consultar reservas del dia (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF49: Consultar reservas del dia
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al encargado consultar todas las reservas programadas para un dia.
+Entrada
+Fecha.
+Proceso
+Busca y lista todas las reservas de la fecha indicada.
+Salida
+Listado de reservas del dia con mesa y cliente.
+Nota. Permite ver las reservas programadas para un dia.
+Tabla 54
+RF50: Consultar pedidos del dia (Prioridad: Alta)
+Campo
+Detalle
+Nombre
+RF50: Consultar pedidos del dia
+Tipo
+Consulta
+Prioridad
+Alta
+Descripcion
+Permite al encargado consultar todos los pedidos registrados para un dia.
+Entrada
+Fecha.
+Proceso
+Busca y lista todos los pedidos de la fecha indicada.
+Salida
+Listado de pedidos del dia con cliente y total.
+Nota. Permite ver los pedidos registrados para un dia.
+Tabla 55
+RF51: Gestionar menú semanal (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF51: Gestionar menu semanal
+Tipo
+Gestion
+Prioridad
+Media
+Descripcion
+Permite al encargado gestionar que platos estan disponibles cada semana.
+Entrada
+Platos, precios, disponibilidad, semana.
+Proceso
+Valida y publica o actualiza el menu semanal.
+Salida
+Menu semanal publicado o actualizado.
+Nota. Permite gestionar el menu semanal del restaurante.
+Tabla 56
+RF53: Exportar historial de movimientos (Prioridad: Media)
+Campo
+Detalle
+Nombre
+RF53: Exportar historial de movimientos
+Tipo
+Reporte
+Prioridad
+Media
+Descripción
+Permite al administrador exportar el historial de movimientos a formato CSV.
+Entrada
+Filtros por tabla, accion o fechas.
+Proceso
+Genera el archivo CSV con los movimientos filtrados.
+Salida
+Archivo CSV con el historial de movimientos.
+Nota. Permite exportar el historial de movimientos a CSV.
+Seguridad: Contraseñas con hash bcrypt; sesiones cookie HttpOnly; rate limiting en login/registro.
+Rendimiento: Tiempo de respuesta inferior a 3 segundos para cargar menú, calendario y pedidos.
+Usabilidad: Interfaz clara e intuitiva, navegable desde computadora y celular; mensajes en español.
+Disponibilidad: Sistema disponible durante el horario de atención del restaurante; copias de seguridad periódicas.
+Compatibilidad: Compatible con navegadores web modernos y diseño responsivo.
+El sistema estará destinado al uso de administradores, encargados y clientes autorizados, proporcionando mecanismos para gestionar reservas, pedidos, stock, menú semanal, señas, historial de movimientos y generación de reportes.
+El sistema no incluirá:
+Pagos en línea o integración con pasarelas de pago reales (la seña se gestiona como estado pendiente/pagada/devuelta).
+Facturación electrónica vinculada a AFIP u otro ente fiscal.
+Integración con impresoras de cocina o comandas físicas automáticas.
+Gestión de proveedores y compras de insumos.
+Módulo de delivery o envíos a domicilio propio (el domicilio se gestiona como tipo de pedido con dirección).
+Aplicación móvil nativa para Android o iOS (el acceso será vía navegador web).
+Control mediante códigos QR o RFID.
+Manual de usuario para clientes, encargados y administradores.
+Contratación de un hosting en la nube
+Despliegue (subida) de la base de datos a un hosting
+Publicación del frontend y backend con dominio institucional o subdominio.
+Manual de Usuario para guiar el uso del sistema.
+Figura 2
+Diagrama de Entidad- Relación
+Nota: En este diagrama se muestran las relaciones de las tablas de la base de datos.
+Diccionario de Datos — Sistema de Gestión de Restaurante “Green en la Casa Blanca”
+Tabla 57
+Nombre de Archivo: roles
+Fecha de creación: 18/11/2026
+Descripción: Roles del sistema (cliente, encargado, administrador).
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_rol
+10
+Numérico
+Identificador del rol.
+nombre
+50
+Carácter
+Nombre del rol
+descripcion
+200
+Carácter
+Descripción del rol.
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación del rol.
+Relaciones: id_rol en tabla usuarios
+Campos Clave: PK: id_rol
+Tabla 58
+Nombre de Archivo: usuarios
+Fecha de creación: 18/11/2026
+Descripción: Personas registradas con credenciales y rol.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_usuario
+10
+Numérico
+Identificador del usuario.
+nombre
+100
+Carácter
+Nombre completo del usuario.
+email
+150
+Carácter
+Correo electrónico del usuario.
+telefono
+30
+Carácter
+Teléfono de contacto.
+contrasena_hash
+255
+Carácter
+Hash bcrypt de la contraseña.
+id_rol
+10
+Numérico
+Rol asignado para los usuarios.
+activo
+1
+Booleano
+Indica si el usuario puede iniciar sesión.
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación del usuario.
+fecha_actualizacion
+—
+Fecha/Hora
+Momento de última actualización del usuario.
+Relaciones: id_rol con roles
+Campos Clave: PK: id_usuario | UK: email | FK: id_rol
+Tabla 59
+Nombre de Archivo: mesas
+Fecha de creación: 18/11/2026
+Descripción: Mesas físicas con capacidad del restaurante.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_mesa
+10
+Numérico
+Identificador de la mesa.
+numero_mesa
+20
+Carácter
+Identificador legible de la mesa.
+capacidad
+11
+Numérico
+Cantidad de personas por mesa
+activo
+1
+Booleano
+Indica si la mesa está habilitada.
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación de la mesa.
+Relaciones: id_mesa con pedidos
+Campos Clave: PK: id_mesa
+Tabla 60
+Nombre de Archivo: categorias
+Fecha de creación: 18/11/2026
+Descripción: Categorías de la carta (Entradas, Platos principales, Postres, Bebidas).
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_categoria
+10
+Numérico
+Identificador de la categoría. Clave primaria.
+nombre
+50
+Carácter
+Nombre de la categoría (único).
+activo
+1
+Booleano
+Indica si la categoría se muestra en la carta.
+Relaciones:id_categorias con productos
+Campos Clave: PK: id_categoria
+Tabla 61
+Nombre de Archivo: productos
+Fecha de creación: 18/11/2026
+Descripción: Catálogo de platos y bebidas con precio e imagen.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_producto
+10
+Numérico
+Identificador del producto. Clave primaria.
+nombre
+150
+Carácter
+Nombre del producto.
+id_categoria
+10
+Numérico
+Categoría a la que pertenece el producto.
+precio
+10,2
+Numérico
+Precio de venta del producto.
+imagen_url
+500
+Carácter
+URL de la imagen del plato.
+imagen_public_id
+200
+Carácter
+Identificador de la imagen en el gestor de imágenes.
+activo
+1
+Booleano
+Indica si el producto se muestra en la carta.
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación del productoor defecto.
+Relaciones: id_categoria con categorias. id_producto con stock_producto
+Campos Clave: PK: id_producto | FK: id_categoria
+Tabla 62
+Nombre de Archivo: stock_producto
+Fecha de creación: 18/11/2026
+Descripción: Inventario y límite de venta por producto (1:1).
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_stock
+10
+Numérico
+Identificador del registro de stock. Clave primaria. Valor obligatorio, único y autogenerado.
+id_producto
+10
+Numérico
+Producto al que corresponde el stock (1:1). Referencia a productos. Valor obligatorio y único.
+stock_actual
+11
+Numérico
+Unidades disponibles del producto. Valor obligatorio, con 0 por defecto.
+limite_venta
+11
+Numérico
+Máximo de unidades que se pueden vender (0 = sin límite). Valor obligatorio, con 0 por defecto.
+activo
+1
+Booleano
+Indica si el registro de stock está activo. Valor obligatorio, con 1 por defecto.
+fecha_actualizacion
+—
+Fecha/Hora
+Momento de última actualización del stock. Admite valor nulo.
+Relaciones: id_producto con productos.
+Campos Clave: PK: id_stock | FK: id_producto
+Tabla 63
+Nombre de Archivo: pedidos
+Fecha de creación: 18/11/2026
+Descripción: Pedidos con tipo, seña y saldo.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_pedido
+10
+Numérico
+Identificador del pedido. Clave primaria.
+id_mesa
+10
+Numérico
+Mesa donde se consumió el pedido (solo con_reserva)
+id_mesero
+10
+Numérico
+Mesero responsable del pedido.
+id_usuario
+10
+Numérico
+Cliente que realizó el pedido. Referencia a usuarios.
+fecha_pedido
+—
+Fecha/Hora
+Fecha y hora del pedido.
+estado
+20
+Carácter
+Estado del pedido
+total
+10,2
+Numérico
+Total del pedido.
+fecha_actualizacion
+—
+Fecha/Hora
+Momento de última actualización del pedido.
+tipo_pedido
+—
+Carácter
+Tipo de pedido
+senia
+10,2
+Numérico
+Seña anticipada del pedido
+estado_senia
+—
+Carácter
+Estado de la seña
+saldo_pendiente
+12,2
+Numérico
+Saldo restante tras la seña.
+numero_pedido
+30
+Carácter
+Número del pedido
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación del pedido.
+Relaciones: id_mesa referencia con mesas; id_mesero e id_usuario con usuarios(id).
+Campos Clave: PK: id_pedido | FK: id_mesa , id_mesero, usuarios(id)
+Tabla 63
+Nombre de Archivo: detalle_pedidos
+Fecha de creación: 18/11/2026
+Descripción: Líneas de cada pedido: producto, cantidad y precio unitario.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_detalle
+10
+Numérico
+Identificador de la línea de detalle.
+id_pedido
+10
+Numérico
+Pedido al que pertenece la línea.
+id_producto
+10
+Numérico
+Producto vendido. Referencia a productos.
+cantidad
+11
+Numérico
+Unidades vendidas.
+precio_unitario
+10,2
+Numérico
+Precio unitario al momento de la venta
+Relaciones: id_pedido con tabla pedidos, id_producto con productos.
+Campos Clave: PK: id_detalle | FK: id_pedido , id_producto
+Tabla 65
+Nombre de Archivo: reservas
+Fecha de creación: 18/11/2026
+Descripción: Reservas de mesa confirmadas con datos del cliente.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_reserva
+10
+Numérico
+Identificador de la reserva.
+id_mesa
+10
+Numérico
+Mesa reservada. Referencia a mesas.
+id_usuario
+10
+Numérico
+Cliente que reservó. Referencia a usuarios.
+comensales
+10
+Numérico
+Cantidad de personas. .
+telefono
+30
+Carácter
+Teléfono de contacto de la reserva.
+ocasion
+100
+Carácter
+Ocasión de la reserva.
+fecha_reserva
+—
+Fecha
+Día de la reserva.
+hora_inicio
+—
+Fecha/Hora
+Hora de inicio de la reserva.
+hora_fin
+—
+Fecha/Hora
+Hora de fin de la reserva.
+estado
+20
+Carácter
+Estado: pendiente, confirmada, cancelada, vencida, completada.
+fecha_creacion
+—
+Fecha/Hora
+Momento de creación de la reserva.
+fecha_actualizacion
+—
+Fecha/Hora
+Momento de última actualización de la reserva.
+observaciones
+500
+Carácter
+Observaciones del cliente
+Relaciones: id_mesa contabla mesas, id_usuario con tabla usuarios
+Campos Clave: PK: id_reserva | FK: id_mesa, id_usuario
+Tabla 66
+Nombre de Archivo: historial_movimientos
+Fecha de creación: 18/11/2026
+Descripción: Auditoría de todos los movimientos del sistema.
+Campo
+Tamaño
+Tipo de Dato
+Descripción
+id_historial
+10
+Numérico
+Identificador del movimiento.
+tabla_afectada
+50
+Carácter
+Tabla sobre la que se actuó.
+id_registro
+10
+Numérico
+Identificador del registro afectado.
+accion
+20
+Carácter
+Acciones realizadas
+detalles
+texto largo
+Carácter
+Detalle de historial
+id_usuario
+10
+Numérico
+Usuario que realizó el movimiento.
+fecha_movimiento
+—
+Fecha/Hora
+Fecha y hora del movimiento. .
+direccion_ip
+45
+Carácter
+Dirección IP del usuario.
+Relaciones: id_usuario con tabla usuario
+Campos Clave: PK: id_historial | FK: id_usuario
+Figura 3 Diagrama de Casos de Uso
+Nota: Diagrama creado en draw.io
+Nota: Diagrama creado en draw.io
+Plan de Mantenimiento y Capacitación
+Sistema de Gestión de Restaurante “Green en la Casa Blanca”
+Organizar las actividades necesarias para conservar el correcto funcionamiento del sistema, detectar errores a tiempo y aplicar las actualizaciones y mejoras que el restaurante necesite, de modo que las reservas, los pedidos, el stock y la administración de usuarios estén disponibles y sus datos protegidos.
+Responsable
+Quién es
+Funciones en el mantenimiento
+Equipo de desarrollo
+Equipo que construyó el sistema
+Revisión de funcionamiento y errores, actualizaciones, correcciones y pruebas.
+Responsable técnico
+Persona designada para el soporte técnico
+Respaldos, restauración, control de la base de datos, atención de incidencias e instalación de parches.
+Administrador del sistema
+Cuenta con rol administrador
+Seguridad, usuarios y roles, contraseñas de administrador, revisión del historial de movimientos y aprobación de cambios.
+Encargado del restaurante
+Responsable de la operación diaria
+Control diario de reservas y pedidos, control de stock y reporte de incidencias.
+Actividad
+Descripción
+Frecuencia
+Duración
+Responsable
+Verificación del respaldo diario
+Comprobar que la copia automática de la base de datos se generó sin errores y se puede leer.
+Diaria
+15 minutos
+Responsable técnico
+Control de reservas y pedidos
+Revisar reservas pendientes o vencidas (no confirmadas o no presentadas) y pedidos pendientes o detenidos en un estado intermedio; corregir inconsistencias.
+Diaria
+30 minutos
+Encargado del restaurante
+Respaldo de información
+Realizar una copia de seguridad completa de la base de datos y guardarla fuera del servidor de producción.
+Semanal
+1 hora
+Responsable técnico
+Control de stock
+Revisar productos con stock bajo, con límite de venta alcanzado o activos sin stock.
+Semanal
+1 hora
+Encargado del restaurante
+Control de usuarios y auditoría
+Revisar el historial de movimientos para detectar cambios o accesos inusuales, y verificar usuarios activos y roles asignados.
+Semanal
+1 hora
+Administrador del sistema
+Control de información
+Verificar el registro y la consulta de datos: coherencia entre pedidos, detalle, total, seña y saldo pendiente; reservas con mesa y usuario válidos; integridad y rendimiento de la base de datos.
+Mensual
+1 hora
+Responsable técnico
+Cambio de contraseñas de administrador
+Renovar las contraseñas de las cuentas administradoras según la política de seguridad.
+Mensual
+30 minutos
+Administrador del sistema
+Prueba de restauración
+Restaurar la última copia completa en un entorno de pruebas para confirmar que los datos se recuperan.
+Mensual
+2 horas
+Responsable técnico
+Revisión del funcionamiento
+Comprobar que la aplicación funcione correctamente: ingreso, reservas, pedidos, stock, carta y gestión de usuarios; medir tiempos de respuesta.
+Mensual
+2 horas
+Equipo de desarrollo
+Revisión de errores
+Analizar las incidencias registradas en el mes, identificar sus causas, corregir los errores y elaborar el reporte de mejoras.
+Mensual
+2 horas
+Equipo de desarrollo
+Actualización del software
+Instalar parches y actualizaciones de componentes, y realizar ajustes y mejoras (nuevas categorías de producto, cambios operativos o normativos).
+Trimestral
+3 horas
+Equipo de desarrollo
+Pruebas de funcionamiento
+Verificar, primero en un entorno de pruebas y luego en producción, que las funciones principales siguen operando después de las modificaciones.
+Después de cada actualización
+2 horas
+Equipo de desarrollo
+Atención de incidencias (correctivo)
+Atender las fallas reportadas por los usuarios según su prioridad (ver 1.4).
+Según demanda
+1 a 2 horas por incidencia
+Responsable técnico y Equipo de desarrollo
+Cualquier usuario que detecte una falla la comunica al encargado del restaurante o al responsable técnico, que la registra con fecha, quién la reporta, descripción, módulo afectado, prioridad y pasos para reproducirla. Luego se diagnostica la causa, se corrige y se prueba en un entorno de pruebas, se despliega en producción y, por último, quien la reportó confirma la solución y se cierra el registro.
+Prioridad
+Situación
+Tiempo máximo de atención
+Crítica
+El sistema no está disponible o no se pueden tomar reservas ni pedidos.
+4 horas hábiles
+Alta
+Falla en una función principal que tiene una alternativa temporal.
+1 día hábil
+Media
+Error que no impide trabajar.
+3 días hábiles
+Baja
+Mejora de interfaz o de usabilidad.
+Se incluye en la próxima actualización trimestral
+Los tiempos de la guía se mantuvieron para las actividades mensuales, trimestrales y de respaldo semanal. Se agregaron tareas diarias breves porque el restaurante recibe reservas y pedidos todos los días, y un error o la pérdida de datos afecta el servicio de inmediato. La prueba de restauración mensual se incorporó porque una copia que nunca se restauró no garantiza que los datos se puedan recuperar. El control de stock es semanal porque el límite de venta condiciona lo que se puede ofrecer en la carta.
+Orientar a los usuarios en el manejo del sistema para que utilicen sus funciones de forma autónoma, correcta y segura, y reducir la dependencia del soporte técnico en las operaciones cotidianas.
+Destinatarios
+Descripción
+Funciones del sistema que utilizan
+Clientes
+Usuarios finales del restaurante.
+Reservar mesa, consultar la carta, hacer pedidos, seguir su estado y cancelar.
+Encargados del restaurante
+Responsables de la operación diaria del salón y la cocina.
+Reservas del día, mesas, pedidos y sus estados, stock, carta y reportes.
+Administradores del sistema
+Responsables de la configuración global y de los usuarios.
+Usuarios y roles, vista global de reservas y pedidos, respaldos e historial de movimientos.
+Tema de capacitación
+Contenidos o actividades
+Destinatarios
+Frecuencia sugerida
+Duración estimada
+Responsable
+Acceso al sistema y uso general
+Registro e ingreso con correo y contraseña, cierre de sesión y reconocimiento de las opciones y funciones principales según el rol.
+Todos los usuarios
+Inicial
+30 minutos
+Equipo de desarrollo
+Reservas y pedidos
+Reservar una mesa (fecha, hora, comensales, observaciones), consultar la carta por categorías, hacer un pedido (con reserva o para llevar), conocer la seña y el saldo, seguir el estado y cancelar.
+Clientes
+Inicial
+30 minutos
+Equipo de desarrollo
+Gestión de reservas y mesas
+Consulta de las reservas del día y sus estados (pendiente, confirmada, cancelada, vencida, completada), asignación de mesas según su capacidad y habilitación de mesas. Los administradores ven además todas las reservas del sistema y pueden reasignarlas.
+Encargados y administradores
+Inicial
+1 hora
+Equipo de desarrollo
+Gestión de pedidos
+Registro y seguimiento de pedidos, cambio de estado (pendiente, en preparación, listo, entregado, cancelado), asignación de mesero, detalle del pedido y control de seña y saldo pendiente.
+Encargados y administradores
+Inicial
+1 hora
+Equipo de desarrollo
+Gestión de stock y carta
+Carga y ajuste de stock, límite de venta, alta y edición de productos y categorías, activación o desactivación de productos y carga de imágenes.
+Encargados
+Inicial
+1 hora
+Equipo de desarrollo
+Consultas y reportes
+Búsqueda de reservas y pedidos y generación de reportes de ventas y consumo diario, si corresponde.
+Encargados
+Inicial
+1 hora
+Equipo de desarrollo
+Gestión de usuarios y roles
+Alta, edición y baja (desactivación) de usuarios, asignación de roles (cliente, encargado, administrador) y criterios para contraseñas seguras.
+Administradores
+Inicial
+1 hora 30 minutos
+Equipo de desarrollo
+Respaldo y auditoría del sistema
+Copias de seguridad y restauración de la base de datos, consulta del historial de movimientos, detección de actividad inusual y reporte de incidencias.
+Administradores
+Inicial
+2 horas
+Responsable técnico
+Seguridad y buenas prácticas
+Uso responsable de las cuentas, protección de contraseñas y de los datos personales de los clientes, y cierre de sesión en equipos compartidos.
+Todos los usuarios
+Inicial y refuerzo semestral
+30 minutos
+Responsable técnico
+Destinatarios
+Temas que cursan
+Duración total inicial
+Clientes
+Acceso y uso general, reservas y pedidos, seguridad
+1 hora 30 minutos
+Encargados del restaurante
+Acceso y uso general, reservas y mesas, pedidos, stock y carta, consultas y reportes, seguridad
+5 horas
+Administradores del sistema
+Acceso y uso general, reservas y mesas, pedidos, usuarios y roles, respaldo y auditoría, seguridad
+6 horas 30 minutos
+La semana 1 corresponde a la primera semana de capacitación, previa a la puesta en marcha del sistema. Las capacitaciones pueden ser presenciales o por videoconferencia, según la disponibilidad de los participantes.
+Cuándo
+Destinatarios
+Sesión
+Temas
+Duración
+Responsable
+Semana 1
+Administradores
+Sesión 1
+Acceso y uso general; usuarios y roles
+2 horas
+Equipo de desarrollo
+Semana 1
+Administradores
+Sesión 2
+Reservas y mesas; pedidos
+2 horas
+Equipo de desarrollo
+Semana 1
+Administradores
+Sesión 3
+Respaldo y auditoría; seguridad
+2 horas 30 minutos
+Responsable técnico
+Semana 2
+Encargados
+Sesión 1
+Acceso y uso general; reservas y mesas; pedidos
+2 horas 30 minutos
+Equipo de desarrollo
+Semana 2
+Encargados
+Sesión 2
+Stock y carta; consultas y reportes; seguridad
+2 horas 30 minutos
+Equipo de desarrollo y Responsable técnico
+Semana 3
+Clientes
+Sesión única
+Acceso y uso general; reservas y pedidos; seguridad
+1 hora 30 minutos
+Equipo de desarrollo y Responsable técnico
+Cada 6 meses
+Todos los usuarios
+Refuerzo
+Seguridad y buenas prácticas
+30 minutos
+Responsable técnico
+Materiales: guía rápida por rol, videos tutoriales de hasta 5 minutos y ejercicios prácticos guiados en el entorno de pruebas.
+Evaluación: cada participante completa una prueba práctica supervisada (clientes: una reserva y un pedido de prueba; encargados: actualizar stock, cambiar el estado de un pedido y asignar una mesa; administradores: crear un usuario, asignarle un rol y realizar un respaldo de prueba) y responde una encuesta breve de satisfacción. Los resultados quedan en el acta de capacitación de cada participante.
+Soporte posterior: consultas por correo o grupo de mensajería, de lunes a viernes de 9:00 a 18:00, con respuesta en un máximo de 24 horas hábiles. Se pueden pedir sesiones de refuerzo adicionales.
+La guía propone 1 hora para el acceso y 2 horas para la gestión de información. Aquí el acceso se redujo a 30 minutos porque es un flujo corto, y la gestión de información se dividió en reservas y mesas, pedidos, y stock y carta, que son las funciones reales del sistema. Los clientes reciben la capacitación más corta porque sus flujos son simples, mientras que los administradores reciben la más larga por la responsabilidad que tienen sobre los usuarios, los respaldos y la seguridad.
+Pressman, R. S. (2010). Software engineering: A practitioner’s approach (7th ed.). McGraw-Hill.
+Sommerville, I. (2016). Software engineering (10th ed.). Pearson.

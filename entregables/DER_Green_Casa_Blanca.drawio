@@ -1,11 +1,11 @@
 <mxfile host="app.diagrams.net" agent="MuseSpark">
   <diagram id="der-green-casa-blanca" name="DER - Green en la Casa Blanca (UML)">
-    <mxGraphModel dx="3611" dy="2253" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+    <mxGraphModel dx="4913" dy="2955" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="der_title" parent="1" style="text;html=1;align=left;verticalAlign=top;fontSize=14;fontStyle=1;whiteSpace=wrap;" value="DER — Green en la Casa Blanca (Notación UML / Barker)&#xa;Basado exclusivamente en el Diccionario de Datos&#xa;Todas las tablas normalizadas y relacionadas (PK → FK)" vertex="1">
-          <mxGeometry height="60" width="700" x="740" y="-340" as="geometry" />
+        <mxCell id="der_title" parent="1" style="text;html=1;align=left;verticalAlign=top;fontSize=14;fontStyle=1;whiteSpace=wrap;" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;DER — Green en la Casa Blanca&amp;nbsp;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="530" x="240" y="-310" as="geometry" />
         </mxCell>
         <mxCell id="t_roles" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;ROLES&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_rol&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;nombre&lt;br&gt;descripcion&lt;br&gt;fecha_creacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
           <mxGeometry height="110" width="210" x="-110" y="-10" as="geometry" />
