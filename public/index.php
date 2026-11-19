@@ -8,33 +8,24 @@ use Restaurante\Config\Config;
 use Restaurante\Database\Conexion;
 use Restaurante\Logger;
 use Restaurante\Dao\AreaDao;
-use Restaurante\Dao\BloqueMesaDao;
 use Restaurante\Dao\DetallePedidoDao;
-use Restaurante\Dao\HorarioFuncionamientoDao;
 use Restaurante\Dao\IntentosLoginDao;
 use Restaurante\Dao\MesaDao;
 use Restaurante\Dao\PedidoDao;
 use Restaurante\Dao\ProductoDao;
-use Restaurante\Dao\RecuperarContrasenaDao;
 use Restaurante\Dao\ReservaDao;
 use Restaurante\Dao\UsuarioDao;
 use Restaurante\Middleware\AuthMiddleware;
 use Restaurante\Middleware\RateLimiterMiddleware;
 use Restaurante\Service\ServicioDeAutenticacion;
-use Restaurante\Service\ServicioDeBloques;
-use Restaurante\Service\ServicioDeDisponibilidad;
-use Restaurante\Service\ServicioDeHorarios;
 use Restaurante\Service\ServicioDeMesas;
 use Restaurante\Service\ServicioDePedidos;
-use Restaurante\Service\ServicioDeCloudinary;
 use Restaurante\Service\ServicioDeProductos;
 use Restaurante\Service\ServicioDeReservas;
 use Restaurante\Validator\ValidadorDeReserva;
 use Restaurante\Controller\AreaAdminController;
 use Restaurante\Controller\AreaController;
 use Restaurante\Controller\AuthController;
-use Restaurante\Controller\BloqueAdminController;
-use Restaurante\Controller\HorarioAdminController;
 use Restaurante\Controller\MesaAdminController;
 use Restaurante\Controller\MesaController;
 use Restaurante\Controller\PedidoController;
@@ -71,8 +62,7 @@ if (is_file($envFile) && !$esProduccion) {
             [$clave, $valor] = explode('=', $linea, 2);
             $clave = trim($clave);
             $valor = trim($valor, "\"'");
-            // Solo establecer desde .env si no existe ni en $_ENV ni en el entorno del contenedor (getenv).
-            // Esto evita que valores locales (ej. DB_HOST=127.0.0.1) sobrescriban las variables de Railway.
+            // Solo establecer desde .env si no existe ya en el entorno.
             if (!isset($_ENV[$clave]) && !getenv($clave)) {
                 $_ENV[$clave] = $valor;
                 putenv(sprintf('%s=%s', $clave, $valor));
@@ -85,6 +75,11 @@ $logDir = $_ENV['LOG_DIR'] ?? __DIR__ . '/../logs';
 Logger::init($logDir);
 
 ConfiguracionSesion::aplicar();
+
+// Leer cuerpo de la petición una sola vez y dejarlo disponible para todos los controladores
+if (!isset($_SERVER['RAW_INPUT'])) {
+    $_SERVER['RAW_INPUT'] = @file_get_contents('php://input');
+}
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -108,55 +103,46 @@ $pedidoDao = new PedidoDao();
 $reservaDao = new ReservaDao();
 $productoDao = new ProductoDao();
 $detallePedidoDao = new DetallePedidoDao();
-$horarioDao = new HorarioFuncionamientoDao();
-$bloqueDao = new BloqueMesaDao();
-$recuperarDao = new RecuperarContrasenaDao();
-$auth = new ServicioDeAutenticacion($usuarioDao, $intentosDao, $recuperarDao);
+$auth = new ServicioDeAutenticacion($usuarioDao, $intentosDao);
 $servicioDeMesas = new ServicioDeMesas($areaDao, $mesaDao);
-$servicioDeDisponibilidad = new ServicioDeDisponibilidad();
 $validadorDeReserva = new ValidadorDeReserva($reservaDao, $mesaDao);
 $servicioDeReservas = new ServicioDeReservas($reservaDao, $validadorDeReserva);
 $servicioDePedidos = new ServicioDePedidos($pedidoDao, $productoDao, $mesaDao);
-$cloudinary = new ServicioDeCloudinary();
-$servicioDeProductos = new ServicioDeProductos($productoDao, $cloudinary);
-$servicioDeHorarios = new ServicioDeHorarios($horarioDao);
-$servicioDeBloques = new ServicioDeBloques($bloqueDao);
+$servicioDeProductos = new ServicioDeProductos($productoDao);
 $authMiddleware = new AuthMiddleware($auth);
 $rateLimiter = new RateLimiterMiddleware();
 
 $authController = new AuthController($auth, $authMiddleware, $rateLimiter, $usuarioDao);
 $areaController = new AreaController($servicioDeMesas);
-$mesaController = new MesaController($servicioDeMesas, $servicioDeDisponibilidad);
+$mesaController = new MesaController($servicioDeMesas);
 $reservaController = new ReservaController($servicioDeReservas, $authMiddleware);
 $pedidoController = new PedidoController($authMiddleware);
 $productoController = new ProductoController($servicioDeProductos);
 $usuarioAdminController = new UsuarioAdminController($usuarioDao, $authMiddleware, $auth);
 $areaAdminController = new AreaAdminController($areaDao, $authMiddleware);
 $mesaAdminController = new MesaAdminController($mesaDao, $authMiddleware);
-$horarioAdminController = new HorarioAdminController($servicioDeHorarios, $authMiddleware);
-$bloqueAdminController = new BloqueAdminController($servicioDeBloques, $authMiddleware);
 
 function leerCuerpoJson(): array
 {
-    $cuerpo = @file_get_contents('php://input');
-    if ($cuerpo === false || empty($cuerpo)) {
-        // Fallback para servidor incorporado de PHP con router
-        $handle = @fopen('php://input', 'r');
-        if ($handle) {
-            $cuerpo = '';
-            while (!feof($handle)) {
-                $fragmento = fread($handle, 8192);
-                if ($fragmento === false) {
-                    break;
-                }
-                $cuerpo .= $fragmento;
-            }
-            fclose($handle);
-        }
-    }
-    // Fallback a variable guardada por el router
-    if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+    // Usar primero el cuerpo guardado por el router (php://input solo se lee una vez)
+    if (isset($_SERVER['RAW_INPUT']) && $_SERVER['RAW_INPUT'] !== '') {
         $cuerpo = $_SERVER['RAW_INPUT'];
+    } else {
+        $cuerpo = @file_get_contents('php://input');
+        if ($cuerpo === false || empty($cuerpo)) {
+            $handle = @fopen('php://input', 'r');
+            if ($handle) {
+                $cuerpo = '';
+                while (!feof($handle)) {
+                    $fragmento = fread($handle, 8192);
+                    if ($fragmento === false) {
+                        break;
+                    }
+                    $cuerpo .= $fragmento;
+                }
+                fclose($handle);
+            }
+        }
     }
 
     $datos = json_decode($cuerpo, true);
@@ -168,8 +154,8 @@ $respuesta = null;
 $codigo_http = 200;
 
 try {
-    // ── Servir archivos estáticos PRIMERO (antes de tocar la DB) ──
-    // Evita que .js/.css se sirvan como text/html cuando la BD no está disponible
+    // â”€â”€ Servir archivos estÃ¡ticos PRIMERO (antes de tocar la DB) â”€â”€
+    // Evita que .js/.css se sirvan como text/html cuando la BD no estÃ¡ disponible
     $extensionesEstaticas = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'ico', 'svg', 'woff', 'woff2', 'ttf', 'eot', 'webp'];
     $extension = strtolower(pathinfo($uri, PATHINFO_EXTENSION));
     if ($extension !== '' && in_array($extension, $extensionesEstaticas, true)) {
@@ -205,12 +191,12 @@ try {
     $pdo = Conexion::obtener();
     $pdo->query('SELECT 1');
 
-    // Auto-aplicar migraciones si las tablas no existen (para Railway)
+    // Verificar que las tablas existan
     $tablas = $pdo->query("SHOW TABLES LIKE 'usuarios'")->fetch();
     if (!$tablas) {
         echo json_encode(['exito' => false, 'mensaje' => 'Aplicando migraciones, espere...', 'codigo' => 202], JSON_UNESCAPED_UNICODE);
         aplicarMigraciones($pdo);
-        echo json_encode(['exito' => true, 'mensaje' => 'Migraciones aplicadas. Recargue la página.', 'codigo' => 200], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['exito' => true, 'mensaje' => 'Migraciones aplicadas. Recargue la pÃ¡gina.', 'codigo' => 200], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -224,20 +210,20 @@ try {
             }
             $respuesta = [
                 'exito' => true,
-                'aplicacion' => 'Sistema de gestión de un restaurante',
+                'aplicacion' => 'Sistema de gestiÃ³n de un restaurante',
                 'version' => '1.0.0-completo',
                 'entorno' => Config::obtener('APP_ENV'),
                 'base_de_datos' => 'conectada',
                 'ruta' => $uri,
                 'metodo' => $metodo,
-                'mensaje' => 'Sistema completo: autenticación, mesas, reservas, pedidos, productos, administración.',
+                'mensaje' => 'Sistema completo: autenticaciÃ³n, mesas, reservas, pedidos, productos, administraciÃ³n.',
             ];
             break;
 
         case str_starts_with($uri, '/api/auth'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/auth')), '/');
 
-            if (in_array($ruta_interna, ['login', 'registro', 'recuperar', 'restablecer'], true) && $metodo === 'POST') {
+            if (in_array($ruta_interna, ['login', 'registro'], true) && $metodo === 'POST') {
                 $cliente_id = $_SERVER['REMOTE_ADDR'] ?? 'desconocido';
                 $endpoint = $metodo . ':' . $uri;
                 $rateLimiter->consumir($cliente_id, $endpoint);
@@ -294,13 +280,13 @@ try {
 
                 if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     http_response_code(400);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Email inválido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Email invÃ¡lido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
 
                 if ($contrasena !== null && strlen($contrasena) < 8) {
                     http_response_code(400);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'La contraseña debe tener al menos 8 caracteres.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'La contraseÃ±a debe tener al menos 8 caracteres.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
 
@@ -346,7 +332,7 @@ try {
         case $uri === '/api/areas':
             if ($metodo !== 'GET') {
                 http_response_code(405);
-                echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Método no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
+                echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'MÃ©todo no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
@@ -357,7 +343,7 @@ try {
         case str_starts_with($uri, '/api/mesas'):
             if ($metodo !== 'GET') {
                 http_response_code(405);
-                echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Método no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
+                echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'MÃ©todo no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
@@ -372,7 +358,7 @@ try {
             $ruta_interna = ltrim(substr($uri, strlen('/api/reservas')), '/');
             $query_params = $_GET ?? [];
 
-            // Endpoint: detalle de reserva (cliente dueño, o encargado/admin)
+            // Endpoint: detalle de reserva (cliente dueÃ±o, o encargado/admin)
             if (preg_match('/^(\d+)\/detalle$/', $ruta_interna, $c) && $metodo === 'GET') {
                 $authMiddleware->requiereAutenticacion();
                 $id_reserva = (int) $c[1];
@@ -426,7 +412,7 @@ try {
             $ruta_interna = ltrim(substr($uri, strlen('/api/pedidos')), '/');
             $query_params = $_GET ?? [];
 
-            // Endpoint: detalle de pedido con ítems (cliente dueño, o encargado/admin)
+            // Endpoint: detalle de pedido con Ã­tems (cliente dueÃ±o, o encargado/admin)
             if (preg_match('/^(\d+)\/detalle$/', $ruta_interna, $c) && $metodo === 'GET') {
                 $authMiddleware->requiereAutenticacion();
                 $id_pedido = (int) $c[1];
@@ -485,7 +471,7 @@ try {
 
                 if ($id_mesero === null || $id_mesero <= 0) {
                     http_response_code(400);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Se requiere id_mesero válido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Se requiere id_mesero vÃ¡lido.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
 
@@ -504,7 +490,7 @@ try {
                 $mesero = $stmt->fetch();
                 if (!$mesero) {
                     http_response_code(400);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'El usuario especificado no existe o está inactivo.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'El usuario especificado no existe o estÃ¡ inactivo.', 'codigo' => 400], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
                 if (!in_array((int) $mesero['id_rol'], [2, 4], true)) {
@@ -532,27 +518,27 @@ try {
                 break;
             }
 
-            // Endpoint específico para marcar seña como pagada
-            if (preg_match('/^(\d+)\/seña$/', $ruta_interna, $c) && $metodo === 'POST') {
+            // Endpoint especÃ­fico para marcar seÃ±a como pagada
+            if (preg_match('/^(\d+)\/seÃ±a$/', $ruta_interna, $c) && $metodo === 'POST') {
                 $authMiddleware->requiereMeseroOAdministrador();
                 $id_pedido = (int) $c[1];
                 $cuerpo = leerCuerpoJson();
                 $estado = $cuerpo['estado'] ?? 'pagada';
 
                 try {
-                    $stmt = $pdo->prepare('UPDATE pedidos SET estado_seña = ? WHERE id_pedido = ?');
+                    $stmt = $pdo->prepare('UPDATE pedidos SET estado_seÃ±a = ? WHERE id_pedido = ?');
                     $stmt->execute([$estado, $id_pedido]);
                     if ($stmt->rowCount() === 0) {
                         http_response_code(404);
                         echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Pedido no encontrado.', 'codigo' => 404], JSON_UNESCAPED_UNICODE);
                         exit;
                     }
-                    $respuesta = ['exito' => true, 'mensaje' => 'Estado de seña actualizado.', 'codigo' => 200];
+                    $respuesta = ['exito' => true, 'mensaje' => 'Estado de seÃ±a actualizado.', 'codigo' => 200];
                     $codigo_http = 200;
                     break;
                 } catch (\PDOException $e) {
                     http_response_code(500);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Error al actualizar la seña.', 'codigo' => 500], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Error al actualizar la seÃ±a.', 'codigo' => 500], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
             }
@@ -562,14 +548,14 @@ try {
             break;
 
         // -------------------------------------------------------------------------
-        // Productos más vendidos (público - para carta destacada)
+        // Productos mÃ¡s vendidos (pÃºblico - para carta destacada)
         // -------------------------------------------------------------------------
         case str_starts_with($uri, '/api/productos-mas-vendidos'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/productos-mas-vendidos')), '/');
             if ($ruta_interna === '' || $ruta_interna === 'listar') {
                 if ($metodo !== 'GET') {
                     http_response_code(405);
-                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'Método no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
+                    echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'MÃ©todo no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
                     exit;
                 }
                 $pdo = Conexion::obtener();
@@ -588,18 +574,44 @@ try {
                 return [
                     'exito' => true,
                     'datos' => $datos,
-                    'mensaje' => 'Productos más vendidos obtenidos.',
+                    'mensaje' => 'Productos mÃ¡s vendidos obtenidos.',
                     'codigo' => 200,
                 ];
             }
-            return errorJson('Endpoint de productos más vendidos no encontrado.', 404);
+            return errorJson('Endpoint de productos mÃ¡s vendidos no encontrado.', 404);
+            break;
+
+        // -------------------------------------------------------------------------
+        // Menu destacado: 3 productos mÃ¡s vendidos (sin tabla menu_semanal)
+        // -------------------------------------------------------------------------
+        case str_starts_with($uri, '/api/menu-destacado'):
+            if ($metodo !== 'GET') {
+                http_response_code(405);
+                echo json_encode(['exito' => false, 'datos' => null, 'mensaje' => 'MÃ©todo no permitido.', 'codigo' => 405], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $pdo = Conexion::obtener();
+            $sql = 'SELECT pr.id_producto, pr.nombre, cat.nombre AS categoria, pr.precio, pr.imagen_url,
+                           SUM(dp.cantidad) AS cantidad_vendida
+                    FROM detalle_pedidos dp
+                    JOIN pedidos p ON p.id_pedido = dp.id_pedido
+                    JOIN productos pr ON pr.id_producto = dp.id_producto
+                    LEFT JOIN categorias cat ON cat.id_categoria = pr.id_categoria
+                    WHERE p.estado <> :cancelado AND pr.activo = 1
+                    GROUP BY pr.id_producto, pr.nombre, cat.nombre, pr.precio, pr.imagen_url
+                    ORDER BY cantidad_vendida DESC
+                    LIMIT 3';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':cancelado' => 'cancelado']);
+            $respuesta = ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'MenÃº destacado obtenido.', 'codigo' => 200];
+            $codigo_http = 200;
             break;
 
         case str_starts_with($uri, '/api/productos'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/productos')), '/');
             $cuerpo = leerCuerpoJson();
 
-            // Rutas de escritura requieren autenticación (encargado/administrador)
+            // Rutas de escritura requieren autenticaciÃ³n (encargado/administrador)
             if (in_array($metodo, ['POST', 'PUT', 'DELETE'], true)) {
                 $authMiddleware->requiereMeseroOAdministrador();
             }
@@ -650,19 +662,6 @@ try {
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
 
-        case str_starts_with($uri, '/api/admin/horarios'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/horarios')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-
-            if ($metodo === 'PUT' || $metodo === 'DELETE') {
-                $_REQUEST = array_merge($_REQUEST, $cuerpo);
-            }
-
-            $respuesta = $horarioAdminController->manejar($ruta_interna, $metodo, $query_params);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
         case str_starts_with($uri, '/api/admin/stock'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/admin/stock')), '/');
             $query_params = $_GET ?? [];
@@ -694,48 +693,6 @@ try {
             $codigo_http = $respuesta['codigo'] ?? 200;
             break;
 
-        case str_starts_with($uri, '/api/disponibilidad'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/disponibilidad')), '/');
-            $query_params = $_GET ?? [];
-            $respuesta = manejarDisponibilidadPublica($ruta_interna, $metodo, $query_params);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        case str_starts_with($uri, '/api/admin/disponibilidad'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/disponibilidad')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            if ($metodo === 'PUT' || $metodo === 'DELETE') {
-                $_REQUEST = array_merge($_REQUEST, $cuerpo);
-            }
-            $respuesta = manejarDisponibilidadAdmin($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        case str_starts_with($uri, '/api/admin/bloques'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/bloques')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-
-            if ($metodo === 'PUT' || $metodo === 'DELETE') {
-                $_REQUEST = array_merge($_REQUEST, $cuerpo);
-            }
-
-            $respuesta = $bloqueAdminController->manejar($ruta_interna, $metodo, $query_params);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        case str_starts_with($uri, '/api/menu-semanal'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/menu-semanal')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            if ($metodo === 'PUT' || $metodo === 'DELETE') {
-                $_REQUEST = array_merge($_REQUEST, $cuerpo);
-            }
-            $respuesta = manejarMenuSemanal($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
         case str_starts_with($uri, '/api/admin/reportes'):
             $ruta_interna = ltrim(substr($uri, strlen('/api/admin/reportes')), '/');
             $query_params = $_GET ?? [];
@@ -752,73 +709,6 @@ try {
             break;
 
         // -------------------------------------------------------------------------
-        // Configuración general del sistema (RF-101)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/configuracion'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/configuracion')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarConfiguracionSistema($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware, $auth);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/pedidos-sin-reserva'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/pedidos-sin-reserva')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarLimitePedidosSinReserva($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Zonas de delivery (RF-81)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/zonas-delivery'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/zonas-delivery')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarZonasDelivery($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // Repartidores (RF-83)
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/repartidores'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/repartidores')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarRepartidores($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-84: Estado de entrega de delivery
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/pedidos/{id}/entrega'):
-        case str_starts_with($uri, '/api/pedidos/{id}/entrega'):
-            $ruta_interna = ltrim(substr($uri, strrpos($uri, '/api/pedidos')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarEstadoEntrega($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
-        // RF-97 a RF-100: Reportes avanzados
-        // -------------------------------------------------------------------------
-        case str_starts_with($uri, '/api/admin/reportes-avanzados'):
-            $ruta_interna = ltrim(substr($uri, strlen('/api/admin/reportes-avanzados')), '/');
-            $query_params = $_GET ?? [];
-            $cuerpo = leerCuerpoJson();
-            $respuesta = manejarReportesAvanzados($ruta_interna, $metodo, $query_params, $cuerpo, $authMiddleware);
-            $codigo_http = $respuesta['codigo'] ?? 200;
-            break;
-
-        // -------------------------------------------------------------------------
         // Subir imagen al servidor (RF-XX)
         // -------------------------------------------------------------------------
         case str_starts_with($uri, '/api/subir-imagen'):
@@ -828,7 +718,7 @@ try {
                 $codigo_http = $respuesta['codigo'] ?? 200;
                 break;
             }
-            return errorJson('Método no permitido.', 405);
+            return errorJson('MÃ©todo no permitido.', 405);
             break;
 
         default:
@@ -876,7 +766,7 @@ try {
 }
 
 // -------------------------------------------------------------------------
-// Stock / límite de ventas por producto (encargado y administrador)
+// Stock / lÃ­mite de ventas por producto (encargado y administrador)
 // -------------------------------------------------------------------------
 function manejarStock(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
 {
@@ -885,7 +775,7 @@ function manejarStock(string $ruta, string $metodo, array $query, array $cuerpo,
 
     if ($ruta === '' || $ruta === 'listar') {
         if ($metodo !== 'GET') {
-            return errorJson('Método no permitido.', 405);
+            return errorJson('MÃ©todo no permitido.', 405);
         }
         $sql = 'SELECT sp.id_stock, sp.id_producto, p.nombre, sp.stock_actual, sp.limite_venta, sp.activo
                 FROM stock_producto sp
@@ -918,207 +808,7 @@ function manejarStock(string $ruta, string $metodo, array $query, array $cuerpo,
 }
 
 // -------------------------------------------------------------------------
-// Disponibilidad pública (clientes ven qué días tienen mesas)
-// -------------------------------------------------------------------------
-function manejarDisponibilidadPublica(string $ruta, string $metodo, array $query): array
-{
-    if ($metodo !== 'GET') {
-        return errorJson('Método no permitido.', 405);
-    }
-    $pdo = Conexion::obtener();
-    $fecha = isset($query['fecha']) ? $query['fecha'] : '';
-    if ($fecha === '') {
-        return errorJson('Se requiere fecha.', 400);
-    }
-    $sql = 'SELECT id_disponibilidad, fecha, hora_inicio, hora_fin, mesas_disponibles
-            FROM disponibilidad_mesa
-            WHERE fecha = ? AND activo = 1';
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$fecha]);
-    return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Disponibilidad obtenida.', 'codigo' => 200];
-}
-
-// -------------------------------------------------------------------------
-// Disponibilidad administración (encargado abre disponibilidad por fechas)
-// -------------------------------------------------------------------------
-function manejarDisponibilidadAdmin(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-    $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if ($ruta === '' || $ruta === 'listar') {
-        if ($metodo !== 'GET') {
-            return errorJson('Método no permitido.', 405);
-        }
-        $fecha = isset($query['fecha']) ? $query['fecha'] : null;
-        if ($fecha) {
-            $sql = 'SELECT * FROM disponibilidad_mesa WHERE fecha = ? ORDER BY hora_inicio';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$fecha]);
-        } else {
-            $stmt = $pdo->query('SELECT * FROM disponibilidad_mesa WHERE activo = 1 ORDER BY fecha, hora_inicio');
-        }
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Disponibilidad obtenida.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $fecha = $cuerpo['fecha'] ?? '';
-        $hora_inicio = $cuerpo['hora_inicio'] ?? '';
-        $hora_fin = $cuerpo['hora_fin'] ?? '';
-        $mesas = isset($cuerpo['mesas_disponibles']) ? (int) $cuerpo['mesas_disponibles'] : 1;
-        if ($fecha === '' || $hora_inicio === '' || $hora_fin === '') {
-            return errorJson('Faltan fecha, hora_inicio o hora_fin.', 400);
-        }
-        try {
-            $sql = 'INSERT INTO disponibilidad_mesa (fecha, hora_inicio, hora_fin, mesas_disponibles, activo, creado_por)
-                    VALUES (:f, :hi, :hf, :m, 1, :u)
-                    ON DUPLICATE KEY UPDATE hora_fin = VALUES(hora_fin), mesas_disponibles = VALUES(mesas_disponibles), activo = 1';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([':f' => $fecha, ':hi' => $hora_inicio, ':hf' => $hora_fin, ':m' => $mesas, ':u' => $id_usuario]);
-            return ['exito' => true, 'mensaje' => 'Disponibilidad guardada.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al guardar disponibilidad.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE disponibilidad_mesa SET activo = 0 WHERE id_disponibilidad = ?');
-        $stmt->execute([$id]);
-        return ['exito' => true, 'mensaje' => 'Disponibilidad desactivada.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Menú semanal (público ve, encargado/admin publica)
-// -------------------------------------------------------------------------
-function manejarMenuSemanal(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $pdo = Conexion::obtener();
-
-    // GET público: listar menú semanal activo o por fecha
-    if ($ruta === '' || $ruta === 'listar') {
-        if ($metodo !== 'GET') {
-            return errorJson('Método no permitido.', 405);
-        }
-        $semana = isset($query['semana']) ? $query['semana'] : null; // formato YYYY-Www o fecha lunes
-        if ($semana) {
-            $sql = 'SELECT ms.*, u.nombre as creado_por_nombre
-                    FROM menu_semanal ms
-                    LEFT JOIN usuarios u ON u.id_usuario = ms.creado_por
-                    WHERE ms.semana_inicio = ? AND ms.activo = 1';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$semana]);
-        } else {
-            $sql = 'SELECT ms.*, u.nombre as creado_por_nombre
-                    FROM menu_semanal ms
-                    LEFT JOIN usuarios u ON u.id_usuario = ms.creado_por
-                    WHERE ms.activo = 1
-                    ORDER BY ms.semana_inicio DESC';
-            $stmt = $pdo->query($sql);
-        }
-        $semanas = $stmt->fetchAll();
-        $resultado = [];
-        foreach ($semanas as $s) {
-            $id_menu = (int) $s['id_menu_semanal'];
-            $stmt2 = $pdo->prepare('
-                SELECT msi.id_item, msi.id_producto, p.nombre, cat.nombre AS categoria, p.precio, msi.disponible, msi.precio_semanal
-                FROM menu_semanal_items msi
-                JOIN productos p ON p.id_producto = msi.id_producto
-                LEFT JOIN categorias cat ON cat.id_categoria = p.id_categoria
-                WHERE msi.id_menu_semanal = ?
-                ORDER BY cat.nombre, p.nombre
-            ');
-            $stmt2->execute([$id_menu]);
-            $items = $stmt2->fetchAll();
-            $resultado[] = [
-                'id_menu_semanal' => (int) $s['id_menu_semanal'],
-                'semana_inicio' => $s['semana_inicio'],
-                'semana_fin' => $s['semana_fin'],
-                'activo' => (bool) $s['activo'],
-                'creado_por' => $s['creado_por_nombre'] ?? null,
-                'fecha_creacion' => $s['fecha_creacion'],
-                'items' => array_map(function ($it) {
-                    return [
-                        'id_item' => (int) $it['id_item'],
-                        'id_producto' => (int) $it['id_producto'],
-                        'nombre' => $it['nombre'],
-                        'categoria' => $it['categoria'],
-                        'precio' => (float) $it['precio'],
-                        'disponible' => (bool) $it['disponible'],
-                        'precio_semanal' => $it['precio_semanal'] ? (float) $it['precio_semanal'] : null,
-                    ];
-                }, $items),
-            ];
-        }
-        return ['exito' => true, 'datos' => $resultado, 'mensaje' => 'Menú semanal obtenido.', 'codigo' => 200];
-    }
-
-    // POST/PUT/DELETE: solo encargado o administrador
-    $authMiddleware->requiereMeseroOAdministrador();
-    $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'POST') {
-        $semana_inicio = $cuerpo['semana_inicio'] ?? '';
-        $semana_fin = $cuerpo['semana_fin'] ?? '';
-        $items = $cuerpo['items'] ?? []; // array de [id_producto, disponible, precio_semanal]
-        if ($semana_inicio === '' || $semana_fin === '') {
-            return errorJson('Se requieren semana_inicio y semana_fin.', 400);
-        }
-        try {
-            $pdo->beginTransaction();
-            $stmt = $pdo->prepare('
-                INSERT INTO menu_semanal (semana_inicio, semana_fin, activo, creado_por, fecha_creacion)
-                VALUES (:si, :sf, 1, :u, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE semana_fin = VALUES(semana_fin), activo = 1, fecha_creacion = CURRENT_TIMESTAMP
-            ');
-            $stmt->execute([':si' => $semana_inicio, ':sf' => $semana_fin, ':u' => $id_usuario]);
-            $id_menu = (int) $pdo->lastInsertId();
-
-            // Si ya existía, borrar items previos y reinsertar
-            $pdo->prepare('DELETE FROM menu_semanal_items WHERE id_menu_semanal = ?')->execute([$id_menu]);
-
-            foreach ($items as $it) {
-                $id_producto = (int) ($it['id_producto'] ?? 0);
-                $disponible = isset($it['disponible']) ? (bool) $it['disponible'] : true;
-                $precio_semanal = isset($it['precio_semanal']) && $it['precio_semanal'] !== '' ? (float) $it['precio_semanal'] : null;
-                if ($id_producto <= 0) continue;
-                $stmt = $pdo->prepare('
-                    INSERT INTO menu_semanal_items (id_menu_semanal, id_producto, disponible, precio_semanal)
-                    VALUES (:im, :ip, :d, :ps)
-                ');
-                $stmt->execute([':im' => $id_menu, ':ip' => $id_producto, ':d' => $disponible ? 1 : 0, ':ps' => $precio_semanal]);
-            }
-            $pdo->commit();
-            return ['exito' => true, 'mensaje' => 'Menú semanal guardado.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            $pdo->rollBack();
-            return errorJson('Error al guardar el menú semanal.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id = (int) $c[1];
-        try {
-            $pdo->beginTransaction();
-            $pdo->prepare('DELETE FROM menu_semanal_items WHERE id_menu_semanal = ?')->execute([$id]);
-            $pdo->prepare('DELETE FROM menu_semanal WHERE id_menu_semanal = ?')->execute([$id]);
-            $pdo->commit();
-            return ['exito' => true, 'mensaje' => 'Menú semanal eliminado.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            $pdo->rollBack();
-            return errorJson('Error al eliminar el menú semanal.', 500);
-        }
-    }
-
-    return errorJson('Endpoint no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Reportes de administración (solo administrador)
+// Disponibilidad pÃºblica (clientes ven quÃ© dÃ­as tienen mesas)
 // -------------------------------------------------------------------------
 function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddleware $authMiddleware): array
 {
@@ -1144,10 +834,10 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
         $sql .= ' GROUP BY DATE(p.fecha_pedido) ORDER BY fecha';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas totales por período obtenidas.', 'codigo' => 200];
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas totales por perÃ­odo obtenidas.', 'codigo' => 200];
     }
 
-    // 2. Top productos más vendidos (detalle_pedidos join pedidos por fecha)
+    // 2. Top productos mÃ¡s vendidos (detalle_pedidos join pedidos por fecha)
     if ($ruta === 'productos-mas-vendidos' && $metodo === 'GET') {
         $sql = 'SELECT pr.id_producto, pr.nombre, SUM(dp.cantidad) AS cantidad_vendida,
                        SUM(dp.cantidad * dp.precio_unitario) AS total_vendido
@@ -1167,10 +857,10 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
         $sql .= ' GROUP BY pr.id_producto, pr.nombre ORDER BY cantidad_vendida DESC LIMIT 10';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Productos más vendidos obtenidos.', 'codigo' => 200];
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Productos mÃ¡s vendidos obtenidos.', 'codigo' => 200];
     }
 
-    // 3. Cantidad de reservas por día
+    // 3. Cantidad de reservas por dÃ­a
     if ($ruta === 'reservas-por-dia' && $metodo === 'GET') {
         $sql = 'SELECT r.fecha_reserva AS fecha, COUNT(*) AS cantidad_reservas
                 FROM reservas r
@@ -1187,10 +877,10 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
         $sql .= ' GROUP BY r.fecha_reserva ORDER BY fecha';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Reservas por día obtenidas.', 'codigo' => 200];
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Reservas por dÃ­a obtenidas.', 'codigo' => 200];
     }
 
-    // 4. Ventas por día (fecha, total, cantidad de pedidos)
+    // 4. Ventas por dÃ­a (fecha, total, cantidad de pedidos)
     if ($ruta === 'ventas-por-dia' && $metodo === 'GET') {
         $sql = 'SELECT DATE(p.fecha_pedido) AS fecha, SUM(p.total) AS total, COUNT(*) AS cantidad_pedidos
                 FROM pedidos p
@@ -1207,10 +897,10 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
         $sql .= ' GROUP BY DATE(p.fecha_pedido) ORDER BY fecha';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas por día obtenidas.', 'codigo' => 200];
+        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas por dÃ­a obtenidas.', 'codigo' => 200];
     }
 
-    // 5. Historial de movimientos (vía /reportes/historial)
+    // 5. Historial de movimientos (vÃ­a /reportes/historial)
     if ($ruta === 'historial' && $metodo === 'GET') {
         return obtenerHistorial($query);
     }
@@ -1221,7 +911,7 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
         $fechaHasta = $query['fecha_hasta'] ?? '';
         $formato = $query['formato'] ?? 'csv';
 
-        $sql = 'SELECT DATE(p.fecha_pedido) AS fecha, p.id_pedido, p.tipo_pedido, p.estado, p.total, p.seña, u.nombre AS nombre_usuario, m.numero_mesa
+        $sql = 'SELECT DATE(p.fecha_pedido) AS fecha, p.id_pedido, p.tipo_pedido, p.estado, p.total, p.seÃ±a, u.nombre AS nombre_usuario, m.numero_mesa
                 FROM pedidos p
                 LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
                 LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -1244,7 +934,7 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="reporte_ventas.csv"');
             $salida = fopen('php://output', 'w');
-            fputcsv($salida, ['Fecha', 'Pedido', 'Tipo', 'Estado', 'Total', 'Seña', 'Usuario', 'Mesa'], ';');
+            fputcsv($salida, ['Fecha', 'Pedido', 'Tipo', 'Estado', 'Total', 'SeÃ±a', 'Usuario', 'Mesa'], ';');
             foreach ($ventas as $v) {
                 fputcsv($salida, [
                     $v['fecha'],
@@ -1252,7 +942,7 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
                     $v['tipo_pedido'],
                     $v['estado'],
                     $v['total'],
-                    $v['seña'],
+                    $v['seÃ±a'],
                     $v['nombre_usuario'] ?? '',
                     $v['numero_mesa'] ?? '',
                 ], ';');
@@ -1261,7 +951,7 @@ function manejarReportes(string $ruta, string $metodo, array $query, AuthMiddlew
             exit;
         }
 
-        return ['exito' => true, 'datos' => $ventas, 'mensaje' => 'Datos de exportación obtenidos.', 'codigo' => 200];
+        return ['exito' => true, 'datos' => $ventas, 'mensaje' => 'Datos de exportaciÃ³n obtenidos.', 'codigo' => 200];
     }
 
     return errorJson('Endpoint de reporte no encontrado.', 404);
@@ -1352,327 +1042,14 @@ function manejarHistorial(string $ruta, string $metodo, array $query, array $cue
 }
 
 // -------------------------------------------------------------------------
-// Configuración general del sistema (RF-101)
-// -------------------------------------------------------------------------
-function manejarConfiguracionSistema(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware, ServicioDeAutenticacion $auth): array
-{
-    $authMiddleware->requiereAdministrador();
-    $pdo = Conexion::obtener();
-    $id_usuario = ServicioDeAutenticacion::idUsuarioAutenticado();
-
-    if ($ruta === '' && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT clave, valor, descripcion, fecha_actualizacion FROM configuracion_sistema ORDER BY clave');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Configuración obtenida.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'PUT') {
-        $clave = $cuerpo['clave'] ?? '';
-        $valor = $cuerpo['valor'] ?? null;
-        $descripcion = $cuerpo['descripcion'] ?? null;
-        if ($clave === '') {
-            return errorJson('Se requiere la clave de configuración.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO configuracion_sistema (clave, valor, descripcion, actualizado_por)
-                VALUES (:c, :v, :d, :u)
-                ON DUPLICATE KEY UPDATE valor = VALUES(valor), descripcion = VALUES(descripcion), actualizado_por = VALUES(actualizado_por), fecha_actualizacion = CURRENT_TIMESTAMP
-            ');
-            $stmt->execute([
-                ':c' => $clave,
-                ':v' => $valor !== null ? $valor : null,
-                ':d' => $descripcion,
-                ':u' => $id_usuario,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Configuración guardada.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al guardar la configuración.', 500);
-        }
-    }
-
-    return errorJson('Endpoint de configuración no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Límite de pedidos sin reserva (RF-68, RF-69, RF-70, RF-71)
-// -------------------------------------------------------------------------
-function manejarLimitePedidosSinReserva(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-
-    // GET: consultar límite y contador del día
-    if ($ruta === '' && $metodo === 'GET') {
-        $fecha = $query['fecha'] ?? date('Y-m-d');
-        $stmt = $pdo->prepare("
-            SELECT clave, valor FROM configuracion_sistema
-            WHERE clave IN ('limite_pedidos_sin_reserva_retiro', 'limite_pedidos_sin_reserva_domicilio')
-        ");
-        $stmt->execute();
-        $config = [];
-        while ($row = $stmt->fetch()) {
-            $config[$row['clave']] = (int) $row['valor'];
-        }
-
-        $contadorRetiro = 0;
-        $contadorDomicilio = 0;
-        $stmt = $pdo->prepare('SELECT tipo_pedido, cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ?');
-        $stmt->execute([$fecha]);
-        while ($row = $stmt->fetch()) {
-            if ($row['tipo_pedido'] === 'para_llevar') {
-                $contadorRetiro = (int) $row['cantidad_pedidos'];
-            } elseif ($row['tipo_pedido'] === 'domicilio') {
-                $contadorDomicilio = (int) $row['cantidad_pedidos'];
-            }
-        }
-
-        return [
-            'exito' => true,
-            'datos' => [
-                'fecha' => $fecha,
-                'limite_retiro' => $config['limite_pedidos_sin_reserva_retiro'] ?? 0,
-                'contador_retiro' => $contadorRetiro,
-                'disponible_retiro' => max(0, ($config['limite_pedidos_sin_reserva_retiro'] ?? 0) - $contadorRetiro),
-                'limite_domicilio' => $config['limite_pedidos_sin_reserva_domicilio'] ?? 0,
-                'contador_domicilio' => $contadorDomicilio,
-                'disponible_domicilio' => max(0, ($config['limite_pedidos_sin_reserva_domicilio'] ?? 0) - $contadorDomicilio),
-                'bloqueado_retiro' => $contadorRetiro >= ($config['limite_pedidos_sin_reserva_retiro'] ?? 0),
-                'bloqueado_domicilio' => $contadorDomicilio >= ($config['limite_pedidos_sin_reserva_domicilio'] ?? 0),
-            ],
-            'mensaje' => 'Límites y contadores de pedidos sin reserva obtenidos.',
-            'codigo' => 200,
-        ];
-    }
-
-    // POST: establecer/actualizar límite
-    if ($ruta === '' && $metodo === 'POST') {
-        $tipo = $cuerpo['tipo'] ?? ''; // 'retiro' o 'domicilio'
-        $limite = isset($cuerpo['limite']) ? (int) $cuerpo['limite'] : 0;
-        if (!in_array($tipo, ['retiro', 'domicilio'], true)) {
-            return errorJson('Tipo inválido. Use "retiro" o "domicilio".', 400);
-        }
-        $clave = $tipo === 'retiro' ? 'limite_pedidos_sin_reserva_retiro' : 'limite_pedidos_sin_reserva_domicilio';
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO configuracion_sistema (clave, valor, descripcion)
-                VALUES (:c, :v, :d)
-                ON DUPLICATE KEY UPDATE valor = VALUES(valor), fecha_actualizacion = CURRENT_TIMESTAMP
-            ');
-            $stmt->execute([
-                ':c' => $clave,
-                ':v' => (string) $limite,
-                ':d' => 'Límite máximo de pedidos sin reserva para ' . $tipo,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Límite actualizado.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al actualizar el límite.', 500);
-        }
-    }
-
-    return errorJson('Endpoint de límite de pedidos sin reserva no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Zonas de delivery (RF-81)
-// -------------------------------------------------------------------------
-function manejarZonasDelivery(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT * FROM zonas_delivery ORDER BY nombre');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Zonas de delivery obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $nombre = $cuerpo['nombre'] ?? '';
-        $costo_envio = isset($cuerpo['costo_envio']) ? (float) $cuerpo['costo_envio'] : 0.00;
-        $tiempo = isset($cuerpo['tiempo_estimado_minutos']) ? (int) $cuerpo['tiempo_estimado_minutos'] : 45;
-        $cobertura = $cuerpo['cobertura'] ?? null;
-        if ($nombre === '') {
-            return errorJson('Se requiere el nombre de la zona.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO zonas_delivery (nombre, costo_envio, tiempo_estimado_minutos, cobertura, activa)
-                VALUES (:n, :ce, :t, :c, 1)
-            ');
-            $stmt->execute([
-                ':n' => $nombre,
-                ':ce' => $costo_envio,
-                ':t' => $tiempo,
-                ':c' => $cobertura,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Zona de delivery creada.', 'codigo' => 200, 'datos' => ['id_zona' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear la zona de delivery.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_zona = (int) $c[1];
-        $nombre = $cuerpo['nombre'] ?? null;
-        $costo_envio = isset($cuerpo['costo_envio']) ? (float) $cuerpo['costo_envio'] : null;
-        $tiempo = isset($cuerpo['tiempo_estimado_minutos']) ? (int) $cuerpo['tiempo_estimado_minutos'] : null;
-        $cobertura = isset($cuerpo['cobertura']) ? $cuerpo['cobertura'] : null;
-        $activa = isset($cuerpo['activa']) ? (int) $cuerpo['activa'] : null;
-
-        $campos = [];
-        $params = [];
-        if ($nombre !== null) { $campos[] = 'nombre = :n'; $params[':n'] = $nombre; }
-        if ($costo_envio !== null) { $campos[] = 'costo_envio = :ce'; $params[':ce'] = $costo_envio; }
-        if ($tiempo !== null) { $campos[] = 'tiempo_estimado_minutos = :t'; $params[':t'] = $tiempo; }
-        if ($cobertura !== null) { $campos[] = 'cobertura = :c'; $params[':c'] = $cobertura; }
-        if ($activa !== null) { $campos[] = 'activa = :a'; $params[':a'] = $activa; }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_zona;
-        try {
-            $stmt = $pdo->prepare('UPDATE zonas_delivery SET ' . implode(', ', $campos) . ' WHERE id_zona = :id');
-            $stmt->execute($params);
-            return ['exito' => true, 'mensaje' => 'Zona de delivery actualizada.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al actualizar la zona.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_zona = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE zonas_delivery SET activa = 0 WHERE id_zona = ?');
-        $stmt->execute([$id_zona]);
-        return ['exito' => true, 'mensaje' => 'Zona de delivery desactivada.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de zonas de delivery no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Repartidores (RF-83)
-// -------------------------------------------------------------------------
-function manejarRepartidores(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-
-    if (($ruta === '' || $ruta === 'listar') && $metodo === 'GET') {
-        $stmt = $pdo->query('SELECT r.*, u.nombre AS nombre_usuario FROM repartidores r LEFT JOIN usuarios u ON u.id_usuario = r.id_usuario ORDER BY r.nombre');
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Repartidores obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === '' && $metodo === 'POST') {
-        $nombre = $cuerpo['nombre'] ?? '';
-        $telefono = $cuerpo['telefono'] ?? null;
-        $id_usuario = isset($cuerpo['id_usuario']) ? (int) $cuerpo['id_usuario'] : null;
-        if ($nombre === '') {
-            return errorJson('Se requiere el nombre del repartidor.', 400);
-        }
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO repartidores (id_usuario, nombre, telefono, activo)
-                VALUES (:u, :n, :t, 1)
-            ');
-            $stmt->execute([
-                ':u' => $id_usuario > 0 ? $id_usuario : null,
-                ':n' => $nombre,
-                ':t' => $telefono,
-            ]);
-            return ['exito' => true, 'mensaje' => 'Repartidor creado.', 'codigo' => 200, 'datos' => ['id_repartidor' => (int) $pdo->lastInsertId()]];
-        } catch (\PDOException $e) {
-            return errorJson('Error al crear el repartidor.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_repartidor = (int) $c[1];
-        $nombre = $cuerpo['nombre'] ?? null;
-        $telefono = isset($cuerpo['telefono']) ? $cuerpo['telefono'] : null;
-        $activa = isset($cuerpo['activo']) ? (int) $cuerpo['activo'] : null;
-
-        $campos = [];
-        $params = [];
-        if ($nombre !== null) { $campos[] = 'nombre = :n'; $params[':n'] = $nombre; }
-        if ($telefono !== null) { $campos[] = 'telefono = :t'; $params[':t'] = $telefono; }
-        if ($activa !== null) { $campos[] = 'activo = :a'; $params[':a'] = $activa; }
-        if ($campos === []) {
-            return errorJson('No hay campos para actualizar.', 400);
-        }
-        $params[':id'] = $id_repartidor;
-        try {
-            $stmt = $pdo->prepare('UPDATE repartidores SET ' . implode(', ', $campos) . ' WHERE id_repartidor = :id');
-            $stmt->execute($params);
-            return ['exito' => true, 'mensaje' => 'Repartidor actualizado.', 'codigo' => 200];
-        } catch (\PDOException $e) {
-            return errorJson('Error al actualizar el repartidor.', 500);
-        }
-    }
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'DELETE') {
-        $id_repartidor = (int) $c[1];
-        $stmt = $pdo->prepare('UPDATE repartidores SET activo = 0 WHERE id_repartidor = ?');
-        $stmt->execute([$id_repartidor]);
-        return ['exito' => true, 'mensaje' => 'Repartidor desactivado.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de repartidores no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// Cupones y descuentos (RF-88)
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// Calificaciones de platos (RF-91)
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// Preferencias y alergias del cliente (RF-92)
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// Puntos de fidelidad (RF-90)
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-84: Estado de entrega de delivery
-// -------------------------------------------------------------------------
-if (false) {} // placeholder para mantener estructura
-
-// -------------------------------------------------------------------------
-// RF-85: Facturación electrónica (básica, sin proveedor externo)
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-87: Cierre de caja diario
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-89: Historial de cliente y platos favoritos
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-93: Reservas recurrentes
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-94 a RF-96: Notificaciones
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-97 a RF-100: Reportes avanzados
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-102: Sucursales múltiples
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-103: Respaldos de base de datos
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-105: Roles y permisos avanzados
-// -------------------------------------------------------------------------
-
-// -------------------------------------------------------------------------
-// Subir imagen al servidor (RF-XX)
-//
+// ConfiguraciÃ³n general del sistema (RF-101)
 // -------------------------------------------------------------------------
 function manejarSubidaImagen(array $cuerpo, AuthMiddleware $authMiddleware): array
 {
     $authMiddleware->requiereMeseroOAdministrador();
 
     if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] !== UPLOAD_ERR_OK) {
-        return errorJson('No se recibió ningún archivo de imagen.', 400);
+        return errorJson('No se recibiÃ³ ningÃºn archivo de imagen.', 400);
     }
 
     $archivo = $_FILES['imagen'];
@@ -1704,106 +1081,6 @@ function manejarSubidaImagen(array $cuerpo, AuthMiddleware $authMiddleware): arr
 // -------------------------------------------------------------------------
 // RF-84: Estado de entrega de delivery
 // -------------------------------------------------------------------------
-function manejarEstadoEntrega(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereMeseroOAdministrador();
-    $pdo = Conexion::obtener();
-
-    if (preg_match('/^(\d+)$/', $ruta, $c) && $metodo === 'PUT') {
-        $id_pedido = (int) $c[1];
-        $estado = $cuerpo['estado'] ?? null;
-        if (!in_array($estado, ['pendiente','en_camino','entregado','fallido'], true)) {
-            return errorJson('Estado inválido. Use: pendiente, en_camino, entregado o fallido.', 400);
-        }
-        $stmt = $pdo->prepare('UPDATE pedidos SET estado_entrega = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_pedido = ?');
-        $stmt->execute([$estado, $id_pedido]);
-        if ($stmt->rowCount() === 0) {
-            return errorJson('Pedido no encontrado.', 404);
-        }
-        $stmtHist = $pdo->prepare('INSERT INTO historial_movimientos (tabla_afectada, id_registro, accion, detalles, id_usuario, direccion_ip) VALUES (:ta, :ir, :ac, :de, :iu, :ip)');
-        $stmtHist->execute([
-            ':ta' => 'pedidos',
-            ':ir' => $id_pedido,
-            ':ac' => 'CAMBIO_ESTADO_ENTREGA',
-            ':de' => json_encode(['id_pedido' => $id_pedido, 'estado_entrega' => $estado], JSON_UNESCAPED_UNICODE),
-            ':iu' => ServicioDeAutenticacion::idUsuarioAutenticado(),
-            ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-        ]);
-        return ['exito' => true, 'mensaje' => 'Estado de entrega actualizado.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de estado de entrega no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// RF-87: Cierre de caja diario
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-89: Platos favoritos del cliente
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-93: Reservas recurrentes
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-94 a RF-96: Notificaciones
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-97 a RF-100: Reportes avanzados
-// -------------------------------------------------------------------------
-function manejarReportesAvanzados(string $ruta, string $metodo, array $query, array $cuerpo, AuthMiddleware $authMiddleware): array
-{
-    $authMiddleware->requiereAdministrador();
-    $pdo = Conexion::obtener();
-    $fechaDesde = $query['fecha_desde'] ?? date('Y-m-01');
-    $fechaHasta = $query['fecha_hasta'] ?? date('Y-m-t');
-
-    if ($ruta === 'ventas-mensuales' && $metodo === 'GET') {
-        $sql = 'SELECT DATE_FORMAT(p.fecha_pedido, "%Y-%m") AS mes, SUM(p.total) AS total_ventas, COUNT(*) AS cantidad_pedidos FROM pedidos p WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY mes ORDER BY mes';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ventas mensuales obtenidas.', 'codigo' => 200];
-    }
-
-    if ($ruta === 'rentabilidad-platos' && $metodo === 'GET') {
-        $sql = 'SELECT pr.id_producto, pr.nombre, pr.categoria, pr.precio, SUM(dp.cantidad) AS cantidad_vendida, SUM(dp.cantidad * dp.precio_unitario) AS ingresos_totales FROM detalle_pedidos dp JOIN pedidos p ON p.id_pedido = dp.id_pedido JOIN productos pr ON pr.id_producto = dp.id_producto WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY pr.id_producto, pr.nombre, pr.categoria, pr.precio ORDER BY ingresos_totales DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Rentabilidad por plato obtenida.', 'codigo' => 200];
-    }
-
-    if ($ruta === 'desempeño-meseros' && $metodo === 'GET') {
-        $sql = 'SELECT u.id_usuario, u.nombre, COUNT(p.id_pedido) AS pedidos_atendidos, SUM(p.total) AS ventas_totales FROM pedidos p JOIN usuarios u ON u.id_usuario = p.id_mesero WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY u.id_usuario, u.nombre ORDER BY ventas_totales DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Desempeño de meseros obtenido.', 'codigo' => 200];
-    }
-
-    if ($ruta === 'horarios-pico' && $metodo === 'GET') {
-        $sql = 'SELECT HOUR(p.fecha_pedido) AS hora, COUNT(*) AS cantidad_pedidos, SUM(p.total) AS total_ventas FROM pedidos p WHERE p.estado <> "cancelado" AND DATE(p.fecha_pedido) BETWEEN :fd AND :fh GROUP BY hora ORDER BY cantidad_pedidos DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Horarios pico obtenidos.', 'codigo' => 200];
-    }
-
-    if ($ruta === 'ocupacion-mesas' && $metodo === 'GET') {
-        $sql = 'SELECT DATE(r.fecha_reserva) AS fecha, COUNT(*) AS cantidad_reservas, COUNT(DISTINCT r.id_mesa) AS mesas_usadas FROM reservas r WHERE r.estado IN ("confirmada","completada") AND r.fecha_reserva BETWEEN :fd AND :fh GROUP BY fecha ORDER BY fecha';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':fd' => $fechaDesde, ':fh' => $fechaHasta]);
-        return ['exito' => true, 'datos' => $stmt->fetchAll(), 'mensaje' => 'Ocupación de mesas obtenida.', 'codigo' => 200];
-    }
-
-    return errorJson('Endpoint de reporte avanzado no encontrado.', 404);
-}
-
-// -------------------------------------------------------------------------
-// RF-102: Sucursales múltiples
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-103: Respaldos de base de datos
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// RF-105: Roles y permisos avanzados
-// -------------------------------------------------------------------------
 function aplicarMigraciones(PDO $pdo): void
 {
     $migrationsDir = __DIR__ . '/../migrations';
@@ -1819,7 +1096,7 @@ function aplicarMigraciones(PDO $pdo): void
             if ($contenido === false) {
                 continue;
             }
-            // Dividir por punto y coma, ignorar comentarios y vacíos
+            // Dividir por punto y coma, ignorar comentarios y vacÃ­os
             $statements = array_filter(array_map('trim', explode(';', $contenido)), function ($line) {
                 $line = trim($line);
                 return $line !== '' && !str_starts_with($line, '--') && !str_starts_with($line, '#');
@@ -1842,4 +1119,4 @@ function errorJson(string $mensaje, int $codigo): array
 }
 
 http_response_code($codigo_http);
-echo json_encode($respuesta ?? ['exito' => false, 'mensaje' => 'Respuesta vacía.'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+echo json_encode($respuesta ?? ['exito' => false, 'mensaje' => 'Respuesta vacÃ­a.'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

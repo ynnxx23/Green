@@ -35,7 +35,6 @@ class ValidadorDeReserva
         $this->validarHoraFinMayorQueInicio($hora_inicio, $hora_fin);
         $this->validarNoPasado($fecha_reserva, $hora_inicio);
         $this->validarAnticipacionMaxima($fecha_reserva);
-        $this->validarHorarioFuncionamiento($id_mesa, $fecha_reserva, $hora_inicio, $hora_fin);
         $this->validarSinSolapamiento($id_mesa, $fecha_reserva, $hora_inicio, $hora_fin, $id_reserva_excluir);
     }
 
@@ -113,69 +112,6 @@ class ValidadorDeReserva
         if ($fechaReserva > $fechaMaxima) {
             throw new \InvalidArgumentException(
                 'No se puede reservar con más de ' . self::MAX_ANTICIPACION_DIAS . ' días de anticipación.'
-            );
-        }
-    }
-
-    private function validarHorarioFuncionamiento(
-        int $id_mesa,
-        string $fecha_reserva,
-        string $hora_inicio,
-        string $hora_fin
-    ): void {
-        $mesa = $this->mesaDao->obtenerPorId($id_mesa);
-        if ($mesa === null) {
-            throw new \InvalidArgumentException('La mesa no existe.');
-        }
-
-        if (!$mesa->activo) {
-            throw new \InvalidArgumentException('La mesa no está disponible.');
-        }
-
-        $dia_semana = (int) date('w', strtotime($fecha_reserva));
-
-        $pdo = Conexion::obtener();
-
-        // El cupo de disponibilidad es la fuente de verdad: si existe uno que
-        // cubra el rango pedido, la reserva es valida aunque el horario del
-        // area sea mas amplio o mas corto.
-        $stmtCupo = $pdo->prepare('
-            SELECT COUNT(*) AS total
-            FROM disponibilidad_mesa
-            WHERE fecha = ? AND activo = 1 AND mesas_disponibles > 0
-              AND hora_inicio <= ? AND hora_fin >= ?
-        ');
-        $stmtCupo->execute([$fecha_reserva, $hora_inicio, $hora_fin]);
-        if ((int) $stmtCupo->fetchColumn() > 0) {
-            return;
-        }
-
-        $stmt = $pdo->prepare('
-            SELECT hf.hora_apertura, hf.hora_cierre
-            FROM horarios_funcionamiento hf
-            JOIN mesas m ON hf.id_area = m.id_area
-            WHERE m.id_mesa = :id_mesa
-              AND hf.dia_semana = :dia_semana
-              AND hf.activo = 1
-        ');
-        $stmt->execute([
-            ':id_mesa' => $id_mesa,
-            ':dia_semana' => $dia_semana,
-        ]);
-        $horario = $stmt->fetch();
-
-        if ($horario === false) {
-            throw new \InvalidArgumentException('El área no tiene horario de funcionamiento para ese día.');
-        }
-
-        $apertura = strtotime('1970-01-01 ' . $horario['hora_apertura']);
-        $cierre = strtotime('1970-01-01 ' . $horario['hora_cierre']);
-        $inicio = strtotime('1970-01-01 ' . $hora_inicio);
-        $fin = strtotime('1970-01-01 ' . $hora_fin);
-
-        if ($inicio < $apertura || $fin > $cierre) {
-            throw new \InvalidArgumentException(
-                'El horario solicitado está fuera del horario de funcionamiento del área.'
             );
         }
     }

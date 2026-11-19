@@ -182,7 +182,11 @@ class MesaAdminController
 
     private function leerCuerpoJson(): array
     {
-        $cuerpo = file_get_contents('php://input');
+        if (isset($_SERVER['RAW_INPUT']) && $_SERVER['RAW_INPUT'] !== '') {
+            $cuerpo = $_SERVER['RAW_INPUT'];
+        } else {
+            $cuerpo = file_get_contents('php://input');
+        }
         $datos = json_decode($cuerpo, true);
 
         return is_array($datos) ? $datos : [];

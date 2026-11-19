@@ -78,7 +78,7 @@ class PedidoController
     }
 
     // ========================================================================
-    // REGISTRAR PEDIDO (con senia 50% automática y delivery)
+    // REGISTRAR PEDIDO (senia 50% automática, sin delivery)
     // ========================================================================
     private function registrarPedido(): array
     {
@@ -89,12 +89,8 @@ class PedidoController
         $id_mesa = isset($entrada['id_mesa']) && $entrada['id_mesa'] !== '' ? (int) $entrada['id_mesa'] : null;
         $detalles = $entrada['detalles'] ?? [];
         $tipo_pedido = $entrada['tipo_pedido'] ?? 'con_reserva';
-        $senia_manual = isset($entrada['senia']) ? (float) $entrada['senia'] : -1.0; // -1 = no enviado, calcular automático
+        $senia_manual = isset($entrada['senia']) ? (float) $entrada['senia'] : -1.0;
         $estado_senia = $entrada['estado_senia'] ?? 'pendiente';
-        $direccion_domicilio = $entrada['direccion_domicilio'] ?? null;
-        $id_zona_delivery = isset($entrada['id_zona_delivery']) && $entrada['id_zona_delivery'] !== '' ? (int) $entrada['id_zona_delivery'] : null;
-        $costo_envio_manual = isset($entrada['costo_envio']) ? (float) $entrada['costo_envio'] : -1.0;
-        $id_repartidor = isset($entrada['id_repartidor']) && $entrada['id_repartidor'] !== '' ? (int) $entrada['id_repartidor'] : null;
         $observaciones = $entrada['observaciones'] ?? null;
 
         $id_usuario = \Restaurante\Service\ServicioDeAutenticacion::idUsuarioAutenticado();
@@ -104,47 +100,12 @@ class PedidoController
             return $this->error('Se requiere al menos un producto en el pedido.', 400);
         }
 
-        if (!in_array($tipo_pedido, ['con_reserva', 'para_llevar', 'domicilio'], true)) {
+        if (!in_array($tipo_pedido, ['con_reserva', 'para_llevar'], true)) {
             return $this->error('Tipo de pedido no válido.', 400);
         }
 
         if ($tipo_pedido === 'con_reserva' && ($id_mesa === null || $id_mesa <= 0)) {
             return $this->error('Se requiere id_mesa para pedidos con reserva.', 400);
-        }
-
-        if ($tipo_pedido === 'domicilio' && empty($direccion_domicilio)) {
-            return $this->error('Se requiere dirección de domicilio para pedidos a domicilio.', 400);
-        }
-
-        // -----------------------------------------------------------------
-        // RF-70: Bloquear automáticamente pedidos sin reserva cuando se alcanza el límite
-        // -----------------------------------------------------------------
-        if ($tipo_pedido === 'para_llevar' || $tipo_pedido === 'domicilio') {
-            $pdo = \Restaurante\Database\Conexion::obtener();
-            $fecha = date('Y-m-d');
-            $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
-
-            $clave = $tipo_pedido === 'para_llevar' ? 'limite_pedidos_sin_reserva_retiro' : 'limite_pedidos_sin_reserva_domicilio';
-            $stmt = $pdo->prepare('SELECT valor AS limite FROM configuracion_sistema WHERE clave = ?');
-            $stmt->execute([$clave]);
-            $config = $stmt->fetch();
-            $limite = $config ? (int) $config['limite'] : 0;
-
-            if ($limite > 0) {
-                $stmt = $pdo->prepare('SELECT cantidad_pedidos FROM contador_pedidos_sin_reserva WHERE fecha = ? AND tipo_pedido = ?');
-                $stmt->execute([$fecha, $tipoContador]);
-                $contador = $stmt->fetch();
-                $cantidadActual = $contador ? (int) $contador['cantidad_pedidos'] : 0;
-
-                if ($cantidadActual >= $limite) {
-                    return $this->error(
-                        'Se ha alcanzado el límite máximo de pedidos sin reserva para ' .
-                        ($tipo_pedido === 'para_llevar' ? 'retiro' : 'delivery') .
-                        ' hoy. Intente con una reserva de mesa.',
-                        403
-                    );
-                }
-            }
         }
 
         $pdo = \Restaurante\Database\Conexion::obtener();
@@ -161,7 +122,6 @@ class PedidoController
                 return $this->error('Datos de producto inválidos en el pedido.', 400);
             }
 
-            // Obtener precio del producto desde BD (no confiar en precio enviado por cliente)
             $stmt = $pdo->prepare('SELECT precio FROM productos WHERE id_producto = ? AND activo = 1');
             $stmt->execute([$id_producto]);
             $producto = $stmt->fetch();
@@ -172,7 +132,6 @@ class PedidoController
 
             $precio_unitario = (float) $producto['precio'];
 
-            // Verificar stock
             $stmt = $pdo->prepare('SELECT stock_actual, limite_venta FROM stock_producto WHERE id_producto = ? AND activo = 1');
             $stmt->execute([$id_producto]);
             $stock = $stmt->fetch();
@@ -185,7 +144,6 @@ class PedidoController
                 return $this->error('Stock insuficiente para el producto id ' . $id_producto . '.', 400);
             }
 
-            // Validar límite de venta
             if ((int) $stock['limite_venta'] > 0) {
                 $stmt2 = $pdo->prepare('
                     SELECT COALESCE(SUM(dp.cantidad), 0) as vendidos
@@ -222,58 +180,34 @@ class PedidoController
             }
         }
 
-        // Calcular costo de envío para delivery
-        $costo_envio = 0.00;
-        if ($tipo_pedido === 'domicilio' && $id_zona_delivery !== null && $id_zona_delivery > 0) {
-            $stmt = $pdo->prepare('SELECT costo_envio FROM zonas_delivery WHERE id_zona_delivery = ? AND activa = 1');
-            $stmt->execute([$id_zona_delivery]);
-            $zona = $stmt->fetch();
-            if ($zona) {
-                $costo_envio = (float) $zona['costo_envio'];
-            }
-        } elseif ($costo_envio_manual >= 0) {
-            $costo_envio = $costo_envio_manual;
-        }
+        $saldo_pendiente = round($total_pedido - $senia, 2);
 
-        $total_con_envio = $total_pedido + $costo_envio;
-
-        // Si es domicilio y no hay senia manual, la senia es 50% del total (sin envío)
-        // El saldo pendiente es total - senia
-        $saldo_pendiente = round($total_con_envio - $senia, 2);
+        // Generar número de pedido
+        $numeroPedido = 'PED-' . date('Ymd') . '-' . str_pad((string) ((int) ($pdo->query('SELECT COUNT(*) FROM pedidos WHERE DATE(fecha_pedido) = CURRENT_DATE')->fetchColumn() + 1)), 4, '0', STR_PAD_LEFT);
 
         try {
             $pdo->beginTransaction();
 
-            // Generar número de pedido
-            $numeroPedido = 'PED-' . date('Ymd') . '-' . str_pad((string) ((int) ($pdo->query('SELECT COUNT(*) FROM pedidos WHERE DATE(fecha_pedido) = CURRENT_DATE')->fetchColumn() + 1)), 4, '0', STR_PAD_LEFT);
-
-            // Registrar pedido
             $stmt = $pdo->prepare('
                 INSERT INTO pedidos (
                     id_mesa, id_mesero, id_usuario, fecha_pedido, estado, total,
-                    tipo_pedido, senia, estado_senia, saldo_pendiente, direccion_domicilio,
-                    id_zona_delivery, costo_envio, id_repartidor, numero_pedido,
-                    observaciones, fecha_pedido_hora, fecha_creacion
+                    tipo_pedido, senia, estado_senia, saldo_pendiente, numero_pedido,
+                    observaciones, fecha_creacion
                 ) VALUES (
                     :id_mesa, :id_mesero, :id_usuario, CURRENT_TIMESTAMP, "pendiente", :total,
-                    :tipo_pedido, :senia, :estado_senia, :saldo_pendiente, :direccion_domicilio,
-                    :id_zona_delivery, :costo_envio, :id_repartidor, :numero_pedido,
-                    :observaciones, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :tipo_pedido, :senia, :estado_senia, :saldo_pendiente, :numero_pedido,
+                    :observaciones, CURRENT_TIMESTAMP
                 )
             ');
             $stmt->execute([
                 ':id_mesa' => $id_mesa,
                 ':id_mesero' => $id_mesero,
                 ':id_usuario' => $id_usuario,
-                ':total' => $total_con_envio,
+                ':total' => $total_pedido,
                 ':tipo_pedido' => $tipo_pedido,
                 ':senia' => $senia,
                 ':estado_senia' => $estado_senia,
                 ':saldo_pendiente' => $saldo_pendiente,
-                ':direccion_domicilio' => $direccion_domicilio,
-                ':id_zona_delivery' => $id_zona_delivery,
-                ':costo_envio' => $costo_envio,
-                ':id_repartidor' => $id_repartidor,
                 ':numero_pedido' => $numeroPedido,
                 ':observaciones' => $observaciones,
             ]);
@@ -287,7 +221,6 @@ class PedidoController
                 ');
                 $stmt->execute([$id_pedido, $detalle['id_producto'], $detalle['cantidad'], $detalle['precio_unitario']]);
 
-                // Descontar stock
                 $stmt = $pdo->prepare('
                     UPDATE stock_producto SET stock_actual = stock_actual - ?, fecha_actualizacion = CURRENT_TIMESTAMP
                     WHERE id_producto = ?
@@ -301,22 +234,11 @@ class PedidoController
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'CREAR_PEDIDO', [
                 'numero_pedido' => $numeroPedido,
                 'id_mesa' => $id_mesa,
-                'total' => $total_con_envio,
+                'total' => $total_pedido,
                 'tipo_pedido' => $tipo_pedido,
                 'senia' => $senia,
                 'saldo_pendiente' => $saldo_pendiente,
             ], $id_mesero);
-
-            // RF-69: Contabilizar pedidos sin reserva
-            if ($tipo_pedido === 'para_llevar' || $tipo_pedido === 'domicilio') {
-                $tipoContador = $tipo_pedido === 'para_llevar' ? 'para_llevar' : 'domicilio';
-                $stmtContador = $pdo->prepare('
-                    INSERT INTO contador_pedidos_sin_reserva (fecha, tipo_pedido, cantidad_pedidos)
-                    VALUES (:f, :t, 1)
-                    ON DUPLICATE KEY UPDATE cantidad_pedidos = cantidad_pedidos + 1, fecha_actualizacion = CURRENT_TIMESTAMP
-                ');
-                $stmtContador->execute([':f' => date('Y-m-d'), ':t' => $tipoContador]);
-            }
 
             return [
                 'exito' => true,
@@ -325,9 +247,7 @@ class PedidoController
                     'numero_pedido' => $numeroPedido,
                     'id_mesa' => $id_mesa,
                     'estado' => 'pendiente',
-                    'total' => $total_con_envio,
-                    'subtotal_productos' => $total_pedido,
-                    'costo_envio' => $costo_envio,
+                    'total' => $total_pedido,
                     'senia' => $senia,
                     'estado_senia' => $estado_senia,
                     'saldo_pendiente' => $saldo_pendiente,
@@ -360,8 +280,7 @@ class PedidoController
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
-                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero, p.direccion_domicilio, p.observaciones,
+                   p.id_mesa, p.id_mesero, p.fecha_creacion, p.fecha_actualizacion,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -388,8 +307,7 @@ class PedidoController
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
-                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero, p.direccion_domicilio, p.observaciones,
+                   p.id_mesa, p.id_mesero, p.fecha_creacion, p.fecha_actualizacion,
                    m.numero_mesa
             FROM pedidos p
             LEFT JOIN mesas m ON m.id_mesa = p.id_mesa
@@ -403,7 +321,6 @@ class PedidoController
         foreach ($pedidos as $pedido) {
             $id_pedido = (int) $pedido['id_pedido'];
 
-            // Obtener detalles
             $stmtDet = $pdo->prepare('
                 SELECT dp.id_producto, pr.nombre AS nombre_producto, dp.cantidad, dp.precio_unitario,
                        (dp.cantidad * dp.precio_unitario) AS subtotal
@@ -445,8 +362,7 @@ class PedidoController
         $stmt = $pdo->query('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
-                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero, p.direccion_domicilio, p.observaciones,
+                   p.id_mesa, p.id_mesero, p.id_usuario, p.fecha_creacion, p.fecha_actualizacion,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario, u.email AS email_usuario
             FROM pedidos p
@@ -479,8 +395,7 @@ class PedidoController
         $stmt = $pdo->prepare('
             SELECT p.id_pedido, p.numero_pedido, p.fecha_pedido, p.estado, p.total,
                    p.tipo_pedido, p.senia, p.estado_senia, p.saldo_pendiente,
-                   p.costo_envio, p.id_zona_delivery, p.id_repartidor, p.id_mesa,
-                   p.id_mesero, p.direccion_domicilio, p.observaciones,
+                   p.id_mesa, p.id_mesero, p.id_usuario, p.fecha_creacion, p.fecha_actualizacion,
                    m.numero_mesa,
                    u.nombre AS nombre_usuario
             FROM pedidos p
@@ -525,18 +440,17 @@ class PedidoController
             return $this->error('Pedido no encontrado.', 404);
         }
 
-        // Validar propiedad o rol
         if (!($esAdmin || $esEncargado) && (int) $pedido['id_usuario'] !== $id_usuario) {
             return $this->error('No puede ver este pedido.', 403);
         }
 
-        // Obtener detalles
         $stmtDet = $pdo->prepare('
             SELECT dp.id_producto, pr.nombre AS nombre_producto, cat.nombre AS categoria,
                    dp.cantidad, dp.precio_unitario,
                    (dp.cantidad * dp.precio_unitario) AS subtotal
             FROM detalle_pedidos dp
             JOIN productos pr ON pr.id_producto = dp.id_producto
+            LEFT JOIN categorias cat ON cat.id_categoria = pr.id_categoria
             WHERE dp.id_pedido = ?
             ORDER BY pr.nombre
         ');
@@ -615,7 +529,6 @@ class PedidoController
             $stmt = $pdo->prepare('UPDATE pedidos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_pedido = ?');
             $stmt->execute([$estado_nuevo, $id_pedido]);
 
-            // Historial
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'CAMBIAR_ESTADO_PEDIDO', [
                 'id_pedido' => $id_pedido,
                 'estado_anterior' => $estado_actual,
@@ -679,7 +592,6 @@ class PedidoController
             ');
             $stmt->execute([$estado, $nuevoSaldo, $id_pedido]);
 
-            // Historial
             $this->insertarHistorial($pdo, 'pedidos', $id_pedido, 'ACTUALIZAR_SEÑA', [
                 'id_pedido' => $id_pedido,
                 'estado_senia_anterior' => $pedido['estado_senia'],
@@ -727,27 +639,24 @@ class PedidoController
 
     private function leerCuerpoJson(): array
     {
-        $cuerpo = @file_get_contents('php://input');
-        if ($cuerpo === false || empty($cuerpo)) {
-            $handle = @fopen('php://input', 'r');
-            if ($handle) {
-                $cuerpo = '';
-                while (!feof($handle)) {
-                    $fragmento = fread($handle, 8192);
-                    if ($fragmento === false) {
-                        break;
-                    }
-                    $cuerpo .= $fragmento;
-                }
-                fclose($handle);
-            }
-        }
-        if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+        if (isset($_SERVER['RAW_INPUT']) && $_SERVER['RAW_INPUT'] !== '') {
             $cuerpo = $_SERVER['RAW_INPUT'];
-        }
-        // Eliminar BOM UTF-8 si está presente
-        if (substr($cuerpo, 0, 3) === "\xEF\xBB\xBF") {
-            $cuerpo = substr($cuerpo, 3);
+        } else {
+            $cuerpo = @file_get_contents('php://input');
+            if ($cuerpo === false || empty($cuerpo)) {
+                $handle = @fopen('php://input', 'r');
+                if ($handle) {
+                    $cuerpo = '';
+                    while (!feof($handle)) {
+                        $fragmento = fread($handle, 8192);
+                        if ($fragmento === false) {
+                            break;
+                        }
+                        $cuerpo .= $fragmento;
+                    }
+                    fclose($handle);
+                }
+            }
         }
 
         $datos = json_decode($cuerpo, true);
@@ -784,11 +693,9 @@ class PedidoController
             'id_mesa' => $pedido['id_mesa'] !== null ? (int) $pedido['id_mesa'] : null,
             'numero_mesa' => $pedido['numero_mesa'] ?? null,
             'id_mesero' => isset($pedido['id_mesero']) ? (int) $pedido['id_mesero'] : null,
+            'id_usuario' => isset($pedido['id_usuario']) ? (int) $pedido['id_usuario'] : null,
             'nombre_usuario' => $pedido['nombre_usuario'] ?? null,
             'email_usuario' => $pedido['email_usuario'] ?? null,
-            'id_zona_delivery' => $pedido['id_zona_delivery'] !== null ? (int) $pedido['id_zona_delivery'] : null,
-            'costo_envio' => (float) ($pedido['costo_envio'] ?? 0),
-            'id_repartidor' => $pedido['id_repartidor'] !== null ? (int) $pedido['id_repartidor'] : null,
             'fecha_pedido' => $pedido['fecha_pedido'] ?? null,
             'estado' => $pedido['estado'],
             'total' => (float) $pedido['total'],
@@ -796,9 +703,8 @@ class PedidoController
             'estado_senia' => $pedido['estado_senia'] ?? 'pendiente',
             'saldo_pendiente' => (float) ($pedido['saldo_pendiente'] ?? 0),
             'tipo_pedido' => $pedido['tipo_pedido'],
-            'direccion_domicilio' => $pedido['direccion_domicilio'] ?? null,
             'observaciones' => $pedido['observaciones'] ?? null,
-            'numero_pedido' => $pedido['numero_pedido'] ?? null,
+            'fecha_creacion' => $pedido['fecha_creacion'] ?? null,
             'fecha_actualizacion' => $pedido['fecha_actualizacion'] ?? null,
         ];
     }

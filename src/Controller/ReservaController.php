@@ -101,42 +101,16 @@ class ReservaController
         $pdo = \Restaurante\Database\Conexion::obtener();
 
         // -----------------------------------------------------------------
-        // 1. Verificar disponibilidad del cupo (fecha + franja) y mesas libres
+        // 2. Asignar automaticamente una mesa libre con capacidad suficiente
+        // (se verifica solapamiento directo con reservas existentes)
         // -----------------------------------------------------------------
-        $stmt = $pdo->prepare('
-            SELECT id_disponibilidad, mesas_disponibles, hora_inicio as disp_inicio, hora_fin as disp_fin
-            FROM disponibilidad_mesa
-            WHERE fecha = ? AND activo = 1
-        ');
-        $stmt->execute([$fecha_reserva]);
-        $disponibilidad = null;
-        while ($f = $stmt->fetch()) {
-            if ($hora_inicio >= substr((string) $f['disp_inicio'], 0, 5)
-                && $hora_inicio < substr((string) $f['disp_fin'], 0, 5)) {
-                $disponibilidad = $f;
-                break;
-            }
-        }
-
-        if (!$disponibilidad) {
-            return $this->error('No hay disponibilidad de mesas para la fecha y hora seleccionadas.', 400);
-        }
-
-        if ((int) $disponibilidad['mesas_disponibles'] <= 0) {
-            return $this->error('No quedan mesas disponibles para esa fecha y horario.', 400);
-        }
-
-        // Si no se indico hora_fin, se usa el fin del cupo disponible.
         if ($hora_fin === '') {
-            $hora_fin = substr((string) $disponibilidad['disp_fin'], 0, 5);
+            $hora_fin = date('H:i', strtotime($hora_inicio . ' +1 hour'));
         }
         if ($hora_fin <= $hora_inicio) {
-            $hora_fin = substr((string) $disponibilidad['disp_fin'], 0, 5);
+            $hora_fin = date('H:i', strtotime($hora_inicio . ' +1 hour'));
         }
 
-        // -----------------------------------------------------------------
-        // 2. Asignar automaticamente una mesa libre con capacidad suficiente
-        // -----------------------------------------------------------------
         $id_mesa = $this->buscarMesaLibre($pdo, $fecha_reserva, $hora_inicio, $hora_fin, $comensales);
         if ($id_mesa === null) {
             return $this->error('No hay mesas libres con capacidad suficiente para ese horario.', 400);
@@ -148,16 +122,6 @@ class ReservaController
             // Usuario de la sesion o usuario creado con los datos del formulario
             if ($id_usuario <= 0) {
                 $id_usuario = $this->obtenerOCrearUsuario($pdo, $nombre, $email, $telefono);
-            }
-
-            // Decrementar mesas disponibles
-            $stmt = $pdo->prepare('
-                UPDATE disponibilidad_mesa SET mesas_disponibles = mesas_disponibles - 1
-                WHERE id_disponibilidad = ? AND mesas_disponibles > 0
-            ');
-            $stmt->execute([$disponibilidad['id_disponibilidad']]);
-            if ($stmt->rowCount() === 0) {
-                throw new \RuntimeException('Se agotaron las mesas disponibles para ese horario.');
             }
 
             $id_reserva = $this->servicioDeReservas->crearReserva(

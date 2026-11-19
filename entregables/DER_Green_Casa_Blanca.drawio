@@ -1,0 +1,110 @@
+<mxfile host="app.diagrams.net" agent="MuseSpark">
+  <diagram id="der-green-casa-blanca" name="DER - Green en la Casa Blanca (UML)">
+    <mxGraphModel dx="3611" dy="2253" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="der_title" parent="1" style="text;html=1;align=left;verticalAlign=top;fontSize=14;fontStyle=1;whiteSpace=wrap;" value="DER — Green en la Casa Blanca (Notación UML / Barker)&#xa;Basado exclusivamente en el Diccionario de Datos&#xa;Todas las tablas normalizadas y relacionadas (PK → FK)" vertex="1">
+          <mxGeometry height="60" width="700" x="740" y="-340" as="geometry" />
+        </mxCell>
+        <mxCell id="t_roles" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;ROLES&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_rol&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;nombre&lt;br&gt;descripcion&lt;br&gt;fecha_creacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="110" width="210" x="-110" y="-10" as="geometry" />
+        </mxCell>
+        <mxCell id="t_categorias" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;CATEGORIAS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_categoria&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;nombre&lt;br&gt;activo&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="85" width="210" x="-80" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="t_reservas" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;RESERVAS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_reserva&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;br&gt;FK2&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_mesa&lt;br&gt;id_usuario&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;comensales&lt;br&gt;telefono&lt;br&gt;ocasion&lt;br&gt;fecha_reserva&lt;br&gt;hora_inicio&lt;br&gt;hora_fin&lt;br&gt;estado&lt;br&gt;fecha_creacion&lt;br&gt;fecha_actualizacion&lt;br&gt;observaciones&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="280" width="210" x="-110" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="t_historial" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;HISTORIAL_MOVIMIENTOS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_historial&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_usuario&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;tabla_afectada&lt;br&gt;id_registro&lt;br&gt;accion&lt;br&gt;detalles&lt;br&gt;fecha_movimiento&lt;br&gt;direccion_ip&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="190" width="210" x="-10" y="-220" as="geometry" />
+        </mxCell>
+        <mxCell id="t_usuarios" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;USUARIOS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;br&gt;FK1&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_usuario&lt;br&gt;id_rol&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;nombre&lt;br&gt;email&lt;br&gt;telefono&lt;br&gt;contrasena_hash&lt;br&gt;activo&lt;br&gt;fecha_creacion&lt;br&gt;fecha_actualizacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="230" width="210" x="320" y="-70" as="geometry" />
+        </mxCell>
+        <mxCell id="t_mesas" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;MESAS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_mesa&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;numero_mesa&lt;br&gt;capacidad&lt;br&gt;activo&lt;br&gt;fecha_creacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="130" width="210" x="310" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="t_productos" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PRODUCTOS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_producto&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_categoria&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;nombre&lt;br&gt;precio&lt;br&gt;imagen_url&lt;br&gt;imagen_public_id&lt;br&gt;activo&lt;br&gt;fecha_creacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="190" width="210" x="300" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pedidos" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PEDIDOS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_pedido&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;br&gt;FK2&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_usuario&lt;br&gt;id_mesa&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;fecha_pedido&lt;br&gt;estado&lt;br&gt;total&lt;br&gt;fecha_actualizacion&lt;br&gt;tipo_pedido&lt;br&gt;senia&lt;br&gt;estado_senia&lt;br&gt;saldo_pendiente&lt;br&gt;numero_pedido&lt;br&gt;fecha_creacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="310" width="210" x="750" y="-40" as="geometry" />
+        </mxCell>
+        <mxCell id="t_detalle_pedidos" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;DETALLE_PEDIDOS&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_detalle&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;br&gt;FK2&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_pedido&lt;br&gt;id_producto&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;cantidad&lt;br&gt;precio_unitario&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="130" width="210" x="700" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="t_stock_producto" parent="1" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" value="&lt;div style=&quot;box-sizing: border-box; width: 100%; background: rgb(228, 228, 228); padding: 2px;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;STOCK_PRODUCTO&lt;/font&gt;&lt;/div&gt;&lt;table style=&quot;width:100%;font-size:1em;&quot; cellpadding=&quot;2&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;PK&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_stock&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;FK1&lt;/font&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;id_producto&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;font size=&quot;3&quot;&gt;stock_actual&lt;br&gt;limite_venta&lt;br&gt;activo&lt;br&gt;fecha_actualizacion&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="170" width="210" x="770" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="r_roles_usuarios" edge="1" parent="1" source="t_roles" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=-0.001;entryY=0.212;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.15;exitDx=0;exitDy=0;exitPerimeter=0;" target="t_usuarios" value="1:M · asigna rol">
+          <mxGeometry relative="1" x="-0.5151" y="-3" as="geometry">
+            <mxPoint y="1" as="offset" />
+            <mxPoint x="570" y="95" as="sourcePoint" />
+            <mxPoint x="360" y="60" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_categorias_productos" edge="1" parent="1" source="t_categorias" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=0;entryY=0.15;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.15;exitDx=0;exitDy=0;exitPerimeter=0;" target="t_productos" value="1:M · clasifica">
+          <mxGeometry relative="1" x="-0.05" as="geometry">
+            <mxPoint x="230" y="195" as="sourcePoint" />
+            <mxPoint x="570" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_mesas_pedidos" edge="1" parent="1" source="t_mesas" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=0.003;entryY=0.239;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;" target="t_pedidos" value="1:M · toma pedido">
+          <mxGeometry relative="1" x="-0.0496" as="geometry">
+            <mxPoint x="570" y="385" as="sourcePoint" />
+            <mxPoint x="700" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_mesas_reservas" edge="1" parent="1" source="t_mesas" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=0.999;entryY=0.293;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0;exitY=0.25;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;" target="t_reservas" value="1:M · reserva">
+          <mxGeometry relative="1" x="-0.3989" as="geometry">
+            <mxPoint x="360" y="385" as="sourcePoint" />
+            <mxPoint x="230" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_usuarios_pedidos_mesero" edge="1" parent="1" source="t_usuarios" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.12;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.002;entryY=0.175;entryDx=0;entryDy=0;entryPerimeter=0;" target="t_pedidos" value="1:M">
+          <mxGeometry relative="1" x="-0.0834" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="910" y="110" as="sourcePoint" />
+            <mxPoint x="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_usuarios_reservas" edge="1" parent="1" source="t_usuarios" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=0.999;entryY=0.406;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0;exitY=0.50;exitDx=0;exitDy=0;exitPerimeter=0;edgeStyle=orthogonalEdgeStyle;" target="t_reservas" value="1:M · hace reserva">
+          <mxGeometry relative="1" x="-0.4895" y="20" as="geometry">
+            <mxPoint x="360" y="170" as="sourcePoint" />
+            <mxPoint x="230" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_usuarios_historial" edge="1" parent="1" source="t_usuarios" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=1;entryY=0.12;entryDx=0;entryDy=0;entryPerimeter=0;exitX=-0.004;exitY=0.161;exitDx=0;exitDy=0;exitPerimeter=0;edgeStyle=orthogonalEdgeStyle;" target="t_historial" value="1:M · registra historial">
+          <mxGeometry relative="1" x="-0.5095" as="geometry">
+            <mxPoint x="360" y="270" as="sourcePoint" />
+            <mxPoint x="230" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_pedidos_detalle" edge="1" parent="1" source="t_pedidos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=1;entryY=0.30;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.08;exitDx=0;exitDy=0;exitPerimeter=0;" target="t_detalle_pedidos" value="1:M · tiene detalle">
+          <mxGeometry relative="1" x="-0.0507" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040" y="-20.8" />
+              <mxPoint x="1040" y="359" />
+            </Array>
+            <mxPoint x="910" y="100" as="sourcePoint" />
+            <mxPoint x="700" y="385" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_productos_detalle" edge="1" parent="1" source="t_productos" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=-0.001;entryY=0.563;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1.002;exitY=0.13;exitDx=0;exitDy=0;exitPerimeter=0;edgeStyle=orthogonalEdgeStyle;" target="t_detalle_pedidos" value="1:M · se detalla">
+          <mxGeometry relative="1" x="0.0835" as="geometry">
+            <mxPoint x="570" y="665" as="sourcePoint" />
+            <mxPoint x="700" y="385" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_productos_stock" edge="1" parent="1" source="t_productos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;startArrow=ERone;startFill=0;endArrow=ERone;endFill=0;fontSize=11;labelBackgroundColor=#ffffff;entryX=0.001;entryY=0.324;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.996;exitY=0.173;exitDx=0;exitDy=0;exitPerimeter=0;" target="t_stock_producto" value="1:1 · controla stock">
+          <mxGeometry relative="1" x="0.5894" y="-5" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="910" y="515" as="sourcePoint" />
+            <mxPoint x="700" y="515" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

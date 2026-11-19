@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Restaurante\Service;
 
 use Restaurante\Dao\IntentosLoginDao;
-use Restaurante\Dao\RecuperarContrasenaDao;
 use Restaurante\Dao\UsuarioDao;
 use Restaurante\Model\Usuario;
 
@@ -13,18 +12,15 @@ class ServicioDeAutenticacion
 {
     private UsuarioDao $usuarioDao;
     private IntentosLoginDao $intentosDao;
-    private RecuperarContrasenaDao $recuperarDao;
 
     private const MAX_INTENTOS_FALLOS = 5;
     private const VENTANA_BLOQUEO_MINUTOS = 15;
-    private const TOKEN_EXPIRACION_MINUTOS = 30;
     private const SESION_DURACION_SEGUNDOS = 14400; // 4 horas
 
-    public function __construct(UsuarioDao $usuarioDao, IntentosLoginDao $intentosDao, RecuperarContrasenaDao $recuperarDao)
+    public function __construct(UsuarioDao $usuarioDao, IntentosLoginDao $intentosDao)
     {
         $this->usuarioDao = $usuarioDao;
         $this->intentosDao = $intentosDao;
-        $this->recuperarDao = $recuperarDao;
     }
 
     // ========================================================================
@@ -113,8 +109,7 @@ class ServicioDeAutenticacion
     public static function iniciarSesion(array $usuario): void
     {
         // Configurar cookies de sesión seguras
-        // Detectar HTTPS considerando proxies/load balancers (X-Forwarded-Proto)
-        // que es el caso típico en Railway y otros proveedores de cloud.
+        // Detectar HTTPS considerando proxies/load balancers (X-Forwarded-Proto).
         $esHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
@@ -234,78 +229,6 @@ class ServicioDeAutenticacion
 
         $tiempoTranscurrido = time() - strtotime($fechaLogin);
         return $tiempoTranscurrido > self::SESION_DURACION_SEGUNDOS;
-    }
-
-    // ========================================================================
-    // RECUPERACIÓN DE CONTRASEÑA
-    // ========================================================================
-    public function solicitarRecuperacion(string $email, string $direccion_ip): array
-    {
-        $email = trim(strtolower($email));
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException('El email no tiene un formato válido.');
-        }
-
-        $usuario = $this->usuarioDao->obtenerPorEmail($email);
-
-        // Siempre devolvemos éxito para no revelar si el email existe
-        if ($usuario === null || !$usuario->activo) {
-            return [
-                'exito' => true,
-                'mensaje' => 'Si el correo existe y está activo, se ha generado un token de recuperación.',
-                'token' => null,
-                'expira_en' => null,
-            ];
-        }
-
-        $token = bin2hex(random_bytes(32));
-        $fecha_expiracion = date('Y-m-d H:i:s', time() + (self::TOKEN_EXPIRACION_MINUTOS * 60));
-
-        $this->recuperarDao->crearToken(
-            $usuario->id_usuario,
-            $token,
-            $fecha_expiracion,
-            $direccion_ip
-        );
-
-        return [
-            'exito' => true,
-            'mensaje' => 'Token de recuperación generado.',
-            'token' => $token, // Solo visible en entorno de desarrollo
-            'expira_en' => $fecha_expiracion,
-        ];
-    }
-
-    public function restablecerContrasena(string $token, string $nueva_contrasena): array
-    {
-        if (strlen($nueva_contrasena) < 8) {
-            throw new \InvalidArgumentException('La contraseña debe tener al menos 8 caracteres.');
-        }
-        if (!preg_match('/[A-Z]/', $nueva_contrasena)) {
-            throw new \InvalidArgumentException('La contraseña debe incluir al menos una letra mayúscula.');
-        }
-        if (!preg_match('/[0-9]/', $nueva_contrasena)) {
-            throw new \InvalidArgumentException('La contraseña debe incluir al menos un número.');
-        }
-
-        $datos = $this->recuperarDao->obtenerTokenValido($token);
-        if ($datos === null) {
-            throw new \InvalidArgumentException('Token inválido o expirado.');
-        }
-
-        $this->usuarioDao->actualizarContraseña(
-            (int) $datos['id_usuario'],
-            password_hash($nueva_contrasena, PASSWORD_BCRYPT, ['cost' => 12])
-        );
-
-        $this->recuperarDao->marcarTokenUsado($token);
-        $this->intentosDao->limpiarIntentos($this->usuarioDao->obtenerPorId((int) $datos['id_usuario'])->email ?? '');
-
-        return [
-            'exito' => true,
-            'mensaje' => 'Contraseña restablecida correctamente.',
-        ];
     }
 
     // ========================================================================

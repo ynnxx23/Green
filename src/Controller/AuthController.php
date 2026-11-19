@@ -56,18 +56,6 @@ class AuthController
                 }
                 return $this->verificarSesion();
 
-            case 'recuperar':
-                if ($metodo !== 'POST') {
-                    return $this->error('Método no permitido.', 405);
-                }
-                return $this->recuperar();
-
-            case 'restablecer':
-                if ($metodo !== 'POST') {
-                    return $this->error('Método no permitido.', 405);
-                }
-                return $this->restablecer();
-
             case 'perfil':
                 if ($metodo === 'GET') {
                     return $this->perfil();
@@ -263,81 +251,26 @@ class AuthController
         }
     }
 
-    private function recuperar(): array
-    {
-        $entrada = $this->leerCuerpoJson();
-        $email = $entrada['email'] ?? '';
-        $direccion_ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
-
-        if ($email === '') {
-            return $this->error('El correo electrónico es obligatorio.', 400);
-        }
-
-        // Rate limiting para recuperación
-        $clienteId = $_SERVER['REMOTE_ADDR'] ?? 'desconocido';
-        $this->rateLimiter->consumir($clienteId, 'recuperar:' . $direccion_ip);
-
-        try {
-            $resultado = $this->auth->solicitarRecuperacion($email, $direccion_ip);
-
-            return [
-                'exito' => true,
-                'datos' => [
-                    'token' => $resultado['token'] ?? null,
-                    'expira_en' => $resultado['expira_en'] ?? null,
-                ],
-                'mensaje' => $resultado['mensaje'],
-            ];
-        } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
-        }
-    }
-
-    private function restablecer(): array
-    {
-        $entrada = $this->leerCuerpoJson();
-        $token = $entrada['token'] ?? '';
-        $nueva_contrasena = $entrada['nueva_contrasena'] ?? '';
-
-        if ($token === '' || $nueva_contrasena === '') {
-            return $this->error('Se requieren token y nueva contraseña.', 400);
-        }
-
-        try {
-            $resultado = $this->auth->restablecerContrasena($token, $nueva_contrasena);
-
-            return [
-                'exito' => true,
-                'mensaje' => $resultado['mensaje'],
-            ];
-        } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
-        }
-    }
-
     private function leerCuerpoJson(): array
     {
-        $cuerpo = @file_get_contents('php://input');
-        if ($cuerpo === false || empty($cuerpo)) {
-            $handle = @fopen('php://input', 'r');
-            if ($handle) {
-                $cuerpo = '';
-                while (!feof($handle)) {
-                    $fragmento = fread($handle, 8192);
-                    if ($fragmento === false) {
-                        break;
-                    }
-                    $cuerpo .= $fragmento;
-                }
-                fclose($handle);
-            }
-        }
-        if (empty($cuerpo) && isset($_SERVER['RAW_INPUT'])) {
+        if (isset($_SERVER['RAW_INPUT']) && $_SERVER['RAW_INPUT'] !== '') {
             $cuerpo = $_SERVER['RAW_INPUT'];
-        }
-        // Eliminar BOM UTF-8 si está presente
-        if (substr($cuerpo, 0, 3) === "\xEF\xBB\xBF") {
-            $cuerpo = substr($cuerpo, 3);
+        } else {
+            $cuerpo = @file_get_contents('php://input');
+            if ($cuerpo === false || empty($cuerpo)) {
+                $handle = @fopen('php://input', 'r');
+                if ($handle) {
+                    $cuerpo = '';
+                    while (!feof($handle)) {
+                        $fragmento = fread($handle, 8192);
+                        if ($fragmento === false) {
+                            break;
+                        }
+                        $cuerpo .= $fragmento;
+                    }
+                    fclose($handle);
+                }
+            }
         }
 
         $datos = json_decode($cuerpo, true);

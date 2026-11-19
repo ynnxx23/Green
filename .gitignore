@@ -1,6 +1,5 @@
 .env
 .env.backup*
-.env.railway.backup*
 vendor/
 node_modules/
 tests/

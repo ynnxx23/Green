@@ -218,21 +218,15 @@ Aplicar las migraciones en orden dentro de `migrations/`:
 ## 7. Entornos soportados
 
 - XAMPP local (Apache + PHP + MariaDB)
-- Docker Compose local
-- Hosting o servidor remoto con PHP y MariaDB/MySQL
 
 ### Inicio rápido (XAMPP)
 1. Copiar el proyecto en `htdocs/Yensel/Morday/` (o la ruta de tu servidor).
 2. Copiar `.env.example` a `.env` y completar valores (base de datos, URL, cookies).
-3. Crear base de datos y aplicar las migraciones de `migrations/` en orden.
+3. Crear base de datos y aplicar las migraciones de `migrations/` en orden (`001` → `026`).
 4. Acceder a `http://localhost/Yensel/Morday/public/`.
 
-### Inicio rápido (Docker)
-```bash
-cp .env.example .env
-# editar .env con valores reales
-docker compose up -d
-```
+### Puerto local por defecto
+El servidor web se ejecuta en `http://localhost:8082/` usando `start_sistema.bat` (inicia MySQL y el servidor incorporado de PHP) o `start_server.bat` (solo PHP).
 
 ---
 
@@ -267,9 +261,9 @@ docker compose up -d
 ```
 / (root)
 ├── .env / .env.example
-├── docker-compose.yml / Dockerfile
 ├── README.md
 ├── start_server.bat / start_sistema.bat
+├── aplicar_todas_migraciones.ps1
 ├── /src                  Código fuente del sistema (PHP)
 │   ├── Config/
 │   ├── Controller/
@@ -284,23 +278,11 @@ docker compose up -d
 │   ├── router.php
 │   ├── *.html            Páginas
 │   └── /assets           CSS, imágenes, JS
-├── /migrations           Migraciones de base de datos (001 → 013)
+├── /migrations           Migraciones de base de datos (001 → 026)
 ├── /documentacion        Documentación del sistema
 │   ├── /general          Documentación general (requerimientos, tecnologías, endpoints, guías)
 │   └── /desarrollo       Documentación de desarrollo (análisis, arquitectura, pruebas, CI/CD)
 ├── /entregables          Entregables del proyecto (documento APA7, etapas del integrador y diagramas)
-│   ├── 00_indice_entregables.md
-│   ├── 01_documento_apa7.md
-│   ├── 02_analisis_problematica.md
-│   ├── 03_etapa1_requerimientos.md
-│   ├── 04_diseno_sistema.md
-│   ├── 05_desarrollo.md
-│   ├── 06_sistema_funcional_pruebas.md
-│   ├── 07_plan_mantenimiento.md
-│   ├── 08_plan_capacitacion.md
-│   ├── 09_diagrama_caso_uso.md
-│   ├── 10_diagrama_der.md
-│   └── 11_diagrama_gantt.md
 ├── /plan_desarrollo      Plan de desarrollo (backend, frontend)
 └── /tests                Pruebas (en .gitignore)
 ```

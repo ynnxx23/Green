@@ -3,11 +3,10 @@
 ## Estado del Proyecto
 Sistema funcional completo con 3 roles, autenticación, reservas, pedidos, stock, menú semanal, historial y reportes.
 
-**Desplegado en Railway:** ✅ Online
-- Servicio web: Green (Online, región sfo)
-- Base de datos: MySQL (Online, región sfo)
-- Migraciones 001→007 aplicadas automáticamente
-- URL pública: obtener desde dashboard de Railway o ejecutar `railway open`
+**Entorno:** 100% local (XAMPP + PHP servidor incorporado)
+- Base de datos: MySQL/MariaDB local
+- URL: `http://localhost:8082/` (o `http://localhost/Yensel/Morday/public/` en Apache de XAMPP)
+- Usuario admin: `admin@restaurante.local` / `admin123`
 
 ## Estructura del Repositorio
 
@@ -111,21 +110,16 @@ Páginas en `public/`:
 - **Estados de pedido:** pendiente, en_preparacion, listo, entregado, cancelado.
 - **Estados de seña:** pendiente, pagada, devuelta.
 
-## Cómo Ejecutar (Producción/Pruebas)
+## Cómo Ejecutar (Local)
 
-### Opción A: Despliegue en Railway (ya desplegado)
-El sistema está desplegado en Railway en el proyecto "rare-caring":
-- Servicio web "Green": Online (región sfo)
-- Base de datos MySQL: Online (región sfo)
-- Acceder desde el dashboard de Railway o ejecutar `railway open`
-- Usuario admin: `admin@restaurante.local` / `admin123`
-
-### Opción B: Entorno local (XAMPP)
-1. Copiar proyecto en `htdocs/Yensel/Morday/` (XAMPP) o usar Docker Compose.
+### Entorno local (XAMPP)
+1. Copiar proyecto en `htdocs/Yensel/Morday/` (XAMPP).
 2. Copiar `.env.example` a `.env` y completar credenciales de BD.
-3. Crear base de datos y aplicar migraciones en orden: `001` → `002` → `003` → `004` → `005` → `006` → `007`.
-4. Acceder a `http://localhost/Yensel/Morday/public/`.
-5. Usuario admin de prueba: `admin@restaurante.local` / `admin123`.
+3. Crear base de datos `restaurante_dev` y aplicar migraciones en orden: `001` → `026`.
+   - Usar `aplicar_todas_migraciones.ps1` (PowerShell) o aplicar manualmente con `mysql`.
+4. Ejecutar `start_sistema.bat` (inicia MySQL + PHP en `http://localhost:8082/`).
+5. Acceder a `http://localhost:8082/`.
+6. Usuario admin de prueba: `admin@restaurante.local` / `admin123`.
 
 ## Verificación de Sintaxis PHP
 Todos los archivos PHP verificados con `php -l` sin errores (quando PHP esté disponible en el entorno).
